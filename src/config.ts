@@ -5,7 +5,7 @@ export const CONFIG = {
 
   // 物理設定
   GRAVITY: -19.8,
-  PLAYER_SPEED: 8.0,
+  PLAYER_SPEED: 12.0, // 基本速度を8.0から12.0に引き上げ
   PLAYER_JUMP_FORCE: 8.0,
 
   // プレイヤーのサイズ
@@ -32,4 +32,3 @@ export const CONFIG = {
   ITEM_DESPAWN_TIME: 30,        // 秒単位の消滅時間
   ITEM_PICKUP_RADIUS: 2.0,      // アイテムを吸い込む半径
 };
-

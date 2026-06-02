@@ -286,8 +286,12 @@ export class Player {
     const direction = Player.tempDirection.copy(moveVector);
     direction.applyAxisAngle(Player.tempVec3_2.set(0, 1, 0), this.yaw);
 
-    this.body.velocity.x = direction.x * this.speed;
-    this.body.velocity.z = direction.z * this.speed;
+    // ダッシュ判定 (Shiftキーが押されている間は1.5倍速)
+    const isSprinting = input.keys['ShiftLeft'] || input.keys['ShiftRight'];
+    const currentSpeed = isSprinting ? this.speed * 1.5 : this.speed;
+
+    this.body.velocity.x = direction.x * currentSpeed;
+    this.body.velocity.z = direction.z * currentSpeed;
 
     // ジャンプ
     if (input.isActionActive('jump') && this.isGrounded) {
@@ -296,7 +300,7 @@ export class Player {
     }
   }
 
-  // アバターの位置・回転・手足スイングの更新
+
   private animateAvatar(deltaTime: number): void {
     // アバターグループの位置をプレイヤー座標に同期
     this.avatar.position.copy(this.position);
