@@ -2,6 +2,7 @@ import { configStore } from '../configStore.ts';
 
 export class InputHandler {
   public keys: Record<string, boolean> = {};
+  private justPressedKeys: Record<string, boolean> = {};
   public mouseDelta = { x: 0, y: 0 };
   public isLocked = false;
 
@@ -42,12 +43,22 @@ export class InputHandler {
 
   private onKeyDown(e: KeyboardEvent): void {
     const key = e.code;
+    
+    // ポインターロック中のブラウザデフォルト動作防止（F5:更新, Tab:フォーカス移動など）
+    if (this.isLocked && (key === 'F5' || key === 'KeyQ')) {
+      e.preventDefault();
+    }
+
+    if (!this.keys[key]) {
+      this.justPressedKeys[key] = true;
+    }
     this.keys[key] = true;
   }
 
   private onKeyUp(e: KeyboardEvent): void {
     const key = e.code;
     this.keys[key] = false;
+    this.justPressedKeys[key] = false;
   }
 
   private onMouseMove(e: MouseEvent): void {
@@ -78,6 +89,16 @@ export class InputHandler {
 
   private clearKeys(): void {
     this.keys = {};
+    this.justPressedKeys = {};
+  }
+
+  // キーが押された瞬間を判定して消費する
+  public consumeJustPressed(code: string): boolean {
+    if (this.justPressedKeys[code]) {
+      this.justPressedKeys[code] = false;
+      return true;
+    }
+    return false;
   }
 
   // 毎フレームの終わりにマウス移動量を消費（リセット）する
@@ -88,3 +109,4 @@ export class InputHandler {
     return delta;
   }
 }
+

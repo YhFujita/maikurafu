@@ -144,8 +144,31 @@ export function createProceduralTextureAtlas(): THREE.Texture {
     ctx.fillRect(coalStartX + sx, coalStartY + sy, 1, 1);
   });
 
+  // 11: 松明 (col: 3, row: 2)
+  // 背景を暗い透明感のある色、または透明に（今回は透過マテリアルでなくても動作するように暗めの灰色ベースでクリアしつつ、棒と火を描画）
+  const torchStartX = 3 * tileSize;
+  const torchStartY = 2 * tileSize;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // 透明でクリア
+  ctx.clearRect(torchStartX, torchStartY, tileSize, tileSize);
+  // 周りを少し透過しない背景（マテリアルが透明度非対応の場合に備えて黒寄りに）
+  ctx.fillStyle = 'rgb(20, 20, 20)';
+  ctx.fillRect(torchStartX, torchStartY, tileSize, tileSize);
+  
+  // 棒の部分 (中央下部)
+  ctx.fillStyle = 'rgb(120, 80, 40)'; // 茶色
+  ctx.fillRect(torchStartX + 7, torchStartY + 6, 2, 10);
+  
+  // 炎のベース (オレンジ)
+  ctx.fillStyle = 'rgb(255, 100, 0)';
+  ctx.fillRect(torchStartX + 6, torchStartY + 2, 4, 4);
+  
+  // 炎の芯 (黄色)
+  ctx.fillStyle = 'rgb(255, 220, 0)';
+  ctx.fillRect(torchStartX + 7, torchStartY + 3, 2, 2);
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
+
   
   // マイクラ風のクッキリしたピクセル感を出すためにNearestFilterを適用
   texture.magFilter = THREE.NearestFilter;

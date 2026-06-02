@@ -463,6 +463,7 @@
     .slot-plank { background: linear-gradient(135deg, #fbbf24, #b45309); }
     .slot-brick { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
     .slot-sand { background: linear-gradient(135deg, #fef08a, #ca8a04); }
+    .slot-torch { background: linear-gradient(135deg, #f97316, #eab308); }
 
     .slot-num {
       position: absolute;
@@ -471,6 +472,16 @@
       font-size: 0.65rem;
       color: #9ca3af;
       font-weight: bold;
+    }
+
+    .slot-count {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 0.75rem;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
     }
 
     .hotbar-slot.active .slot-num {
@@ -489,6 +500,71 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       transition: opacity 0.2s;
     }
+
+    /* ダメージオーバーレイとデス画面 */
+    #damage-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.4);
+      z-index: 15;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    #death-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(20, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #death-screen h1 {
+      font-size: 3.5rem;
+      color: #ff3333;
+      text-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+      margin-bottom: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    #respawn-btn {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border: none;
+      color: white;
+      padding: 16px 40px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+    }
+
+    #respawn-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 30px rgba(239, 68, 68, 0.6);
+    }
+
+    #hp-container {
+      display: flex;
+      gap: 2px;
+      font-size: 1.2rem;
+      margin-top: 8px;
+      color: #ef4444;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -497,6 +573,15 @@
 
   <!-- クロスヘア -->
   <div id="crosshair"></div>
+
+  <!-- ダメージフラッシュ用の赤オーバーレイ -->
+  <div id="damage-overlay"></div>
+
+  <!-- 死亡画面 -->
+  <div id="death-screen">
+    <h1>YOU DIED</h1>
+    <button id="respawn-btn">リスポーン</button>
+  </div>
 
   <!-- メニュー画面 / ポインターロック用 -->
   <div id="menu-overlay">
@@ -521,6 +606,14 @@
           <span class="key-badge">Space</span>
         </div>
         <div class="instruction-row">
+          <span>視点切り替え</span>
+          <span class="key-badge">F5</span>
+        </div>
+        <div class="instruction-row">
+          <span>アイテムを捨てる</span>
+          <span class="key-badge">Q</span>
+        </div>
+        <div class="instruction-row">
           <span>視点移動</span>
           <span>マウス移動</span>
         </div>
@@ -543,6 +636,7 @@
   <!-- 画面左下のHUD -->
   <div id="hud">
     <div class="hud-panel">
+      <div class="hud-row">ライフ: <div id="hp-container">❤❤❤❤❤❤❤❤❤❤</div></div>
       <div class="hud-row">座標: <span id="pos-display">0.0, 0.0, 0.0</span></div>
       <div class="hud-row">アクティブチャンク数: <span id="chunks-display">0</span></div>
       <div class="hud-row">物理ボディ数: <span id="bodies-display">0</span></div>
@@ -603,34 +697,47 @@
       <div class="hotbar-slot active" data-index="0" data-block="1">
         <div class="slot-icon slot-grass"></div>
         <div class="slot-num">1</div>
+        <div class="slot-count" id="count-0">64</div>
       </div>
       <div class="hotbar-slot" data-index="1" data-block="2">
         <div class="slot-icon slot-dirt"></div>
         <div class="slot-num">2</div>
+        <div class="slot-count" id="count-1">64</div>
       </div>
       <div class="hotbar-slot" data-index="2" data-block="3">
         <div class="slot-icon slot-stone"></div>
         <div class="slot-num">3</div>
+        <div class="slot-count" id="count-2">64</div>
       </div>
       <div class="hotbar-slot" data-index="3" data-block="4">
         <div class="slot-icon slot-wood"></div>
         <div class="slot-num">4</div>
+        <div class="slot-count" id="count-3">64</div>
       </div>
       <div class="hotbar-slot" data-index="4" data-block="5">
         <div class="slot-icon slot-leaves"></div>
         <div class="slot-num">5</div>
+        <div class="slot-count" id="count-4">64</div>
       </div>
       <div class="hotbar-slot" data-index="5" data-block="6">
         <div class="slot-icon slot-plank"></div>
         <div class="slot-num">6</div>
+        <div class="slot-count" id="count-5">64</div>
       </div>
       <div class="hotbar-slot" data-index="6" data-block="7">
         <div class="slot-icon slot-brick"></div>
         <div class="slot-num">7</div>
+        <div class="slot-count" id="count-6">64</div>
       </div>
       <div class="hotbar-slot" data-index="7" data-block="8">
         <div class="slot-icon slot-sand"></div>
         <div class="slot-num">8</div>
+        <div class="slot-count" id="count-7">64</div>
+      </div>
+      <div class="hotbar-slot" data-index="8" data-block="10">
+        <div class="slot-icon slot-torch"></div>
+        <div class="slot-num">9</div>
+        <div class="slot-count" id="count-8">64</div>
       </div>
     </div>
     <div id="hotbar-label">Grass</div>
@@ -639,3 +746,4 @@
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
+

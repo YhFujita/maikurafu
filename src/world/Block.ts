@@ -9,6 +9,7 @@ export enum BlockType {
   BRICK = 7,  // レンガ
   SAND = 8,   // 砂
   COAL_ORE = 9, // 石炭鉱石
+  TORCH = 10,   // 松明ブロック
 }
 
 export interface BlockProperties {
@@ -16,6 +17,7 @@ export interface BlockProperties {
   name: string;
   isSolid: boolean;
   isTransparent: boolean;
+  lightLevel?: number; // 光強度（0〜15、未指定は0）
   // テクスチャアトラス上の面ごとのUVインデックス [前, 後, 左, 右, 上, 下]
   // アトラスのグリッドが4x4の場合、インデックスは0〜15
   uvs: {
@@ -62,7 +64,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     name: 'Wood',
     isSolid: true,
     isTransparent: false,
-    // 木（原木）は側面が樹皮(4)、天面底面が年輪(5)
+    // 木（原木）は側面が樹皮(4), 天面底面が年輪(5)
     uvs: { front: 4, back: 4, left: 4, right: 4, top: 5, bottom: 5 },
   },
   [BlockType.LEAVES]: {
@@ -100,4 +102,13 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     uvs: { front: 10, back: 10, left: 10, right: 10, top: 10, bottom: 10 },
   },
+  [BlockType.TORCH]: {
+    id: BlockType.TORCH,
+    name: 'Torch',
+    isSolid: false,
+    isTransparent: true,
+    lightLevel: 14, // 強い発光強度を持つ
+    uvs: { front: 11, back: 11, left: 11, right: 11, top: 11, bottom: 11 },
+  },
 };
+

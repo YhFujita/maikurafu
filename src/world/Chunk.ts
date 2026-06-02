@@ -132,6 +132,22 @@ export class Chunk {
     const atlasGridSize = 4; // 4x4アトラス
     const uvStep = 1.0 / atlasGridSize; // 0.25
 
+    // 周辺の松明の座標を走査（現在のチャンク + 隣接2マスまで検索）
+    const torches: { x: number; y: number; z: number }[] = [];
+    const searchRange = 2;
+    for (let cx = -searchRange; cx < this.size + searchRange; cx++) {
+      for (let cy = -searchRange; cy < this.size + searchRange; cy++) {
+        for (let cz = -searchRange; cz < this.size + searchRange; cz++) {
+          const gx = this.x * this.size + cx;
+          const gy = this.y * this.size + cy;
+          const gz = this.z * this.size + cz;
+          if (world.getBlock(gx, gy, gz) === BlockType.TORCH) {
+            torches.push({ x: gx + 0.5, y: gy + 0.5, z: gz + 0.5 });
+          }
+        }
+      }
+    }
+
     for (let cx = 0; cx < this.size; cx++) {
       for (let cy = 0; cy < this.size; cy++) {
         for (let cz = 0; cz < this.size; cz++) {
@@ -161,16 +177,44 @@ export class Chunk {
             if (shouldDrawFace) {
               // 頂点の追加
               for (const corner of face.corners) {
-                positions.push(
-                  globalX + corner[0],
-                  globalY + corner[1],
-                  globalZ + corner[2]
-                );
+                const vx = globalX + corner[0];
+                const vy = globalY + corner[1];
+                const vz = globalZ + corner[2];
+
+                positions.push(vx, vy, vz);
                 normals.push(...face.dir);
 
-                // 頂点カラー：陰影を直接乗せて立体感を強調する（マテリアルカラーと掛け算される）
+                // 頂点カラー：陰影（アンビエントオクルージョン風）と松明光源の頂点ライトを合成
                 const shadow = FACE_SHADING[face.uvName];
-                colors.push(shadow, shadow, shadow);
+
+                // 最も近い松明からの光を計算（マンハッタン距離）
+                let maxLight = 0.0;
+                for (let i = 0; i < torches.length; i++) {
+                  const torch = torches[i];
+                  const dx = vx - torch.x;
+                  const dy = vy - torch.y;
+                  const dz = vz - torch.z;
+                  const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+                  const light = Math.max(0, 1.0 - dist / 8.0); // 8ブロック先で完全に減衰
+                  if (light > maxLight) {
+                    maxLight = light;
+                  }
+                }
+
+                // 松明ブロック自身は常に最大光輝
+                const isSelfTorch = (blockType === BlockType.TORCH);
+                const lightFactor = isSelfTorch ? 1.0 : maxLight;
+
+                // 最終カラー値のブレンド（明るさは最低0.3、松明ライトで最大1.0まで加算）
+                const finalLight = Math.min(1.0, 0.35 + lightFactor * 0.65);
+                const finalColor = shadow * finalLight;
+
+                // 黄色・オレンジの温かみのある光を表現するため、RとGを少し強調し、Bを抑える
+                const r = finalColor;
+                const g = finalColor * (isSelfTorch ? 0.9 : (0.85 + lightFactor * 0.05));
+                const b = finalColor * (isSelfTorch ? 0.6 : (0.7 + lightFactor * 0.1));
+                
+                colors.push(r, g, b);
               }
 
               // UV座標の算出 (4x4グリッド)
@@ -232,4 +276,5 @@ export class Chunk {
     this.isDirty = false;
     return this.mesh;
   }
+
 }
