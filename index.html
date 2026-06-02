@@ -189,6 +189,306 @@
     .hud-row:last-child {
       margin-bottom: 0;
     }
+
+    /* 設定ボタン */
+    #config-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f3f4f6;
+      padding: 14px 36px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    #config-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+    #config-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* 設定モーダル */
+    #config-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 30;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    #config-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 30px 40px;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    #config-card h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    .config-section {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 15px 0;
+    }
+
+    .config-section:first-of-type {
+      border-top: none;
+    }
+
+    .config-section h3 {
+      font-size: 0.95rem;
+      color: #e5e7eb;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .config-tip {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+
+    .config-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      color: #d1d5db;
+    }
+
+    .key-config-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      min-width: 80px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .key-config-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .key-config-btn.waiting {
+      background: #3b82f6;
+      border-color: #60a5fa;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    /* スイッチ（トグルボタン）のスタイル */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s;
+      border-radius: 22px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #3b82f6;
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
+
+    .config-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    #config-save-btn {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      color: white;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+      transition: all 0.2s;
+    }
+    #config-save-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    #config-default-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #9ca3af;
+      padding: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #config-default-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e5e7eb;
+    }
+
+    #config-close-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      padding: 5px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: underline;
+    }
+    #config-close-btn:hover {
+      color: #e5e7eb;
+    }
+
+    /* ホットバー UI */
+    #hotbar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hotbar-slots {
+      background: rgba(11, 15, 25, 0.6);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 6px;
+      display: flex;
+      gap: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .hotbar-slot {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+
+    .hotbar-slot.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #60a5fa;
+      box-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+      transform: scale(1.05);
+    }
+
+    .slot-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+
+    .slot-grass { background: linear-gradient(135deg, #4ade80, #15803d); }
+    .slot-dirt { background: linear-gradient(135deg, #a16207, #451a03); }
+    .slot-stone { background: linear-gradient(135deg, #9ca3af, #4b5563); }
+    .slot-wood { background: linear-gradient(135deg, #d97706, #78350f); }
+    .slot-leaves { background: linear-gradient(135deg, #22c55e, #14532d); }
+    .slot-plank { background: linear-gradient(135deg, #fbbf24, #b45309); }
+    .slot-brick { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
+    .slot-sand { background: linear-gradient(135deg, #fef08a, #ca8a04); }
+
+    .slot-num {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 0.65rem;
+      color: #9ca3af;
+      font-weight: bold;
+    }
+
+    .hotbar-slot.active .slot-num {
+      color: #fff;
+    }
+
+    #hotbar-label {
+      background: rgba(11, 15, 25, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: opacity 0.2s;
+    }
   </style>
 </head>
 <body>
@@ -205,6 +505,7 @@
       <p class="subtitle">TypeScript & Three.js Voxel Game</p>
       
       <button id="start-btn">ゲームスタート</button>
+      <button id="config-btn">設定変更</button>
       
       <div class="instructions">
         <h3>コントロール</h3>
@@ -246,6 +547,93 @@
       <div class="hud-row">アクティブチャンク数: <span id="chunks-display">0</span></div>
       <div class="hud-row">物理ボディ数: <span id="bodies-display">0</span></div>
     </div>
+  </div>
+
+  <!-- 設定モーダル -->
+  <div id="config-modal" style="display: none;">
+    <div id="config-card">
+      <h2>ゲーム設定</h2>
+      <div class="config-section">
+        <h3>キー割り当て</h3>
+        <p class="config-tip">ボタンをクリック後、割り当てたいキーを押してください。</p>
+        <div class="config-row">
+          <span>前進 (Forward):</span>
+          <button id="key-forward-btn" class="key-config-btn">W</button>
+        </div>
+        <div class="config-row">
+          <span>後退 (Backward):</span>
+          <button id="key-backward-btn" class="key-config-btn">S</button>
+        </div>
+        <div class="config-row">
+          <span>左移動 (Left):</span>
+          <button id="key-left-btn" class="key-config-btn">A</button>
+        </div>
+        <div class="config-row">
+          <span>右移動 (Right):</span>
+          <button id="key-right-btn" class="key-config-btn">D</button>
+        </div>
+        <div class="config-row">
+          <span>ジャンプ (Jump):</span>
+          <button id="key-jump-btn" class="key-config-btn">Space</button>
+        </div>
+      </div>
+      
+      <div class="config-section">
+        <h3>操作オプション</h3>
+        <div class="config-row">
+          <span>左右クリック反転 (左:配置 / 右:破壊):</span>
+          <label class="switch">
+            <input type="checkbox" id="invert-clicks-chk">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="config-actions">
+        <button id="config-save-btn">保存して閉じる</button>
+        <button id="config-default-btn">デフォルトに戻す</button>
+        <button id="config-close-btn">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 画面下部のホットバー -->
+  <div id="hotbar" style="display: none;">
+    <div class="hotbar-slots">
+      <div class="hotbar-slot active" data-index="0" data-block="1">
+        <div class="slot-icon slot-grass"></div>
+        <div class="slot-num">1</div>
+      </div>
+      <div class="hotbar-slot" data-index="1" data-block="2">
+        <div class="slot-icon slot-dirt"></div>
+        <div class="slot-num">2</div>
+      </div>
+      <div class="hotbar-slot" data-index="2" data-block="3">
+        <div class="slot-icon slot-stone"></div>
+        <div class="slot-num">3</div>
+      </div>
+      <div class="hotbar-slot" data-index="3" data-block="4">
+        <div class="slot-icon slot-wood"></div>
+        <div class="slot-num">4</div>
+      </div>
+      <div class="hotbar-slot" data-index="4" data-block="5">
+        <div class="slot-icon slot-leaves"></div>
+        <div class="slot-num">5</div>
+      </div>
+      <div class="hotbar-slot" data-index="5" data-block="6">
+        <div class="slot-icon slot-plank"></div>
+        <div class="slot-num">6</div>
+      </div>
+      <div class="hotbar-slot" data-index="6" data-block="7">
+        <div class="slot-icon slot-brick"></div>
+        <div class="slot-num">7</div>
+      </div>
+      <div class="hotbar-slot" data-index="7" data-block="8">
+        <div class="slot-icon slot-sand"></div>
+        <div class="slot-num">8</div>
+      </div>
+    </div>
+    <div id="hotbar-label">Grass</div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

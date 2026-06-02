@@ -3,6 +3,12 @@ export enum BlockType {
   GROUND = 1, // 草ブロック (土 + 上面が緑)
   DIRT = 2,   // 土ブロック
   STONE = 3,  // 石ブロック
+  WOOD = 4,   // 木（原木）
+  LEAVES = 5,  // 葉
+  PLANK = 6,  // 木材
+  BRICK = 7,  // レンガ
+  SAND = 8,   // 砂
+  COAL_ORE = 9, // 石炭鉱石
 }
 
 export interface BlockProperties {
@@ -35,9 +41,6 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     name: 'Grass',
     isSolid: true,
     isTransparent: false,
-    // 草ブロックは上面が緑、底面が土、側面が草付き土
-    // テクスチャアトラスの例 (4x4グリッド):
-    // 0: 草(上面), 1: 土, 2: 石, 3: 草側面
     uvs: { front: 3, back: 3, left: 3, right: 3, top: 0, bottom: 1 },
   },
   [BlockType.DIRT]: {
@@ -53,5 +56,48 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 2, back: 2, left: 2, right: 2, top: 2, bottom: 2 },
+  },
+  [BlockType.WOOD]: {
+    id: BlockType.WOOD,
+    name: 'Wood',
+    isSolid: true,
+    isTransparent: false,
+    // 木（原木）は側面が樹皮(4)、天面底面が年輪(5)
+    uvs: { front: 4, back: 4, left: 4, right: 4, top: 5, bottom: 5 },
+  },
+  [BlockType.LEAVES]: {
+    id: BlockType.LEAVES,
+    name: 'Leaves',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 6, back: 6, left: 6, right: 6, top: 6, bottom: 6 },
+  },
+  [BlockType.PLANK]: {
+    id: BlockType.PLANK,
+    name: 'Plank',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 9, back: 9, left: 9, right: 9, top: 9, bottom: 9 },
+  },
+  [BlockType.BRICK]: {
+    id: BlockType.BRICK,
+    name: 'Brick',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 7, back: 7, left: 7, right: 7, top: 7, bottom: 7 },
+  },
+  [BlockType.SAND]: {
+    id: BlockType.SAND,
+    name: 'Sand',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 8, back: 8, left: 8, right: 8, top: 8, bottom: 8 },
+  },
+  [BlockType.COAL_ORE]: {
+    id: BlockType.COAL_ORE,
+    name: 'Coal Ore',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 10, back: 10, left: 10, right: 10, top: 10, bottom: 10 },
   },
 };

@@ -111,10 +111,10 @@ export class Player {
   private handleMovement(input: InputHandler, _deltaTime: number): void {
     const moveVector = new THREE.Vector3();
 
-    if (input.keys['KeyW']) moveVector.z -= 1;
-    if (input.keys['KeyS']) moveVector.z += 1;
-    if (input.keys['KeyA']) moveVector.x -= 1;
-    if (input.keys['KeyD']) moveVector.x += 1;
+    if (input.isActionActive('forward')) moveVector.z -= 1;
+    if (input.isActionActive('backward')) moveVector.z += 1;
+    if (input.isActionActive('left')) moveVector.x -= 1;
+    if (input.isActionActive('right')) moveVector.x += 1;
 
     moveVector.normalize();
 
@@ -128,7 +128,7 @@ export class Player {
     this.body.velocity.z = direction.z * this.speed;
 
     // ジャンプ
-    if (input.keys['Space'] && this.isGrounded) {
+    if (input.isActionActive('jump') && this.isGrounded) {
       this.body.velocity.y = this.jumpForce;
       this.isGrounded = false;
     }

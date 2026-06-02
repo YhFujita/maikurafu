@@ -1,7 +1,21 @@
+import { configStore } from '../configStore.ts';
+
 export class InputHandler {
   public keys: Record<string, boolean> = {};
   public mouseDelta = { x: 0, y: 0 };
   public isLocked = false;
+
+  public isActionActive(action: 'forward' | 'backward' | 'left' | 'right' | 'jump'): boolean {
+    const config = configStore.getConfig();
+    switch (action) {
+      case 'forward': return !!this.keys[config.keyForward];
+      case 'backward': return !!this.keys[config.keyBackward];
+      case 'left': return !!this.keys[config.keyLeft];
+      case 'right': return !!this.keys[config.keyRight];
+      case 'jump': return !!this.keys[config.keyJump];
+      default: return false;
+    }
+  }
 
   private targetElement: HTMLElement;
 
