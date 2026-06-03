@@ -258,6 +258,12 @@ export class Chunk {
               const isDoorClosed = (blockType === BlockType.DOOR_CLOSED);
               const isDoorOpen = (blockType === BlockType.DOOR_OPEN);
 
+              // 扉の向き情報を取得（NS=南北方向に開口、EW=東西方向に開口）
+              let doorOrientation: 'NS' | 'EW' = 'NS';
+              if (isDoorClosed || isDoorOpen) {
+                doorOrientation = world.getDoorOrientation(globalX, globalY, globalZ);
+              }
+
               // 頂点の追加
               for (const corner of face.corners) {
                 let vx = globalX + corner[0];
@@ -270,11 +276,21 @@ export class Chunk {
                   vy = globalY + corner[1] * 0.65;
                   vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
                 } else if (isDoorClosed) {
-                  // ドア（閉）：X-Y平面に平行な薄い板（Z方向を薄くする、厚さ14cm）
-                  vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                  if (doorOrientation === 'EW') {
+                    // EW向き（東西）の閉扉：X軸方向に薄い板（通路をZ方向に通る場合に壁になる）
+                    vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
+                  } else {
+                    // NS向き（南北）の閉扉：Z軸方向に薄い板（通路をX方向に通る場合に壁になる）
+                    vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                  }
                 } else if (isDoorOpen) {
-                  // ドア（開）：Y-Z平面に平行な薄い板（X方向を薄くする、厚さ14cm）
-                  vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
+                  if (doorOrientation === 'EW') {
+                    // EW向き（東西）の開扉：Z軸方向に薄い板（壁の端に収まる）
+                    vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                  } else {
+                    // NS向き（南北）の開扉：X軸方向に薄い板（壁の端に収まる）
+                    vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
+                  }
                 }
 
                 positions.push(vx, vy, vz);

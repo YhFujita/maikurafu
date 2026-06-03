@@ -460,9 +460,26 @@ window.addEventListener('mousedown', (e) => {
         world.setBlock(bx, by, bz, BlockType.AIR);
         // ブロック破壊音の再生
         SoundManager.playBreak(targetBlockType);
-        
-        // 破壊ブロックの中央座標にドロップアイテムをスポーン
-        spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+
+        // 扉ブロックの場合、上マスも同時に削除する（2マス扉対応）
+        if (targetBlockType === BlockType.DOOR_CLOSED || targetBlockType === BlockType.DOOR_OPEN) {
+          const aboveType = world.getBlock(bx, by + 1, bz);
+          if (aboveType === BlockType.DOOR_CLOSED || aboveType === BlockType.DOOR_OPEN) {
+            world.setBlock(bx, by + 1, bz, BlockType.AIR);
+          }
+          const belowType = world.getBlock(bx, by - 1, bz);
+          if (belowType === BlockType.DOOR_CLOSED || belowType === BlockType.DOOR_OPEN) {
+            world.setBlock(bx, by - 1, bz, BlockType.AIR);
+            world.removeDoorOrientation(bx, by - 1, bz);
+          }
+          world.removeDoorOrientation(bx, by, bz);
+        }
+
+        // 破壊ブロックの中奈座標にドロップアイテムをスポーン
+        // 扉は上下2マス分でドロップは1個のみ
+        if (targetBlockType !== BlockType.DOOR_OPEN) {
+          spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+        }
       }
 
       
@@ -477,13 +494,23 @@ window.addEventListener('mousedown', (e) => {
       const ctz_z = Math.floor(clickedTarget.z);
       const clickedBlockType = world.getBlock(ctx_x, cty_y, ctz_z);
 
-      // 右クリックした対象がドアの場合、開閉をトグルする
+      // 右クリックした対象がドアの場合、開閉をトグルする（2マス同時切替）
       if (clickedBlockType === BlockType.DOOR_CLOSED) {
         world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_OPEN);
+        // 上マスも扉なら同時に開く
+        const aboveType = world.getBlock(ctx_x, cty_y + 1, ctz_z);
+        if (aboveType === BlockType.DOOR_CLOSED) {
+          world.setBlock(ctx_x, cty_y + 1, ctz_z, BlockType.DOOR_OPEN);
+        }
         SoundManager.playPlace(BlockType.DOOR_OPEN);
         return;
       } else if (clickedBlockType === BlockType.DOOR_OPEN) {
         world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_CLOSED);
+        // 上マスも扉なら同時に閉じる
+        const aboveType = world.getBlock(ctx_x, cty_y + 1, ctz_z);
+        if (aboveType === BlockType.DOOR_OPEN) {
+          world.setBlock(ctx_x, cty_y + 1, ctz_z, BlockType.DOOR_CLOSED);
+        }
         SoundManager.playPlace(BlockType.DOOR_CLOSED);
         return;
       }
@@ -511,15 +538,42 @@ window.addEventListener('mousedown', (e) => {
       const isJumpingAbove = (!player.body.velocity.y || Math.abs(player.body.velocity.y) > 0.05) && feetY >= by + 0.15;
       const allowTowerPlace = (isJumpingAbove && bx === px && bz === pz && by === py);
 
-      // 松明(TORCH)などはソリッドでないため、占有判定をスキップして設置可能にする
       const isTorch = (activeBlockType === BlockType.TORCH);
+      const isDoor = (activeBlockType === BlockType.DOOR_CLOSED);
 
       if (isTorch || !isOccupiedSpace || allowTowerPlace) {
-        // 選択されたブロックを設置し、インベントリから消費
-        world.setBlock(bx, by, bz, activeBlockType);
-        SoundManager.playPlace(activeBlockType);
-        inventory[activeBlockType]--;
-        syncHotbarUI();
+        if (isDoor) {
+          // 扉の設置：下マスに扉を置き、上マスが空気なら上マスにも扉を設置（2マス扉）
+          world.setBlock(bx, by, bz, BlockType.DOOR_CLOSED);
+
+          // プレイヤーのYaw角から扉の向きを決定する
+          // Yawは0=北(+Z向き)、パイ=南、パイ/2=西、-パイ/2=東
+          // プレイヤーが主に北南(Z軸)方向を向いている場合 → NS向き扉（Z軸方向に薄い板で横方向の通路を顔ぐ）
+          // プレイヤーが主に東西(X軸)方向を向いている場合 → EW向き扉（X軸方向に薄い板で縦方向の通路を顔ぐ）
+          const yaw = player.getYaw();
+          // yawの該当成分の途中の数値でNS/EWを判定（対角線45度分割）
+          // sin(yaw)が小さい = 主に北南方向向き = NS扉
+          const isNS = Math.abs(Math.sin(yaw)) < 0.707;
+          const orientation: 'NS' | 'EW' = isNS ? 'NS' : 'EW';
+          world.setDoorOrientation(bx, by, bz, orientation);
+
+          // 上マスが空気なら上マスにも扉を設置（2マス分の高さを確保）
+          const aboveType = world.getBlock(bx, by + 1, bz);
+          if (aboveType === BlockType.AIR) {
+            world.setBlock(bx, by + 1, bz, BlockType.DOOR_CLOSED);
+            world.setDoorOrientation(bx, by + 1, bz, orientation);
+          }
+
+          SoundManager.playPlace(activeBlockType);
+          inventory[activeBlockType]--;
+          syncHotbarUI();
+        } else {
+          // 通常ブロックの設置
+          world.setBlock(bx, by, bz, activeBlockType);
+          SoundManager.playPlace(activeBlockType);
+          inventory[activeBlockType]--;
+          syncHotbarUI();
+        }
 
         // 縦積みの場合は、プレイヤーを設置ブロックの上に押し上げる
         if (allowTowerPlace) {

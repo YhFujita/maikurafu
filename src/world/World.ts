@@ -10,6 +10,8 @@ export class World {
   private material: THREE.Material;
   // プレイヤーが明示的に変更したブロック差分データ (GC低減のためチャンクごとに Map<localIndex, BlockType> で管理)
   private modifiedBlocks: Map<string, Map<number, BlockType>> = new Map();
+  // 扉の向き情報: キーは "x,y,z".値は 'NS'(南北=Z軸方向に薄い板) または 'EW'(東西=X軸方向に薄い板)
+  private doorOrientations: Map<string, 'NS' | 'EW'> = new Map();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -103,6 +105,31 @@ export class World {
     if (ly === CONFIG.CHUNK_SIZE - 1) this.updateChunkMesh(cx, cy + 1, cz);
     if (lz === 0) this.updateChunkMesh(cx, cy, cz - 1);
     if (lz === CONFIG.CHUNK_SIZE - 1) this.updateChunkMesh(cx, cy, cz + 1);
+  }
+
+  /**
+   * 扉の向き情報を登録する。
+   * @param x - グローバルX座標
+   * @param y - グローバルY座標
+   * @param z - グローバルZ座標
+   * @param orientation - 'NS'(南北=Z軸方向に薄い板) または 'EW'(東西=X軸方向に薄い板)
+   */
+  public setDoorOrientation(x: number, y: number, z: number, orientation: 'NS' | 'EW'): void {
+    this.doorOrientations.set(`${x},${y},${z}`, orientation);
+  }
+
+  /**
+   * 指定座標の扉の向き情報を取得する。登録なしの場合は 'NS' をデフォルト返す。
+   */
+  public getDoorOrientation(x: number, y: number, z: number): 'NS' | 'EW' {
+    return this.doorOrientations.get(`${x},${y},${z}`) ?? 'NS';
+  }
+
+  /**
+   * 扉の向き情報を削除する（ブロック破壊時に呼び出す）。
+   */
+  public removeDoorOrientation(x: number, y: number, z: number): void {
+    this.doorOrientations.delete(`${x},${y},${z}`);
   }
 
   private updateChunkMesh(cx: number, cy: number, cz: number): void {
@@ -266,32 +293,48 @@ export class World {
   }
 
   // セーブデータ用：ブロック変更差分を Record 形式でシリアライズして取得
-  public getModifiedBlocksData(): Record<string, Record<string, number>> {
-    const data: Record<string, Record<string, number>> = {};
+  public getModifiedBlocksData(): { blocks: Record<string, Record<string, number>>; doorOrientations: Record<string, string> } {
+    const blocks: Record<string, Record<string, number>> = {};
     for (const [chunkKey, chunkMods] of this.modifiedBlocks.entries()) {
       if (chunkMods.size === 0) continue;
       const mods: Record<string, number> = {};
       for (const [localIndex, type] of chunkMods.entries()) {
         mods[localIndex.toString()] = type;
       }
-      data[chunkKey] = mods;
+      blocks[chunkKey] = mods;
     }
-    return data;
+    // 扉の向き情報もシリアライズ
+    const doorOrientations: Record<string, string> = {};
+    for (const [key, orientation] of this.doorOrientations.entries()) {
+      doorOrientations[key] = orientation;
+    }
+    return { blocks, doorOrientations };
   }
 
   // ロードデータ用：Record 形式のデータからブロック変更差分を復元
-  public setModifiedBlocksData(data: Record<string, Record<string, number>>): void {
+  public setModifiedBlocksData(data: Record<string, any>): void {
     this.modifiedBlocks.clear();
+    this.doorOrientations.clear();
     if (!data) return;
-    for (const chunkKey of Object.keys(data)) {
+
+    // 旧フォーマット（blocksキーなし）との後方互換性維持
+    const blocksData: Record<string, Record<string, number>> = data.blocks ?? data;
+    for (const chunkKey of Object.keys(blocksData)) {
       const chunkMods = new Map<number, BlockType>();
-      const mods = data[chunkKey];
+      const mods = blocksData[chunkKey];
       for (const localIndexStr of Object.keys(mods)) {
         const localIndex = parseInt(localIndexStr, 10);
         const type = mods[localIndexStr] as BlockType;
         chunkMods.set(localIndex, type);
       }
       this.modifiedBlocks.set(chunkKey, chunkMods);
+    }
+
+    // 扉の向き情報を復元（新フォーマットのみ）
+    if (data.doorOrientations) {
+      for (const [key, orientation] of Object.entries(data.doorOrientations)) {
+        this.doorOrientations.set(key, orientation as 'NS' | 'EW');
+      }
     }
   }
 
