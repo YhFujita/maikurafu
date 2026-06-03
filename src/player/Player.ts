@@ -530,7 +530,7 @@ export class Player {
   }
 
   // キー入力による移動 (物理ボディへの速度設定)
-  private handleMovement(input: InputHandler, _deltaTime: number): void {
+  private handleMovement(input: InputHandler, deltaTime: number): void {
     const moveVector = Player.tempVec3.set(0, 0, 0);
 
     if (input.isActionActive('forward')) moveVector.z -= 1;
@@ -552,8 +552,15 @@ export class Player {
       currentSpeed *= 0.6;
     }
 
-    this.body.velocity.x = direction.x * currentSpeed;
-    this.body.velocity.z = direction.z * currentSpeed;
+    const targetVelX = direction.x * currentSpeed;
+    const targetVelZ = direction.z * currentSpeed;
+
+    // 地上では素早く加減速、空中では慣性が働き空中制御が弱くなる
+    const accel = this.isGrounded ? 15.0 : 3.0;
+
+    // 目標速度に向かって現在の速度を補間
+    this.body.velocity.x += (targetVelX - this.body.velocity.x) * accel * deltaTime;
+    this.body.velocity.z += (targetVelZ - this.body.velocity.z) * accel * deltaTime;
 
     // ジャンプ・浮上
     if (input.isActionActive('jump')) {
