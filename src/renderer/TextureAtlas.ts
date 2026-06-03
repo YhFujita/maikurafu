@@ -4,7 +4,7 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 6; // 行数を6に拡張（水ブロック追加のため）
+  const atlasRows = 7; // 行数を7に拡張（武器追加のため）
   canvas.width  = tileSize * atlasCols;  // 64px
   canvas.height = tileSize * atlasRows;  // 96px
   const ctx = canvas.getContext('2d')!;
@@ -281,22 +281,23 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   // 17: ベッド枕部 (col: 1, row: 4) — 白い枕
   const bedHeadX = 1 * tileSize;
   const bedHeadY = 4 * tileSize;
-  ctx.fillStyle = 'rgb(240, 235, 220)';
+  ctx.fillStyle = 'rgb(255, 255, 255)'; // 白
   ctx.fillRect(bedHeadX, bedHeadY, tileSize, tileSize);
-  ctx.fillStyle = 'rgb(180, 140, 100)';
+  ctx.fillStyle = 'rgb(101, 67, 33)'; // フレーム茶色
   ctx.fillRect(bedHeadX,              bedHeadY,              tileSize, 1);
   ctx.fillRect(bedHeadX,              bedHeadY + tileSize-1, tileSize, 1);
   ctx.fillRect(bedHeadX,              bedHeadY,              1, tileSize);
   ctx.fillRect(bedHeadX + tileSize-1, bedHeadY,              1, tileSize);
-  ctx.fillStyle = 'rgb(200, 190, 170)';
+  ctx.fillStyle = 'rgb(220, 220, 220)';
   ctx.fillRect(bedHeadX + 2, bedHeadY + 6,  tileSize-4, 1);
   ctx.fillRect(bedHeadX + 2, bedHeadY + 10, tileSize-4, 1);
 
   // 18: ベッド本体・側面 (col: 2, row: 4) — 赤ウール
-  drawNoiseRect(2, 4, 160, 40, 40, 15);
   const bedBodyX = 2 * tileSize;
   const bedBodyY = 4 * tileSize;
-  ctx.fillStyle = 'rgb(130, 90, 50)';
+  ctx.fillStyle = 'rgb(200, 30, 30)'; // 赤
+  ctx.fillRect(bedBodyX, bedBodyY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(101, 67, 33)'; // フレーム茶色
   ctx.fillRect(bedBodyX,              bedBodyY,              tileSize, 1);
   ctx.fillRect(bedBodyX,              bedBodyY + tileSize-1, tileSize, 1);
   ctx.fillRect(bedBodyX,              bedBodyY,              1, tileSize);
@@ -357,6 +358,37 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillRect(waterX + 2, waterY + 3, 4, 1);
   ctx.fillRect(waterX + 8, waterY + 7, 5, 1);
   ctx.fillRect(waterX + 4, waterY + 12, 3, 1);
+
+  // 23: ダイヤの剣 (col: 3, row: 5)
+  const dswordStartX = 3 * tileSize;
+  const dswordStartY = 5 * tileSize;
+  ctx.clearRect(dswordStartX, dswordStartY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(120, 80, 40)'; // 柄
+  ctx.fillRect(dswordStartX + 2, dswordStartY + 13, 1, 1);
+  ctx.fillRect(dswordStartX + 3, dswordStartY + 12, 1, 1);
+  ctx.fillRect(dswordStartX + 4, dswordStartY + 11, 1, 1);
+  ctx.fillStyle = 'rgb(0, 136, 255)'; // 鍔
+  ctx.fillRect(dswordStartX + 5, dswordStartY + 10, 1, 1);
+  ctx.fillRect(dswordStartX + 3, dswordStartY + 11, 1, 1);
+  ctx.fillRect(dswordStartX + 4, dswordStartY + 12, 1, 1);
+  ctx.fillRect(dswordStartX + 5, dswordStartY + 12, 1, 1);
+  ctx.fillRect(dswordStartX + 2, dswordStartY + 12, 1, 1);
+  ctx.fillRect(dswordStartX + 3, dswordStartY + 13, 1, 1);
+  ctx.fillStyle = 'rgb(0, 255, 255)'; // 刃
+  bladeSpots.forEach(([sx, sy]) => { ctx.fillRect(dswordStartX + sx, dswordStartY + sy, 1, 1); });
+  ctx.fillStyle = 'rgb(240, 255, 255)'; // ハイライト
+  highlightSpots.forEach(([sx, sy]) => { ctx.fillRect(dswordStartX + sx, dswordStartY + sy, 1, 1); });
+
+  // 24: ハンマー (col: 0, row: 6)
+  const hammerStartX = 0 * tileSize;
+  const hammerStartY = 6 * tileSize;
+  ctx.clearRect(hammerStartX, hammerStartY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(120, 80, 40)'; // 柄
+  ctx.fillRect(hammerStartX + 7, hammerStartY + 6, 2, 8);
+  ctx.fillStyle = 'rgb(85, 85, 85)'; // ヘッド
+  ctx.fillRect(hammerStartX + 4, hammerStartY + 2, 8, 4);
+  ctx.fillStyle = 'rgb(120, 120, 120)'; // ヘッドハイライト
+  ctx.fillRect(hammerStartX + 4, hammerStartY + 2, 8, 1);
 
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);

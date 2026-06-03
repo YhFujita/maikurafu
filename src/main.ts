@@ -421,16 +421,24 @@ function animate(time: number) {
     autoSaveGame();
   }
 
+  // キーバインドによる設置・破壊の検知
+  const config = configStore.getConfig();
+  if (input.consumeJustPressed(config.keyPlaceBlock)) {
+    performBlockAction(false, true);
+  }
+  if (input.consumeJustPressed(config.keyBreakBlock)) {
+    performBlockAction(true, false);
+  }
+
   // レンダリング実行
   renderer.render();
 }
 
-// マウスクリックによるブロックの設置・破壊
-window.addEventListener('mousedown', (e) => {
-  if (!input.isLocked) return;
+function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
+  if (!shouldDestroy && !shouldPlace) return;
 
   // 画面中央からレイを飛ばす
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), renderer.camera);
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), player.camera);
   
   const chunkMeshes = world.getChunkMeshes();
   const intersects = raycaster.intersectObjects(chunkMeshes);
@@ -445,15 +453,8 @@ window.addEventListener('mousedown', (e) => {
     const normal = intersect.face?.normal;
     if (!normal) return;
 
-    const config = configStore.getConfig();
-    const isLeftClick = e.button === 0;
-    const isRightClick = e.button === 2;
-
-    const shouldDestroy = config.invertClicks ? isRightClick : isLeftClick;
-    const shouldPlace = config.invertClicks ? isLeftClick : isRightClick;
-
     if (shouldDestroy) {
-      // 破壊/攻撃時は常に剣を振る
+      // 破壊/攻撃時は常に武器を振る
       player.swing();
       SoundManager.playSwing();
 
@@ -486,8 +487,10 @@ window.addEventListener('mousedown', (e) => {
           kbDir.y = 0.2; // 上方向へ弾む
           kbDir.normalize();
 
-          // 剣なら4ダメージ（ゾンビを一撃）、素手なら2ダメージ
-          const damage = (activeBlockType === BlockType.SWORD) ? 4 : 2;
+          // ダイヤの剣なら6ダメージ、ハンマーなら5ダメージ、石の剣なら4ダメージ（ゾンビを一撃）、素手等なら2ダメージ
+          const damage = (activeBlockType === BlockType.DIAMOND_SWORD) ? 6 :
+                         (activeBlockType === BlockType.HAMMER) ? 5 :
+                         (activeBlockType === BlockType.SWORD) ? 4 : 2;
           const isDead = hitMob.takeDamage(damage, kbDir);
           if (isDead) {
             // ゾンビ死亡時に確率で石炭や石などをドロップ
@@ -546,11 +549,10 @@ window.addEventListener('mousedown', (e) => {
           }
         }
       }
-
       
     } else if (shouldPlace) {
-      // 剣は設置できない
-      if (activeBlockType === BlockType.SWORD) return;
+      // 武器は設置できない
+      if (activeBlockType === BlockType.SWORD || activeBlockType === BlockType.DIAMOND_SWORD || activeBlockType === BlockType.HAMMER) return;
 
       // クリックした対象のブロックを特定する
       const clickedTarget = point.clone().sub(normal.clone().multiplyScalar(0.1));
@@ -594,31 +596,26 @@ window.addEventListener('mousedown', (e) => {
       const px = Math.floor(player.position.x);
       const py = Math.floor(player.position.y - halfHeight);
       const pz = Math.floor(player.position.z);
-      const feetY = player.position.y - halfHeight;
 
       // プレイヤーが完全に占有している2マス（足元と頭）
       const isOccupiedSpace = (bx === px && bz === pz && (by === py || by === py + 1));
 
-      // 縦積み（ジャンプ設置）の特別許可判定（足元の少し上にいる場合）
-      const isJumpingAbove = (!player.body.velocity.y || Math.abs(player.body.velocity.y) > 0.05) && feetY >= by + 0.15;
-      const allowTowerPlace = (isJumpingAbove && bx === px && bz === pz && by === py);
+      // 縦積み（足元への直接設置）の特別許可判定
+      const allowTowerPlace = (bx === px && bz === pz && by === py);
+      
+      // 頭と同じ位置（真上）への設置も許可する
+      const allowHeadPlace = (bx === px && bz === pz && by === py + 1);
 
       const isTorch = (activeBlockType === BlockType.TORCH);
       const isDoor  = (activeBlockType === BlockType.DOOR_CLOSED);
       const isBed   = (activeBlockType === BlockType.BED_HEAD);
 
-      if (isTorch || !isOccupiedSpace || allowTowerPlace) {
+      if (isTorch || !isOccupiedSpace || allowTowerPlace || allowHeadPlace) {
         if (isDoor) {
           // 扉の設置：下マスに扉を置き、上マスが空気なら上マスにも扉を設置（2マス扉）
           world.setBlock(bx, by, bz, BlockType.DOOR_CLOSED);
 
-          // プレイヤーのYaw角から扉の向きを決定する
-          // Yawは0=北(+Z向き)、パイ=南、パイ/2=西、-パイ/2=東
-          // プレイヤーが主に北南(Z軸)方向を向いている場合 → NS向き扉（Z軸方向に薄い板で横方向の通路を顔ぐ）
-          // プレイヤーが主に東西(X軸)方向を向いている場合 → EW向き扉（X軸方向に薄い板で縦方向の通路を顔ぐ）
           const yaw = player.getYaw();
-          // yawの該当成分の途中の数値でNS/EWを判定（対角線45度分割）
-          // sin(yaw)が小さい = 主に北南方向向き = NS扉
           const isNS = Math.abs(Math.sin(yaw)) < 0.707;
           const orientation: 'NS' | 'EW' = isNS ? 'NS' : 'EW';
           world.setDoorOrientation(bx, by, bz, orientation);
@@ -638,7 +635,6 @@ window.addEventListener('mousedown', (e) => {
           world.setBlock(bx, by, bz, BlockType.BED_HEAD);
 
           // プレイヤーの向きから足元方向を決定（前方に足元を配置）
-          // プレイヤーの前方ベクトル: (-sin(yaw), 0, -cos(yaw))
           const yaw = player.getYaw();
           const footDX = Math.round(-Math.sin(yaw)); // ±1 or 0
           const footDZ = Math.round(-Math.cos(yaw)); // ±1 or 0
@@ -672,6 +668,20 @@ window.addEventListener('mousedown', (e) => {
       }
     }
   }
+}
+
+// マウスクリックによるブロックの設置・破壊
+window.addEventListener('mousedown', (e) => {
+  if (!input.isLocked) return;
+
+  const config = configStore.getConfig();
+  const isLeftClick = e.button === 0;
+  const isRightClick = e.button === 2;
+
+  const shouldDestroy = config.invertClicks ? isRightClick : isLeftClick;
+  const shouldPlace = config.invertClicks ? isLeftClick : isRightClick;
+
+  performBlockAction(shouldDestroy, shouldPlace);
 });
 
 // コンテキストメニュー（右クリックメニュー）を無効化
@@ -732,6 +742,12 @@ if (startBtn && menuOverlay) {
       if (!isInventoryOpen) {
         if (hotbar) hotbar.style.display = 'none';
         if (hud) hud.style.display = 'none';
+        
+        // Escキー等でポインターロックが解除された場合にオートセーブを実行
+        autoSaveGame();
+        if (accountIdInput && accountIdInput.value.trim() !== '') {
+          saveManager.saveData().catch(e => console.error('Cloud save failed:', e));
+        }
       }
     }
   });
@@ -814,6 +830,8 @@ const allBlocks = [
   BlockType.FURNACE,
   BlockType.CHEST,
   BlockType.WATER,
+  BlockType.DIAMOND_SWORD,
+  BlockType.HAMMER,
 ];
 
 function syncArmorUI() {

@@ -21,6 +21,8 @@ export enum BlockType {
   FURNACE = 19,     // かまど
   CHEST = 20,       // チェスト
   WATER = 21,       // 水
+  DIAMOND_SWORD = 22, // ダイヤの剣（武器）
+  HAMMER = 23,        // ハンマー（武器）
 }
 
 export interface BlockProperties {
@@ -199,5 +201,19 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,      // 通り抜け可能
     isTransparent: true, // 透過
     uvs: { front: 22, back: 22, left: 22, right: 22, top: 22, bottom: 22 },
+  },
+  [BlockType.DIAMOND_SWORD]: {
+    id: BlockType.DIAMOND_SWORD,
+    name: 'ダイヤのけん',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 23, back: 23, left: 23, right: 23, top: 23, bottom: 23 },
+  },
+  [BlockType.HAMMER]: {
+    id: BlockType.HAMMER,
+    name: 'ハンマー',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 24, back: 24, left: 24, right: 24, top: 24, bottom: 24 },
   },
 };

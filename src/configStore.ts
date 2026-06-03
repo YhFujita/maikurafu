@@ -4,6 +4,8 @@ export interface GameConfig {
   keyLeft: string;     // 左移動 (デフォルト: KeyA)
   keyRight: string;    // 右移動 (デフォルト: KeyD)
   keyJump: string;     // ジャンプ (デフォルト: Space)
+  keyPlaceBlock: string; // ブロック設置 (デフォルト: KeyV)
+  keyBreakBlock: string; // ブロック破壊 (デフォルト: KeyB)
   invertClicks: boolean; // 左右クリック反転 (デフォルト: false)
   enableShadows: boolean; // 影のON/OFF (デフォルト: true)
 }
@@ -14,6 +16,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   keyLeft: 'KeyA',
   keyRight: 'KeyD',
   keyJump: 'Space',
+  keyPlaceBlock: 'KeyV',
+  keyBreakBlock: 'KeyB',
   invertClicks: false,
   enableShadows: true,
 };

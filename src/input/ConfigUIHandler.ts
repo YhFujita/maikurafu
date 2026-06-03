@@ -11,6 +11,8 @@ export class ConfigUIHandler {
     left: HTMLButtonElement;
     right: HTMLButtonElement;
     jump: HTMLButtonElement;
+    place: HTMLButtonElement;
+    break: HTMLButtonElement;
   };
   
   private invertClicksChk: HTMLInputElement;
@@ -34,6 +36,8 @@ export class ConfigUIHandler {
       left: document.getElementById('key-left-btn') as HTMLButtonElement,
       right: document.getElementById('key-right-btn') as HTMLButtonElement,
       jump: document.getElementById('key-jump-btn') as HTMLButtonElement,
+      place: document.getElementById('key-place-btn') as HTMLButtonElement,
+      break: document.getElementById('key-break-btn') as HTMLButtonElement,
     };
 
     this.invertClicksChk = document.getElementById('invert-clicks-chk') as HTMLInputElement;
@@ -59,6 +63,8 @@ export class ConfigUIHandler {
     this.keyButtons.left.addEventListener('click', () => this.startBinding('keyLeft', this.keyButtons.left));
     this.keyButtons.right.addEventListener('click', () => this.startBinding('keyRight', this.keyButtons.right));
     this.keyButtons.jump.addEventListener('click', () => this.startBinding('keyJump', this.keyButtons.jump));
+    this.keyButtons.place.addEventListener('click', () => this.startBinding('keyPlaceBlock', this.keyButtons.place));
+    this.keyButtons.break.addEventListener('click', () => this.startBinding('keyBreakBlock', this.keyButtons.break));
 
     // 保存ボタン
     this.saveBtn.addEventListener('click', () => {
@@ -95,6 +101,8 @@ export class ConfigUIHandler {
     this.keyButtons.left.textContent = this.formatKeyName(this.tempConfig.keyLeft);
     this.keyButtons.right.textContent = this.formatKeyName(this.tempConfig.keyRight);
     this.keyButtons.jump.textContent = this.formatKeyName(this.tempConfig.keyJump);
+    this.keyButtons.place.textContent = this.formatKeyName(this.tempConfig.keyPlaceBlock);
+    this.keyButtons.break.textContent = this.formatKeyName(this.tempConfig.keyBreakBlock);
 
     // チェックボックス
     this.invertClicksChk.checked = this.tempConfig.invertClicks;
@@ -185,6 +193,8 @@ export class ConfigUIHandler {
       keyLeft: 'KeyA',
       keyRight: 'KeyD',
       keyJump: 'Space',
+      keyPlaceBlock: 'KeyV',
+      keyBreakBlock: 'KeyB',
       invertClicks: false,
       enableShadows: true,
     };
@@ -206,18 +216,18 @@ export class ConfigUIHandler {
       badges[4].textContent = this.formatKeyName(config.keyJump);
     }
 
-    // クリック説明を更新
-    const rows = this.overlay.querySelectorAll('.instruction-row');
-    rows.forEach(row => {
-      const label = row.querySelector('span:first-child')?.textContent;
-      const valSpan = row.querySelector('span:last-child');
-      if (!valSpan) return;
-
-      if (label === 'ブロックを削る / 壊す') {
-        valSpan.textContent = config.invertClicks ? '右クリック' : '左クリック';
-      } else if (label === 'ブロックを設置') {
-        valSpan.textContent = config.invertClicks ? '左クリック' : '右クリック';
-      }
-    });
+    // クリック説明とキーバッジを更新
+    const clickBreakBadge = this.overlay.querySelector('#click-break-badge');
+    const keyBreakBadge = this.overlay.querySelector('#key-break-badge');
+    if (clickBreakBadge && keyBreakBadge) {
+      clickBreakBadge.textContent = config.invertClicks ? '右クリック' : '左クリック';
+      keyBreakBadge.textContent = this.formatKeyName(config.keyBreakBlock);
+    }
+    const clickPlaceBadge = this.overlay.querySelector('#click-place-badge');
+    const keyPlaceBadge = this.overlay.querySelector('#key-place-badge');
+    if (clickPlaceBadge && keyPlaceBadge) {
+      clickPlaceBadge.textContent = config.invertClicks ? '左クリック' : '右クリック';
+      keyPlaceBadge.textContent = this.formatKeyName(config.keyPlaceBlock);
+    }
   }
 }
