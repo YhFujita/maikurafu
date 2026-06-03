@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.ts';
+import { configStore } from '../configStore.ts';
 
 export class Renderer {
   public scene!: THREE.Scene;
@@ -18,7 +19,6 @@ export class Renderer {
     this.initScene();
     this.initCamera();
     this.initRenderer();
-    this.initLights();
 
     window.addEventListener('resize', this.onWindowResize.bind(this));
   }
@@ -45,6 +45,8 @@ export class Renderer {
   }
 
   private initRenderer(): void {
+    const config = configStore.getConfig();
+
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance'
@@ -52,36 +54,11 @@ export class Renderer {
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 4GB環境向けにピクセル比上限を2に制限
     
-    // シャドウマップの有効化（低負荷に設定）
-    this.renderer.shadowMap.enabled = true;
+    // シャドウマップの有効化（設定から読み込む）
+    this.renderer.shadowMap.enabled = config.enableShadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.container.appendChild(this.renderer.domElement);
-  }
-
-  private initLights(): void {
-    // 環境光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    this.scene.add(ambientLight);
-
-    // 平行光源（太陽光）
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(20, 40, 20);
-    dirLight.castShadow = true;
-
-    // シャドウマップの解像度を抑えてメモリ消費を低減
-    dirLight.shadow.mapSize.width = 512;
-    dirLight.shadow.mapSize.height = 512;
-    dirLight.shadow.camera.near = 0.5;
-    dirLight.shadow.camera.far = 150;
-    
-    const d = 40;
-    dirLight.shadow.camera.left = -d;
-    dirLight.shadow.camera.right = d;
-    dirLight.shadow.camera.top = d;
-    dirLight.shadow.camera.bottom = -d;
-
-    this.scene.add(dirLight);
   }
 
   private onWindowResize(): void {

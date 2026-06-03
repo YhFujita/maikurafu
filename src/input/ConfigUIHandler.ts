@@ -14,6 +14,7 @@ export class ConfigUIHandler {
   };
   
   private invertClicksChk: HTMLInputElement;
+  private enableShadowsChk: HTMLInputElement;
   private saveBtn: HTMLButtonElement;
   private defaultBtn: HTMLButtonElement;
   private closeBtn: HTMLButtonElement;
@@ -36,6 +37,7 @@ export class ConfigUIHandler {
     };
 
     this.invertClicksChk = document.getElementById('invert-clicks-chk') as HTMLInputElement;
+    this.enableShadowsChk = document.getElementById('enable-shadows-chk') as HTMLInputElement;
     this.saveBtn = document.getElementById('config-save-btn') as HTMLButtonElement;
     this.defaultBtn = document.getElementById('config-default-btn') as HTMLButtonElement;
     this.closeBtn = document.getElementById('config-close-btn') as HTMLButtonElement;
@@ -96,6 +98,7 @@ export class ConfigUIHandler {
 
     // チェックボックス
     this.invertClicksChk.checked = this.tempConfig.invertClicks;
+    this.enableShadowsChk.checked = this.tempConfig.enableShadows;
   }
 
   // キー名のフォーマット (例: "KeyW" -> "W", "Space" -> "Space")
@@ -163,11 +166,15 @@ export class ConfigUIHandler {
 
   private saveConfig(): void {
     this.tempConfig.invertClicks = this.invertClicksChk.checked;
+    this.tempConfig.enableShadows = this.enableShadowsChk.checked;
     configStore.save(this.tempConfig);
     this.closeModal();
 
     // 説明テキスト（コントロール）を更新する
     this.updateInstructionsUI();
+
+    // 他のモジュール（main.tsなど）に設定変更を通知するカスタムイベントをディスパッチ
+    window.dispatchEvent(new CustomEvent('config-changed'));
   }
 
   private loadDefaultConfig(): void {
@@ -179,6 +186,7 @@ export class ConfigUIHandler {
       keyRight: 'KeyD',
       keyJump: 'Space',
       invertClicks: false,
+      enableShadows: true,
     };
     this.tempConfig = { ...defaults };
     this.updateUI();

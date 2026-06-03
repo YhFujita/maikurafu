@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { configStore } from '../configStore.ts';
 
 export class TimeManager {
   private time: number = 0; // 0.0 ~ 1.0 (0.0 = 正午, 0.5 = 真夜中)
@@ -19,9 +20,11 @@ export class TimeManager {
     // シーンの背景に色オブジェクトをセット（毎フレームインスタンス化するのを避ける）
     this.scene.background = this.skyColor;
 
+    const config = configStore.getConfig();
+
     // 太陽光の作成
     this.sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    this.sunLight.castShadow = true;
+    this.sunLight.castShadow = config.enableShadows;
     
     // シャドウマップの解像度調整（4GBメモリ向けに低負荷に設定）
     this.sunLight.shadow.mapSize.width = 1024;
@@ -91,6 +94,11 @@ export class TimeManager {
     const ambB = THREE.MathUtils.lerp(0.2, 1.0, dayFactor);
     this.ambientColor.setRGB(ambR, ambG, ambB);
     this.ambientLight.color.copy(this.ambientColor);
+  }
+
+  // 外部から影の有効・無効を切り替える
+  public setShadowsEnabled(enabled: boolean): void {
+    this.sunLight.castShadow = enabled;
   }
 
   // 現在の時間帯が「夜」であるかどうかを判定（Mobスポーン判定に使用）

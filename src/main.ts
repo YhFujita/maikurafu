@@ -458,3 +458,28 @@ window.addEventListener('wheel', (e) => {
   }
 }, { passive: true });
 
+// 設定変更イベントの監視（影のON/OFFなどの即時反映用）
+window.addEventListener('config-changed', () => {
+  const config = configStore.getConfig();
+  
+  // レンダラーの影有効状態を変更
+  renderer.renderer.shadowMap.enabled = config.enableShadows;
+  
+  // TimeManagerの影有効状態を変更
+  timeManager.setShadowsEnabled(config.enableShadows);
+  
+  // 既存のメッシュのマテリアルに更新をかける
+  renderer.scene.traverse((child) => {
+    if (child instanceof THREE.Mesh && child.material) {
+      if (Array.isArray(child.material)) {
+        child.material.forEach(m => {
+          m.needsUpdate = true;
+        });
+      } else {
+        child.material.needsUpdate = true;
+      }
+    }
+  });
+});
+
+

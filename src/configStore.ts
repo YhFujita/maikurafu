@@ -5,6 +5,7 @@ export interface GameConfig {
   keyRight: string;    // 右移動 (デフォルト: KeyD)
   keyJump: string;     // ジャンプ (デフォルト: Space)
   invertClicks: boolean; // 左右クリック反転 (デフォルト: false)
+  enableShadows: boolean; // 影のON/OFF (デフォルト: true)
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -14,6 +15,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   keyRight: 'KeyD',
   keyJump: 'Space',
   invertClicks: false,
+  enableShadows: true,
 };
 
 const STORAGE_KEY = 'maikurafu_config';
