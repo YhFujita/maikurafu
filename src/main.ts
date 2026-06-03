@@ -51,8 +51,14 @@ const inventory: Record<BlockType, number> = {
   [BlockType.GLASS]: 64,
   [BlockType.DOOR_CLOSED]: 64,
   [BlockType.DOOR_OPEN]: 0,
-  [BlockType.SWORD]: 1, // 初期状態で1個所持
-  [BlockType.STAIRS]: 64, // 階段を追加
+  [BlockType.SWORD]: 1,
+  [BlockType.STAIRS]: 64,
+  [BlockType.FENCE]: 64,   // 柵
+  [BlockType.BED_HEAD]: 64, // ベッドアイテム
+  [BlockType.BED_FOOT]: 0,  // 足元ブロックは設置時に自動配置
+  [BlockType.FURNACE]: 64, // かまど
+  [BlockType.CHEST]: 64,   // チェスト
+  [BlockType.WATER]: 64,   // 水
 };
 
 // 設定UIの初期化
@@ -91,15 +97,16 @@ const hotbarPages = [
     BlockType.TORCH,   // 9: 松明
   ],
   [
-    BlockType.GLASS,       // 10: ガラス
-    BlockType.DOOR_CLOSED, // 11: ドア（しめる）
-    BlockType.COAL_ORE,    // 12: 石炭
-    BlockType.SWORD,       // 13: いしのけん
-    BlockType.STAIRS,      // 14: きのかいだん
-    BlockType.DIRT,
-    BlockType.STONE,
-    BlockType.WOOD,
-    BlockType.TORCH,
+    BlockType.GLASS,       // 1: ガラス
+    BlockType.DOOR_CLOSED, // 2: ドア
+    BlockType.COAL_ORE,    // 3: 石炙
+    BlockType.SWORD,       // 4: 剣
+    BlockType.STAIRS,      // 5: 階段
+    BlockType.FENCE,       // 6: 柵
+    BlockType.BED_HEAD,    // 7: ベッド
+    BlockType.FURNACE,     // 8: かまど
+    BlockType.CHEST,       // 9: チェスト
+    BlockType.WATER,       // 10: 水
   ]
 ];
 
@@ -111,19 +118,24 @@ const hotbarLabel = document.getElementById('hotbar-label');
 
 function getSlotIconClass(type: BlockType): string {
   switch (type) {
-    case BlockType.GROUND: return 'slot-grass';
-    case BlockType.DIRT: return 'slot-dirt';
-    case BlockType.STONE: return 'slot-stone';
-    case BlockType.WOOD: return 'slot-wood';
-    case BlockType.LEAVES: return 'slot-leaves';
-    case BlockType.PLANK: return 'slot-plank';
-    case BlockType.BRICK: return 'slot-brick';
-    case BlockType.SAND: return 'slot-sand';
-    case BlockType.TORCH: return 'slot-torch';
-    case BlockType.GLASS: return 'slot-glass';
+    case BlockType.GROUND:      return 'slot-grass';
+    case BlockType.DIRT:        return 'slot-dirt';
+    case BlockType.STONE:       return 'slot-stone';
+    case BlockType.WOOD:        return 'slot-wood';
+    case BlockType.LEAVES:      return 'slot-leaves';
+    case BlockType.PLANK:       return 'slot-plank';
+    case BlockType.BRICK:       return 'slot-brick';
+    case BlockType.SAND:        return 'slot-sand';
+    case BlockType.TORCH:       return 'slot-torch';
+    case BlockType.GLASS:       return 'slot-glass';
     case BlockType.DOOR_CLOSED: return 'slot-door';
-    case BlockType.COAL_ORE: return 'slot-coal';
-    case BlockType.STAIRS: return 'slot-stairs';
+    case BlockType.COAL_ORE:    return 'slot-coal';
+    case BlockType.STAIRS:      return 'slot-stairs';
+    case BlockType.FENCE:       return 'slot-fence';
+    case BlockType.BED_HEAD:    return 'slot-bed';
+    case BlockType.FURNACE:     return 'slot-furnace';
+    case BlockType.CHEST:       return 'slot-chest';
+    case BlockType.WATER:       return 'slot-water';
     default: return '';
   }
 }
@@ -475,10 +487,23 @@ window.addEventListener('mousedown', (e) => {
           world.removeDoorOrientation(bx, by, bz);
         }
 
-        // 破壊ブロックの中奈座標にドロップアイテムをスポーン
-        // 扉は上下2マス分でドロップは1個のみ
-        if (targetBlockType !== BlockType.DOOR_OPEN) {
-          spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+        // ベッドブロックの場合、隐接に配置されたペアブロックも同時に削除（1BEDアイテムのみドロップ）
+        if (targetBlockType === BlockType.BED_HEAD || targetBlockType === BlockType.BED_FOOT) {
+          const pairType = targetBlockType === BlockType.BED_HEAD ? BlockType.BED_FOOT : BlockType.BED_HEAD;
+          const neighbors: [number, number][] = [[bx+1, bz], [bx-1, bz], [bx, bz+1], [bx, bz-1]];
+          for (const [nx, nz] of neighbors) {
+            if (world.getBlock(nx, by, nz) === pairType) {
+              world.setBlock(nx, by, nz, BlockType.AIR);
+              break;
+            }
+          }
+          // ベッドアイテムを必ず1個ドロップ
+          spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+        } else {
+          // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
+          if (targetBlockType !== BlockType.DOOR_OPEN) {
+            spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+          }
         }
       }
 
@@ -539,7 +564,8 @@ window.addEventListener('mousedown', (e) => {
       const allowTowerPlace = (isJumpingAbove && bx === px && bz === pz && by === py);
 
       const isTorch = (activeBlockType === BlockType.TORCH);
-      const isDoor = (activeBlockType === BlockType.DOOR_CLOSED);
+      const isDoor  = (activeBlockType === BlockType.DOOR_CLOSED);
+      const isBed   = (activeBlockType === BlockType.BED_HEAD);
 
       if (isTorch || !isOccupiedSpace || allowTowerPlace) {
         if (isDoor) {
@@ -566,6 +592,26 @@ window.addEventListener('mousedown', (e) => {
 
           SoundManager.playPlace(activeBlockType);
           inventory[activeBlockType]--;
+          syncHotbarUI();
+        } else if (isBed) {
+          // ベッドの設置：枝鞠側（BED_HEAD）を設置地に配置し、足元側（BED_FOOT）をプレイヤーの前方向に配置
+          world.setBlock(bx, by, bz, BlockType.BED_HEAD);
+
+          // プレイヤーの向きから足元方向を決定（前方に足元を配置）
+          // プレイヤーの前方ベクトル: (-sin(yaw), 0, -cos(yaw))
+          const yaw = player.getYaw();
+          const footDX = Math.round(-Math.sin(yaw)); // ±1 or 0
+          const footDZ = Math.round(-Math.cos(yaw)); // ±1 or 0
+          const footX = bx + footDX;
+          const footZ = bz + footDZ;
+
+          // 足元マスが空気ならBED_FOOTを配置
+          if (world.getBlock(footX, by, footZ) === BlockType.AIR) {
+            world.setBlock(footX, by, footZ, BlockType.BED_FOOT);
+          }
+
+          SoundManager.playPlace(activeBlockType);
+          inventory[BlockType.BED_HEAD]--;
           syncHotbarUI();
         } else {
           // 通常ブロックの設置

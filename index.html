@@ -533,6 +533,110 @@
       text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
 
+    /* 柵 (さく) */
+    .slot-fence {
+      background: linear-gradient(135deg, #d4a76a, #8b5e2e);
+      position: relative;
+    }
+    .slot-fence::before {
+      content: '';
+      position: absolute;
+      left: 2px; right: 2px;
+      top: 10px; height: 3px;
+      background: rgba(80,50,20,0.7);
+      border-radius: 1px;
+    }
+    .slot-fence::after {
+      content: '';
+      position: absolute;
+      left: 2px; right: 2px;
+      top: 18px; height: 3px;
+      background: rgba(80,50,20,0.7);
+      border-radius: 1px;
+    }
+
+    /* ベッド */
+    .slot-bed {
+      background: linear-gradient(135deg, #dc2626, #7f1d1d);
+      position: relative;
+      overflow: hidden;
+    }
+    .slot-bed::before {
+      content: '';
+      position: absolute;
+      top: 4px; left: 4px;
+      width: 10px; height: 8px;
+      background: #f3f4f6;
+      border-radius: 3px;
+    }
+    .slot-bed::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 0; right: 0;
+      height: 3px;
+      background: rgba(120,60,20,0.7);
+    }
+
+    /* かまど */
+    .slot-furnace {
+      background: linear-gradient(135deg, #9ca3af, #4b5563);
+      position: relative;
+    }
+    .slot-furnace::before {
+      content: '';
+      position: absolute;
+      bottom: 5px; left: 7px;
+      width: 18px; height: 12px;
+      background: #111;
+      border-radius: 2px;
+    }
+    .slot-furnace::after {
+      content: '';
+      position: absolute;
+      bottom: 7px; left: 11px;
+      width: 6px; height: 8px;
+      background: linear-gradient(to top, #f97316, #fbbf24);
+      border-radius: 1px;
+    }
+
+    /* チェスト */
+    .slot-chest {
+      background: linear-gradient(135deg, #b45309, #78350f);
+      position: relative;
+    }
+    .slot-chest::before {
+      content: '';
+      position: absolute;
+      top: 4px; left: 3px; right: 3px; bottom: 4px;
+      border: 2px solid rgba(80,40,10,0.8);
+      border-radius: 3px;
+    }
+    .slot-chest::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px; height: 5px;
+      background: #fbbf24;
+      border-radius: 1px;
+      box-shadow: 0 2px 0 #92400e;
+    }
+
+    /* 水 */
+    .slot-water {
+      background: linear-gradient(135deg, rgba(30,100,230,0.6), rgba(10,50,150,0.8));
+      position: relative;
+    }
+    .slot-water::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 10%; right: 10%;
+      height: 2px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 1px;
+    }
+
     .slot-num {
       position: absolute;
       top: 2px;
@@ -653,10 +757,10 @@
     #inventory-card {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      padding: 30px;
-      width: 90%;
-      max-width: 550px;
+      border-radius: 20px;
+      padding: 20px;
+      width: 95%;
+      max-width: 480px;
       box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
@@ -678,9 +782,9 @@
     }
 
     .inventory-section h3 {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: #e5e7eb;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
       font-weight: 600;
       border-left: 3px solid #3b82f6;
       padding-left: 8px;
@@ -689,12 +793,12 @@
     .inventory-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 10px;
+      gap: 6px;
       background: rgba(0, 0, 0, 0.2);
-      padding: 12px;
-      border-radius: 14px;
+      padding: 8px;
+      border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.05);
-      max-height: 180px;
+      max-height: 160px;
       overflow-y: auto;
     }
 

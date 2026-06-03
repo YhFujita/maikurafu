@@ -4,9 +4,9 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 4;
-  canvas.width = tileSize * atlasCols;  // 64px
-  canvas.height = tileSize * atlasRows; // 64px
+  const atlasRows = 6; // 行数を6に拡張（水ブロック追加のため）
+  canvas.width  = tileSize * atlasCols;  // 64px
+  canvas.height = tileSize * atlasRows;  // 96px
   const ctx = canvas.getContext('2d')!;
 
   // ノイズを乗せたカラー描画関数
@@ -266,6 +266,97 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   highlightSpots.forEach(([sx, sy]) => {
     ctx.fillRect(swordStartX + sx, swordStartY + sy, 1, 1);
   });
+
+  // ===== row4・row5: 新規ブロック用テクスチャ =====
+
+  // 16: 柵（さく） (col: 0, row: 4) — 木材と同じ色調
+  drawNoiseRect(0, 4, 190, 145, 85, 12);
+  const fenceTexX = 0 * tileSize;
+  const fenceTexY = 4 * tileSize;
+  ctx.fillStyle = 'rgb(140, 100, 55)';
+  ctx.fillRect(fenceTexX,     fenceTexY + 4,  tileSize, 1);
+  ctx.fillRect(fenceTexX,     fenceTexY + 8,  tileSize, 1);
+  ctx.fillRect(fenceTexX,     fenceTexY + 12, tileSize, 1);
+
+  // 17: ベッド枕部 (col: 1, row: 4) — 白い枕
+  const bedHeadX = 1 * tileSize;
+  const bedHeadY = 4 * tileSize;
+  ctx.fillStyle = 'rgb(240, 235, 220)';
+  ctx.fillRect(bedHeadX, bedHeadY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(180, 140, 100)';
+  ctx.fillRect(bedHeadX,              bedHeadY,              tileSize, 1);
+  ctx.fillRect(bedHeadX,              bedHeadY + tileSize-1, tileSize, 1);
+  ctx.fillRect(bedHeadX,              bedHeadY,              1, tileSize);
+  ctx.fillRect(bedHeadX + tileSize-1, bedHeadY,              1, tileSize);
+  ctx.fillStyle = 'rgb(200, 190, 170)';
+  ctx.fillRect(bedHeadX + 2, bedHeadY + 6,  tileSize-4, 1);
+  ctx.fillRect(bedHeadX + 2, bedHeadY + 10, tileSize-4, 1);
+
+  // 18: ベッド本体・側面 (col: 2, row: 4) — 赤ウール
+  drawNoiseRect(2, 4, 160, 40, 40, 15);
+  const bedBodyX = 2 * tileSize;
+  const bedBodyY = 4 * tileSize;
+  ctx.fillStyle = 'rgb(130, 90, 50)';
+  ctx.fillRect(bedBodyX,              bedBodyY,              tileSize, 1);
+  ctx.fillRect(bedBodyX,              bedBodyY + tileSize-1, tileSize, 1);
+  ctx.fillRect(bedBodyX,              bedBodyY,              1, tileSize);
+  ctx.fillRect(bedBodyX + tileSize-1, bedBodyY,              1, tileSize);
+
+  // 19: かまど正面 (col: 3, row: 4) — 黒い開口部とオレンジの炎
+  drawNoiseRect(3, 4, 120, 115, 110, 15);
+  const furnaceX = 3 * tileSize;
+  const furnaceY = 4 * tileSize;
+  ctx.fillStyle = 'rgb(75, 75, 85)';
+  ctx.fillRect(furnaceX + 1, furnaceY + 1, tileSize-2, 2);
+  ctx.fillStyle = 'rgb(25, 20, 15)';
+  ctx.fillRect(furnaceX + 3, furnaceY + 5, 10, 8);
+  ctx.fillStyle = 'rgb(255, 120, 0)';
+  ctx.fillRect(furnaceX + 5, furnaceY + 7, 3, 4);
+  ctx.fillRect(furnaceX + 8, furnaceY + 8, 3, 3);
+  ctx.fillStyle = 'rgb(255, 220, 0)';
+  ctx.fillRect(furnaceX + 6, furnaceY + 8, 2, 2);
+
+  // 20: チェスト正面 (col: 0, row: 5) — 錠前と仕切り線
+  drawNoiseRect(0, 5, 160, 115, 65, 12);
+  const chestFX = 0 * tileSize;
+  const chestFY = 5 * tileSize;
+  ctx.fillStyle = 'rgb(100, 65, 30)';
+  ctx.fillRect(chestFX,              chestFY,              tileSize, 1);
+  ctx.fillRect(chestFX,              chestFY + tileSize-1, tileSize, 1);
+  ctx.fillRect(chestFX,              chestFY,              1, tileSize);
+  ctx.fillRect(chestFX + tileSize-1, chestFY,              1, tileSize);
+  ctx.fillRect(chestFX + 1, chestFY + 5, tileSize-2, 1); // 蓋の境界線
+  ctx.fillStyle = 'rgb(220, 180, 40)';
+  ctx.fillRect(chestFX + 6, chestFY + 2, 4, 3);          // 錠前
+  ctx.fillStyle = 'rgb(160, 120, 20)';
+  ctx.fillRect(chestFX + 7, chestFY + 4, 2, 2);           // 鍵穴
+
+  // 21: チェスト側面・上面 (col: 1, row: 5) — 木材調
+  drawNoiseRect(1, 5, 160, 115, 65, 12);
+  const chestSX = 1 * tileSize;
+  const chestSY = 5 * tileSize;
+  ctx.fillStyle = 'rgb(100, 65, 30)';
+  ctx.fillRect(chestSX,              chestSY,              tileSize, 1);
+  ctx.fillRect(chestSX,              chestSY + tileSize-1, tileSize, 1);
+  ctx.fillRect(chestSX,              chestSY,              1, tileSize);
+  ctx.fillRect(chestSX + tileSize-1, chestSY,              1, tileSize);
+  ctx.fillRect(chestSX + 1, chestSY + 5, tileSize-2, 1);  // 蓋の境界線
+
+  // ===== row6: 追加ブロック（水など） =====
+  
+  // 22: 水 (col: 2, row: 5)
+  // 半透明の青色
+  const waterX = 2 * tileSize;
+  const waterY = 5 * tileSize;
+  // 水は少しノイズを混ぜた青
+  drawNoiseRect(2, 5, 40, 100, 200, 20);
+  ctx.fillStyle = 'rgba(20, 80, 220, 0.4)'; // 全体的に青みをかけて少し透明感（CanvasTextureではアルファは反映されづらいが色味で表現）
+  ctx.fillRect(waterX, waterY, tileSize, tileSize);
+  // 水面の波紋のような白いハイライト
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.fillRect(waterX + 2, waterY + 3, 4, 1);
+  ctx.fillRect(waterX + 8, waterY + 7, 5, 1);
+  ctx.fillRect(waterX + 4, waterY + 12, 3, 1);
 
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);

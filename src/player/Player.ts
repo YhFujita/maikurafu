@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { CONFIG } from '../config.ts';
 import { InputHandler } from '../input/InputHandler.ts';
 import { World } from '../world/World.ts';
+import { BlockType } from '../world/Block.ts';
 import { SoundManager } from '../system/SoundManager.ts';
 import { PhysicsWorld } from '../physics/PhysicsWorld.ts';
 
@@ -579,6 +580,31 @@ export class Player {
       }
       this.leftLeg.rotation.x += (0 - this.leftLeg.rotation.x) * lerpFactor;
       this.rightLeg.rotation.x += (0 - this.rightLeg.rotation.x) * lerpFactor;
+    }
+
+    // ベッドで寝ているかどうかの判定 (静止時かつ足元がベッド)
+    let isSleeping = false;
+    if (!isMoving && this.isGrounded && this.voxelWorld) {
+      const bx = Math.floor(this.position.x);
+      // 足元のブロックを確認（少しめり込むことも考慮し、Y-0.2付近をチェック）
+      const by = Math.floor(this.position.y - 0.2);
+      const bz = Math.floor(this.position.z);
+      const belowBlock = this.voxelWorld.getBlock(bx, by, bz);
+      if (belowBlock === BlockType.BED_HEAD || belowBlock === BlockType.BED_FOOT) {
+        isSleeping = true;
+      }
+    }
+
+    // 寝るモーション（横に倒れる）
+    if (isSleeping) {
+      // 仰向けに倒れる (X軸 -90度)
+      const targetRotX = -Math.PI / 2;
+      this.avatar.rotation.x += (targetRotX - this.avatar.rotation.x) * 10 * deltaTime;
+      // 少し浮かせる（ベッドの表面に乗るように調整）
+      this.avatar.position.y -= 0.5;
+    } else {
+      // 通常時は直立 (X軸 0度)
+      this.avatar.rotation.x += (0 - this.avatar.rotation.x) * 10 * deltaTime;
     }
 
     // スイングアニメーションの更新

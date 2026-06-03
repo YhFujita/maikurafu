@@ -15,6 +15,12 @@ export enum BlockType {
   DOOR_OPEN = 13,   // ドアブロック（開）
   SWORD = 14,       // 剣（武器）
   STAIRS = 15,      // 木の階段
+  FENCE = 16,       // 柵
+  BED_HEAD = 17,    // ベッド（枕側）
+  BED_FOOT = 18,    // ベッド（足元側）
+  FURNACE = 19,     // かまど
+  CHEST = 20,       // チェスト
+  WATER = 21,       // 水
 }
 
 export interface BlockProperties {
@@ -149,5 +155,49 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     uvs: { front: 9, back: 9, left: 9, right: 9, top: 9, bottom: 9 },
+  },
+  [BlockType.FENCE]: {
+    id: BlockType.FENCE,
+    name: 'さく',
+    isSolid: true,       // 物理衝突あり（通り抜け不可）
+    isTransparent: true, // 特殊形状のため通常カリングをスキップ
+    uvs: { front: 16, back: 16, left: 16, right: 16, top: 16, bottom: 16 },
+  },
+  [BlockType.BED_HEAD]: {
+    id: BlockType.BED_HEAD,
+    name: 'ベッド（まくら）',
+    isSolid: true,
+    isTransparent: true, // 半分の高さなので特殊描画
+    uvs: { front: 18, back: 18, left: 18, right: 18, top: 17, bottom: 16 },
+  },
+  [BlockType.BED_FOOT]: {
+    id: BlockType.BED_FOOT,
+    name: 'ベッド（あしもと）',
+    isSolid: true,
+    isTransparent: true,
+    uvs: { front: 18, back: 18, left: 18, right: 18, top: 18, bottom: 16 },
+  },
+  [BlockType.FURNACE]: {
+    id: BlockType.FURNACE,
+    name: 'かまど',
+    isSolid: true,
+    isTransparent: false,
+    // 正面（+Z）にかまどの口、その他は石テクスチャ
+    uvs: { front: 19, back: 2, left: 2, right: 2, top: 2, bottom: 2 },
+  },
+  [BlockType.CHEST]: {
+    id: BlockType.CHEST,
+    name: 'チェスト',
+    isSolid: true,
+    isTransparent: true, // 少し小さい形状なので特殊描画
+    // 正面（+Z）に錠前テクスチャ、側面・上面は木材調
+    uvs: { front: 20, back: 21, left: 21, right: 21, top: 21, bottom: 16 },
+  },
+  [BlockType.WATER]: {
+    id: BlockType.WATER,
+    name: 'みず',
+    isSolid: false,      // 通り抜け可能
+    isTransparent: true, // 透過
+    uvs: { front: 22, back: 22, left: 22, right: 22, top: 22, bottom: 22 },
   },
 };

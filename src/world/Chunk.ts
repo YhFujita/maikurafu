@@ -129,8 +129,10 @@ export class Chunk {
     const indices: number[] = [];
 
     let vertexCount = 0;
-    const atlasGridSize = 4; // 4x4アトラス
-    const uvStep = 1.0 / atlasGridSize; // 0.25
+    const atlasCols = 4; // アトラスの列数
+    const atlasRows = 6; // アトラスの行数（4行+新規拡張）
+    const uvStepU = 1.0 / atlasCols; // U方向ステップ (0.25)
+    const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/6)
 
     // 周辺の松明の座標を走査（現在のチャンク + 隣接2マスまで検索）
     const torches: { x: number; y: number; z: number }[] = [];
@@ -187,12 +189,12 @@ export class Chunk {
           );
         }
 
-        const col = uvIndex % atlasGridSize;
-        const row = Math.floor(uvIndex / atlasGridSize);
-        const uMin = col * uvStep;
-        const vMin = 1.0 - (row + 1) * uvStep;
-        const uMax = uMin + uvStep;
-        const vMax = vMin + uvStep;
+        const col = uvIndex % atlasCols;
+        const row = Math.floor(uvIndex / atlasCols);
+        const uMin = col * uvStepU;
+        const vMin = 1.0 - (row + 1) * uvStepV;
+        const uMax = uMin + uvStepU;
+        const vMax = vMin + uvStepV;
 
         uvs.push(uMin, vMin, uMax, vMin, uMax, vMax, uMin, vMax);
 
@@ -216,8 +218,98 @@ export class Chunk {
           const globalZ = this.z * this.size + cz;
 
           if (blockType === BlockType.STAIRS) {
-            addBox(globalX, globalY, globalZ, globalX + 1.0, globalY + 0.5, globalZ + 1.0, 9); // ベース
+            addBox(globalX, globalY,       globalZ, globalX + 1.0, globalY + 0.5, globalZ + 1.0, 9); // ベース
             addBox(globalX, globalY + 0.5, globalZ, globalX + 1.0, globalY + 1.0, globalZ + 0.5, 9); // ステップ
+            continue;
+          }
+
+          // 柵：中心ポスト + 上下レール二本
+          if (blockType === BlockType.FENCE) {
+            const uv = 16; // 柵テクスチャ
+            // 中心ポスト
+            addBox(globalX+0.375, globalY,        globalZ+0.375, globalX+0.625, globalY+1.0,   globalZ+0.625, uv);
+            // 上レール（X方向）
+            addBox(globalX,       globalY+0.75,   globalZ+0.375, globalX+1.0,   globalY+0.875, globalZ+0.625, uv);
+            // 上レール（Z方向）
+            addBox(globalX+0.375, globalY+0.75,   globalZ,       globalX+0.625, globalY+0.875, globalZ+1.0,   uv);
+            // 下レール（X方向）
+            addBox(globalX,       globalY+0.5,    globalZ+0.375, globalX+1.0,   globalY+0.5625, globalZ+0.625, uv);
+            // 下レール（Z方向）
+            addBox(globalX+0.375, globalY+0.5,    globalZ,       globalX+0.625, globalY+0.5625, globalZ+1.0,   uv);
+            continue;
+          }
+
+          // ベッド：半分の高さの平たい笥
+          if (blockType === BlockType.BED_HEAD || blockType === BlockType.BED_FOOT) {
+            const isBedHead = blockType === BlockType.BED_HEAD;
+            const topUv   = isBedHead ? 17 : 18; // 上面：枝鞠=17、足元=18
+            const sideUv  = 18;                   // 側面：赤ウール
+            const bedH    = 0.5625;               // ベッドの高さ（9/16）
+            // ベッド座面（底面・倖面・周傈）
+            addBox(globalX, globalY, globalZ, globalX+1.0, globalY+bedH, globalZ+1.0, sideUv);
+            // 上面だけ別テクスチャで上書き
+            // （上面が見える山面のみ再描画）
+            {
+              const uvIdx = topUv;
+              const col = uvIdx % atlasCols;
+              const row = Math.floor(uvIdx / atlasCols);
+              const uMin2 = col * uvStepU;
+              const vMin2 = 1.0 - (row + 1) * uvStepV;
+              const uMax2 = uMin2 + uvStepU;
+              const vMax2 = vMin2 + uvStepV;
+              const topCorners = [
+                [globalX,   globalY+bedH, globalZ+1.0],
+                [globalX+1, globalY+bedH, globalZ+1.0],
+                [globalX+1, globalY+bedH, globalZ],
+                [globalX,   globalY+bedH, globalZ],
+              ];
+              for (const corner of topCorners) {
+                positions.push(corner[0], corner[1], corner[2]);
+                normals.push(0, 1, 0);
+                colors.push(0.95, 0.95, 0.95);
+              }
+              uvs.push(uMin2, vMin2, uMax2, vMin2, uMax2, vMax2, uMin2, vMax2);
+              indices.push(vertexCount, vertexCount+1, vertexCount+2, vertexCount, vertexCount+2, vertexCount+3);
+              vertexCount += 4;
+            }
+            continue;
+          }
+
+          // チェスト：内側に少し小さい笥
+          if (blockType === BlockType.CHEST) {
+            // 内側オフセット。本体と蕋
+            const cx0 = globalX + 0.0625;
+            const cz0 = globalZ + 0.0625;
+            const cx1 = globalX + 0.9375;
+            const cz1 = globalZ + 0.9375;
+            // 本体 (7/8の高さ)
+            addBox(cx0, globalY,        cz0, cx1, globalY + 0.875,  cz1, 21); // 側面・底
+            // 正面（+Z面）のみ鍵前テクスチャで上書き
+            {
+              const uvIdx = 20;
+              const col = uvIdx % atlasCols;
+              const row = Math.floor(uvIdx / atlasCols);
+              const uMin2 = col * uvStepU;
+              const vMin2 = 1.0 - (row + 1) * uvStepV;
+              const uMax2 = uMin2 + uvStepU;
+              const vMax2 = vMin2 + uvStepV;
+              const frontCorners = [
+                [cx0, globalY,        cz1],
+                [cx1, globalY,        cz1],
+                [cx1, globalY+0.875,  cz1],
+                [cx0, globalY+0.875,  cz1],
+              ];
+              for (const corner of frontCorners) {
+                positions.push(corner[0], corner[1], corner[2]);
+                normals.push(0, 0, 1);
+                colors.push(0.85, 0.85, 0.85);
+              }
+              uvs.push(uMin2, vMin2, uMax2, vMin2, uMax2, vMax2, uMin2, vMax2);
+              indices.push(vertexCount, vertexCount+1, vertexCount+2, vertexCount, vertexCount+2, vertexCount+3);
+              vertexCount += 4;
+            }
+            // 蕋
+            addBox(cx0, globalY+0.875, cz0, cx1, globalY+0.9375, cz1, 21);
             continue;
           }
 
@@ -229,7 +321,7 @@ export class Chunk {
             let shouldDrawFace = false;
 
             if (blockType === BlockType.TORCH || blockType === BlockType.DOOR_CLOSED || blockType === BlockType.DOOR_OPEN) {
-              // 松明とドアは常に全方位の面を描画する（薄型形状でカリングされると消えるため）
+              // 松明・扉は常に全方位の面を描画する（薄型形状でカリングされると消えるため）
               shouldDrawFace = true;
             } else {
               let neighborBlock: BlockType;
@@ -291,6 +383,19 @@ export class Chunk {
                     // NS向き（南北）の開扉：X軸方向に薄い板（壁の端に収まる）
                     vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
                   }
+                } else if (blockType === BlockType.WATER) {
+                  // 水の場合、上面（corner[1] === 1）かつ、上のブロックが水でなければ水位を下げる
+                  if (corner[1] === 1) {
+                    let aboveBlock: BlockType;
+                    if (this.isOutOfBounds(cx, cy + 1, cz)) {
+                      aboveBlock = world.getBlock(globalX, globalY + 1, globalZ);
+                    } else {
+                      aboveBlock = this.getBlock(cx, cy + 1, cz);
+                    }
+                    if (aboveBlock !== BlockType.WATER) {
+                      vy -= 0.15;
+                    }
+                  }
                 }
 
                 positions.push(vx, vy, vz);
@@ -331,15 +436,15 @@ export class Chunk {
                 colors.push(r, g, b);
               }
 
-              // UV座標の算出 (4x4グリッド)
+              // UV座標の算出
               const uvIdx = blockProp.uvs[face.uvName];
-              const col = uvIdx % atlasGridSize;
-              const row = Math.floor(uvIdx / atlasGridSize);
+              const col = uvIdx % atlasCols;
+              const row = Math.floor(uvIdx / atlasCols);
 
-              const uMin = col * uvStep;
-              const vMin = 1.0 - (row + 1) * uvStep;
-              const uMax = uMin + uvStep;
-              const vMax = vMin + uvStep;
+              const uMin = col * uvStepU;
+              const vMin = 1.0 - (row + 1) * uvStepV;
+              const uMax = uMin + uvStepU;
+              const vMax = vMin + uvStepV;
 
               // 4つの角に対応するUVマッピング
               uvs.push(
