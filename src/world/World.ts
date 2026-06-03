@@ -46,7 +46,6 @@ export class World {
       );
     };
 
-    };
 
     this.material = mat;
     this.terrainGenerator = new TerrainGenerator();

@@ -736,9 +736,8 @@ if (startBtn && menuOverlay) {
       saveManager.setAccountId(id);
       updateAccountIdList(id); // 履歴に追加
       
-      const prevText = startBtn.textContent;
       startBtn.textContent = 'データをロード中...';
-      startBtn.disabled = true;
+      startBtn.setAttribute('disabled', 'true');
       
       await saveManager.loadData();
       startBtn.textContent = 'ゲームスタート';
