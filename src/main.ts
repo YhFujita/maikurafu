@@ -745,8 +745,13 @@ const allBlocks = [
   BlockType.TORCH,
   BlockType.GLASS,
   BlockType.DOOR_CLOSED,
-  BlockType.STAIRS, // 木の階段を追加
+  BlockType.STAIRS, // 木の階段
   BlockType.SWORD,
+  BlockType.FENCE,
+  BlockType.BED_HEAD,
+  BlockType.FURNACE,
+  BlockType.CHEST,
+  BlockType.WATER,
 ];
 
 function syncArmorUI() {
