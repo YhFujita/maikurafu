@@ -894,29 +894,36 @@ function renderInventoryHotbarSlots() {
   if (!inventoryHotbarSlots) return;
   inventoryHotbarSlots.innerHTML = '';
 
-  slotBlocks.forEach((type, index) => {
-    const slotEl = document.createElement('div');
-    slotEl.className = 'inventory-hotbar-slot';
-    slotEl.setAttribute('data-index', index.toString());
-
-    const iconEl = document.createElement('div');
-    iconEl.className = `slot-icon ${getSlotIconClass(type)}`;
-    slotEl.appendChild(iconEl);
-
-    const numEl = document.createElement('div');
-    numEl.className = 'slot-num';
-    numEl.textContent = (index + 1).toString();
-    slotEl.appendChild(numEl);
-
-    slotEl.addEventListener('click', () => {
-      if (selectedInventoryBlock !== null) {
-        slotBlocks[index] = selectedInventoryBlock;
-        syncHotbarUI();
-        renderInventoryHotbarSlots();
+  hotbarPages.forEach((pageArray, pageIndex) => {
+    pageArray.forEach((type, slotIndex) => {
+      const slotEl = document.createElement('div');
+      slotEl.className = 'inventory-hotbar-slot';
+      
+      // 現在アクティブなページを少し明るくして区別しやすくする
+      if (pageIndex === activePage) {
+        slotEl.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+        slotEl.style.background = 'rgba(255, 255, 255, 0.05)';
       }
-    });
 
-    inventoryHotbarSlots.appendChild(slotEl);
+      const iconEl = document.createElement('div');
+      iconEl.className = `slot-icon ${getSlotIconClass(type)}`;
+      slotEl.appendChild(iconEl);
+
+      const numEl = document.createElement('div');
+      numEl.className = 'slot-num';
+      numEl.textContent = (slotIndex + 1).toString();
+      slotEl.appendChild(numEl);
+
+      slotEl.addEventListener('click', () => {
+        if (selectedInventoryBlock !== null) {
+          hotbarPages[pageIndex][slotIndex] = selectedInventoryBlock;
+          syncHotbarUI();
+          renderInventoryHotbarSlots();
+        }
+      });
+
+      inventoryHotbarSlots.appendChild(slotEl);
+    });
   });
 }
 
