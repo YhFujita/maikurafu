@@ -3,6 +3,7 @@ import { CONFIG } from '../config.ts';
 import { Chunk } from './Chunk.ts';
 import { BlockType } from './Block.ts';
 import { createProceduralTextureAtlas } from '../renderer/TextureAtlas.ts';
+import { TerrainGenerator } from './TerrainGenerator.ts';
 
 export class World {
   private chunks: Map<string, Chunk> = new Map();
@@ -12,6 +13,9 @@ export class World {
   private modifiedBlocks: Map<string, Map<number, BlockType>> = new Map();
   // 扉の向き情報: キーは "x,y,z".値は 'NS'(南北=Z軸方向に薄い板) または 'EW'(東西=X軸方向に薄い板)
   private doorOrientations: Map<string, 'NS' | 'EW'> = new Map();
+  // チャンクごとの地形生成アルゴリズムのバージョン (1:平地, 2:ノイズ地形)
+  private chunkVersions: Map<string, number> = new Map();
+  private terrainGenerator: TerrainGenerator;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -42,8 +46,10 @@ export class World {
       );
     };
 
-    this.material = mat;
+    };
 
+    this.material = mat;
+    this.terrainGenerator = new TerrainGenerator();
   }
 
   private getChunkKey(cx: number, cy: number, cz: number): string {
@@ -194,78 +200,28 @@ export class World {
   }
 
   private generateChunkTerrain(chunk: Chunk): void {
-    const size = CONFIG.CHUNK_SIZE;
-    const globalChunkY = chunk.y * size;
-
-    // 1. 基本地形の生成 (石、石炭、土、草)
-    for (let x = 0; x < size; x++) {
-      for (let z = 0; z < size; z++) {
-        for (let y = 0; y < size; y++) {
-          const globalY = globalChunkY + y;
-
-          let type = BlockType.AIR;
-
-          if (globalY < -4) {
-            // 石の中に5%の確率で石炭鉱石を混入させる
-            // 決定論的なハッシュで鉱石の位置を固定
-            const hash = Math.sin((chunk.x * 17.13) + (chunk.y * 31.41) + (chunk.z * 53.57) + (x * 7.1) + (y * 13.3) + (z * 19.9)) * 43758.5453;
-            const rand = hash - Math.floor(hash);
-            type = rand < 0.05 ? BlockType.COAL_ORE : BlockType.STONE;
-          } else if (globalY < 0) {
-            type = BlockType.DIRT;
-          } else if (globalY === 0) {
-            type = BlockType.GROUND;
-          }
-
-          chunk.setBlock(x, y, z, type);
-        }
-      }
-    }
-
-    // 2. 木の自動生成 (地表が存在する chunk.y === 0 の場合)
-    if (chunk.y === 0) {
-      for (let x = 2; x < size - 2; x++) {
-        for (let z = 2; z < size - 2; z++) {
-          // 決定論的なハッシュコードで生成可否を判定 (約1.5%の確率)
-          const hash = Math.sin((chunk.x * 12.9898) + (chunk.z * 78.233) + (x * 43.123) + (z * 93.314)) * 43758.5453;
-          const rand = hash - Math.floor(hash);
-
-          if (rand < 0.015) {
-            // 幹を配置 (高さ3ブロック)
-            chunk.setBlock(x, 1, z, BlockType.WOOD);
-            chunk.setBlock(x, 2, z, BlockType.WOOD);
-            chunk.setBlock(x, 3, z, BlockType.WOOD);
-
-            // 葉を配置 (幹の高さに合わせて3レイヤー)
-            // レイヤー1 (y = 3): 幹の周り十字
-            chunk.setBlock(x + 1, 3, z, BlockType.LEAVES);
-            chunk.setBlock(x - 1, 3, z, BlockType.LEAVES);
-            chunk.setBlock(x, 3, z + 1, BlockType.LEAVES);
-            chunk.setBlock(x, 3, z - 1, BlockType.LEAVES);
-
-            // レイヤー2 (y = 4): 3x3の矩形
-            for (let dx = -1; dx <= 1; dx++) {
-              for (let dz = -1; dz <= 1; dz++) {
-                if (dx !== 0 || dz !== 0) {
-                  chunk.setBlock(x + dx, 4, z + dz, BlockType.LEAVES);
-                }
-              }
-            }
-            chunk.setBlock(x, 4, z, BlockType.LEAVES); // 幹の真上
-
-            // レイヤー3 (y = 5): 頂部の十字
-            chunk.setBlock(x, 5, z, BlockType.LEAVES);
-            chunk.setBlock(x + 1, 5, z, BlockType.LEAVES);
-            chunk.setBlock(x - 1, 5, z, BlockType.LEAVES);
-            chunk.setBlock(x, 5, z + 1, BlockType.LEAVES);
-            chunk.setBlock(x, 5, z - 1, BlockType.LEAVES);
-          }
-        }
-      }
-    }
-
-    // 3. プレイヤーによる変更差分を適用する
     const chunkKey = this.getChunkKey(chunk.x, chunk.y, chunk.z);
+    
+    // バージョンの決定
+    let version = this.chunkVersions.get(chunkKey);
+    if (version === undefined) {
+      if (this.modifiedBlocks.has(chunkKey)) {
+        // セーブデータに変更があるがバージョン指定がない場合、古いワールドなのでV1（平地）とする
+        version = 1;
+      } else {
+        // 新規探索チャンクはV2
+        version = 2;
+      }
+      this.chunkVersions.set(chunkKey, version);
+    }
+
+    if (version === 1) {
+      this.terrainGenerator.generateV1(chunk);
+    } else {
+      this.terrainGenerator.generateV2(chunk);
+    }
+
+    // プレイヤーによる変更差分を適用する
     const chunkMods = this.modifiedBlocks.get(chunkKey);
     if (chunkMods) {
       const size = CONFIG.CHUNK_SIZE;
@@ -293,7 +249,7 @@ export class World {
   }
 
   // セーブデータ用：ブロック変更差分を Record 形式でシリアライズして取得
-  public getModifiedBlocksData(): { blocks: Record<string, Record<string, number>>; doorOrientations: Record<string, string> } {
+  public getModifiedBlocksData(): { blocks: Record<string, Record<string, number>>; doorOrientations: Record<string, string>; chunkVersions: Record<string, number> } {
     const blocks: Record<string, Record<string, number>> = {};
     for (const [chunkKey, chunkMods] of this.modifiedBlocks.entries()) {
       if (chunkMods.size === 0) continue;
@@ -308,13 +264,19 @@ export class World {
     for (const [key, orientation] of this.doorOrientations.entries()) {
       doorOrientations[key] = orientation;
     }
-    return { blocks, doorOrientations };
+    // バージョン情報もシリアライズ
+    const chunkVersions: Record<string, number> = {};
+    for (const [key, version] of this.chunkVersions.entries()) {
+      chunkVersions[key] = version;
+    }
+    return { blocks, doorOrientations, chunkVersions };
   }
 
   // ロードデータ用：Record 形式のデータからブロック変更差分を復元
   public setModifiedBlocksData(data: Record<string, any>): void {
     this.modifiedBlocks.clear();
     this.doorOrientations.clear();
+    this.chunkVersions.clear();
     if (!data) return;
 
     // 旧フォーマット（blocksキーなし）との後方互換性維持
@@ -334,6 +296,13 @@ export class World {
     if (data.doorOrientations) {
       for (const [key, orientation] of Object.entries(data.doorOrientations)) {
         this.doorOrientations.set(key, orientation as 'NS' | 'EW');
+      }
+    }
+    
+    // バージョン情報を復元
+    if (data.chunkVersions) {
+      for (const [key, version] of Object.entries(data.chunkVersions)) {
+        this.chunkVersions.set(key, version as number);
       }
     }
   }
