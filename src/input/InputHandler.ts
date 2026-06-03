@@ -49,7 +49,7 @@ export class InputHandler {
       e.preventDefault();
     }
     if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE')) {
-      if (key === 'KeyE') {
+      if (key === 'KeyE' || key === 'F5') {
         e.preventDefault();
       }
     }

@@ -15,6 +15,9 @@ const ITEM_COLORS: Record<number, number> = {
   [BlockType.SAND]: 0xfef08a,
   [BlockType.COAL_ORE]: 0x374151,
   [BlockType.TORCH]: 0xf97316,
+  [BlockType.GLASS]: 0xe0f2fe,
+  [BlockType.DOOR_CLOSED]: 0xb45309,
+  [BlockType.SWORD]: 0xcccccc,
 };
 
 export class DroppedItem {
@@ -108,7 +111,7 @@ export class DroppedItem {
       const dir = DroppedItem.tempVec3_2.copy(playerPosition).sub(itemPos).normalize();
       
       // 徐々に加速してプレイヤーに吸い込まれる
-      const speed = 10.0;
+      const speed = 22.0; // プレイヤーの移動速度（最大18m/s）に対抗するため22.0m/sに向上
       itemPos.add(dir.multiplyScalar(speed * deltaTime));
       this.mesh.position.copy(itemPos);
 

@@ -30,5 +30,5 @@ export const CONFIG = {
   // ドロップアイテム設定
   MAX_DROPPED_ITEMS: 30,        // 存在できるドロップアイテムの最大数
   ITEM_DESPAWN_TIME: 30,        // 秒単位の消滅時間
-  ITEM_PICKUP_RADIUS: 2.0,      // アイテムを吸い込む半径
+  ITEM_PICKUP_RADIUS: 3.5,      // アイテムを吸い込む半径（吸い寄せをより遠くから開始）
 };

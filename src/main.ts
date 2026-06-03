@@ -267,16 +267,21 @@ function animate(time: number) {
     }
   }
 
-  // ドロップアイテム的更新・回収
+  // ドロップアイテムの更新・回収
   for (let i = droppedItems.length - 1; i >= 0; i--) {
     const item = droppedItems[i];
-    const isDone = item.update(deltaTime, player.position);
-    if (isDone) {
-      const dist = item.mesh.position.distanceTo(player.position);
-      if (dist < 0.8) {
-        inventory[item.blockType] = (inventory[item.blockType] || 0) + 1;
-        syncHotbarUI();
-      }
+    const isDespawned = item.update(deltaTime, player.position);
+    
+    // アイテムメッシュとプレイヤーの位置の距離を算出
+    const dist = item.mesh.position.distanceTo(player.position);
+    if (dist < 1.2) {
+      // 1.2m以内に近づいたら即座に獲得
+      inventory[item.blockType] = (inventory[item.blockType] || 0) + 1;
+      syncHotbarUI();
+      item.destroy();
+      droppedItems.splice(i, 1);
+    } else if (isDespawned) {
+      // 1.2m以内に入らずに時間切れで消去された場合
       droppedItems.splice(i, 1);
     }
   }
