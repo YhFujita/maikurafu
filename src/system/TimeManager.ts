@@ -86,13 +86,15 @@ export class TimeManager {
     this.sunLight.color.copy(this.sunColor);
 
     // 3. 環境光の強さと色の更新
-    // 昼：明るい白 (0.4) 夜：ほの暗い青 (0.08)
-    const ambIntensity = THREE.MathUtils.lerp(0.08, 0.45, dayFactor);
+    // 昼：明るい白 (0.45) 夜：薄暗い月明かりの青 (0.22)
+    const ambIntensity = THREE.MathUtils.lerp(0.22, 0.45, dayFactor);
     this.ambientLight.intensity = ambIntensity;
-    const ambR = THREE.MathUtils.lerp(0.1, 1.0, dayFactor);
-    const ambG = THREE.MathUtils.lerp(0.12, 1.0, dayFactor);
-    const ambB = THREE.MathUtils.lerp(0.2, 1.0, dayFactor);
+    const ambR = THREE.MathUtils.lerp(0.15, 1.0, dayFactor);
+    const ambG = THREE.MathUtils.lerp(0.18, 1.0, dayFactor);
+    const ambB = THREE.MathUtils.lerp(0.35, 1.0, dayFactor);
+
     this.ambientColor.setRGB(ambR, ambG, ambB);
+
     this.ambientLight.color.copy(this.ambientColor);
   }
 

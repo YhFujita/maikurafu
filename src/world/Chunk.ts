@@ -205,14 +205,15 @@ export class Chunk {
                 const isSelfTorch = (blockType === BlockType.TORCH);
                 const lightFactor = isSelfTorch ? 1.0 : maxLight;
 
-                // 最終カラー値のブレンド（明るさは最低0.3、松明ライトで最大1.0まで加算）
-                const finalLight = Math.min(1.0, 0.35 + lightFactor * 0.65);
+                // 最終カラー値のブレンド（明るさは最低0.52、松明ライトで最大1.0まで加算）
+                const finalLight = Math.min(1.0, 0.52 + lightFactor * 0.48);
                 const finalColor = shadow * finalLight;
 
                 // 黄色・オレンジの温かみのある光を表現するため、RとGを少し強調し、Bを抑える
                 const r = finalColor;
-                const g = finalColor * (isSelfTorch ? 0.9 : (0.85 + lightFactor * 0.05));
-                const b = finalColor * (isSelfTorch ? 0.6 : (0.7 + lightFactor * 0.1));
+                const g = finalColor * (isSelfTorch ? 0.9 : (0.93 - (1.0 - lightFactor) * 0.08));
+                const b = finalColor * (isSelfTorch ? 0.6 : (0.85 - (1.0 - lightFactor) * 0.15));
+
                 
                 colors.push(r, g, b);
               }
