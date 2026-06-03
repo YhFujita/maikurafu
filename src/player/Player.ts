@@ -49,6 +49,7 @@ export class Player {
 
   // 接地判定用の簡易フラグ
   private isGrounded: boolean = false;
+  private isInWater: boolean = false; // 水中判定フラグを追加
   private lastVelocityY: number = 0; // 落下ダメージ計算用
 
   // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
@@ -311,6 +312,17 @@ export class Player {
     this.position.set(this.body.position.x, this.body.position.y, this.body.position.z);
     this.handleStepClimb(voxelWorld);
 
+    // 水中判定（足元付近が水かどうかをチェック）
+    this.isInWater = false;
+    if (this.voxelWorld) {
+      const bx = Math.floor(this.position.x);
+      const by = Math.floor(this.position.y - CONFIG.PLAYER_HEIGHT / 2 + 0.1);
+      const bz = Math.floor(this.position.z);
+      if (this.voxelWorld.getBlock(bx, by, bz) === BlockType.WATER) {
+        this.isInWater = true;
+      }
+    }
+
     if (!input.isLocked) {
       this.body.velocity.x *= 0.8;
       this.body.velocity.z *= 0.8;
@@ -373,8 +385,8 @@ export class Player {
 
     const currentGrounded = onSolidBlock || Math.abs(this.body.velocity.y) < 0.05;
 
-    // 着地した瞬間に落下ダメージ判定
-    if (currentGrounded && !this.isGrounded) {
+    // 着地した瞬間に落下ダメージ判定（水の中では落下ダメージを無効化）
+    if (currentGrounded && !this.isGrounded && !this.isInWater) {
       // 直前の落下速度が一定以上であればダメージ
       if (this.lastVelocityY < CONFIG.FALL_DAMAGE_MIN_SPEED) {
         const damage = Math.floor((CONFIG.FALL_DAMAGE_MIN_SPEED - this.lastVelocityY) * CONFIG.FALL_DAMAGE_FACTOR);
@@ -533,16 +545,32 @@ export class Player {
 
     // ダッシュ判定 (Shiftキーが押されている間は1.5倍速)
     const isSprinting = input.keys['ShiftLeft'] || input.keys['ShiftRight'];
-    const currentSpeed = isSprinting ? this.speed * 1.5 : this.speed;
+    let currentSpeed = isSprinting ? this.speed * 1.5 : this.speed;
+
+    // 水中では歩く速度を遅くする
+    if (this.isInWater) {
+      currentSpeed *= 0.6;
+    }
 
     this.body.velocity.x = direction.x * currentSpeed;
     this.body.velocity.z = direction.z * currentSpeed;
 
-    // ジャンプ
-    if (input.isActionActive('jump') && this.isGrounded) {
-      this.body.velocity.y = this.jumpForce;
-      this.isGrounded = false;
-      SoundManager.playJump();
+    // ジャンプ・浮上
+    if (input.isActionActive('jump')) {
+      if (this.isInWater) {
+        // 水中ではジャンプの代わりにゆっくり浮上する（浮力）
+        this.body.velocity.y = this.jumpForce * 0.4;
+      } else if (this.isGrounded) {
+        // 地上での通常ジャンプ
+        this.body.velocity.y = this.jumpForce;
+        this.isGrounded = false;
+        SoundManager.playJump();
+      }
+    }
+
+    // 水中ではゆっくり沈む（落下速度の制限）
+    if (this.isInWater && this.body.velocity.y < -2) {
+      this.body.velocity.y *= 0.8;
     }
   }
 
