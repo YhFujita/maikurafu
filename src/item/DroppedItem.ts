@@ -42,7 +42,8 @@ export class DroppedItem {
     blockType: BlockType,
     pos: THREE.Vector3,
     scene: THREE.Scene,
-    physicsWorld: CANNON.World
+    physicsWorld: CANNON.World,
+    targetPos?: THREE.Vector3
   ) {
     this.blockType = blockType;
     this.scene = scene;
@@ -75,12 +76,30 @@ export class DroppedItem {
       position: new CANNON.Vec3(pos.x, pos.y, pos.z),
     });
 
-    // 飛び散るような初期ランダム初速度を追加
-    this.body.velocity.set(
-      (Math.random() - 0.5) * 4,
-      Math.random() * 4 + 2,
-      (Math.random() - 0.5) * 4
-    );
+    if (targetPos) {
+      // プレイヤー（ターゲット）へ向かって飛ぶように初速度を設定
+      const dir = targetPos.clone().sub(pos);
+      const dist = dir.length();
+      
+      // 上向きのアーチをかける
+      dir.normalize();
+      dir.y += 0.5;
+      dir.normalize();
+
+      // 距離に応じて初速を調整（近ければ遅く、遠ければ速く）
+      const speed = Math.min(Math.max(dist * 2.0, 4.0), 15.0);
+      this.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed);
+      
+      // 空中のブロックを壊した際に、途中で何かに引っかからないように摩擦・反発係数を下げる
+      this.body.linearDamping = 0.1;
+    } else {
+      // 飛び散るような初期ランダム初速度を追加 (Qキーで捨てた時など)
+      this.body.velocity.set(
+        (Math.random() - 0.5) * 4,
+        Math.random() * 4 + 2,
+        (Math.random() - 0.5) * 4
+      );
+    }
 
     this.physicsWorld.addBody(this.body);
   }

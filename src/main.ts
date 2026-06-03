@@ -260,12 +260,12 @@ function updateHPUI() {
 }
 
 // ドロップアイテムの生成処理
-function spawnDroppedItem(type: BlockType, pos: THREE.Vector3) {
+function spawnDroppedItem(type: BlockType, pos: THREE.Vector3, targetPos?: THREE.Vector3) {
   if (droppedItems.length >= CONFIG.MAX_DROPPED_ITEMS) {
     const oldest = droppedItems.shift();
     if (oldest) oldest.destroy();
   }
-  const item = new DroppedItem(type, pos, renderer.scene, physics.world);
+  const item = new DroppedItem(type, pos, renderer.scene, physics.world, targetPos);
   droppedItems.push(item);
 }
 
@@ -495,7 +495,7 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
           if (isDead) {
             // ゾンビ死亡時に確率で石炭や石などをドロップ
             const dropType = Math.random() < 0.4 ? BlockType.COAL_ORE : BlockType.STONE;
-            spawnDroppedItem(dropType, new THREE.Vector3(hitMob.body.position.x, hitMob.body.position.y, hitMob.body.position.z));
+            spawnDroppedItem(dropType, new THREE.Vector3(hitMob.body.position.x, hitMob.body.position.y, hitMob.body.position.z), player.position);
             const idx = mobs.indexOf(hitMob);
             if (idx > -1) mobs.splice(idx, 1);
           }
@@ -541,11 +541,11 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
             }
           }
           // ベッドアイテムを必ず1個ドロップ
-          spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+          spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
         } else {
           // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
           if (targetBlockType !== BlockType.DOOR_OPEN) {
-            spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
+            spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
           }
         }
       }
