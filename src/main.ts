@@ -11,6 +11,7 @@ import { ConfigUIHandler } from './input/ConfigUIHandler.ts';
 import { TimeManager } from './system/TimeManager.ts';
 import { DroppedItem } from './item/DroppedItem.ts';
 import { Mob } from './mob/Mob.ts';
+import { SoundManager } from './system/SoundManager.ts';
 
 // レンダラーの初期化
 const renderer = new Renderer('canvas-container');
@@ -63,6 +64,7 @@ if (respawnBtn) {
   respawnBtn.addEventListener('click', () => {
     player.respawn();
     input.requestLock();
+    SoundManager.init();
   });
 }
 
@@ -278,6 +280,8 @@ function animate(time: number) {
       // 1.2m以内に近づいたら即座に獲得
       inventory[item.blockType] = (inventory[item.blockType] || 0) + 1;
       syncHotbarUI();
+      // アイテム獲得音の再生
+      SoundManager.playPickup();
       item.destroy();
       droppedItems.splice(i, 1);
     } else if (isDespawned) {
@@ -373,6 +377,7 @@ window.addEventListener('mousedown', (e) => {
     if (shouldDestroy) {
       // 破壊/攻撃時は常に剣を振る
       player.swing();
+      SoundManager.playSwing();
 
       // まず敵Mobへの攻撃当たり判定を行う
       const mobMeshes: THREE.Object3D[] = [];
@@ -427,6 +432,8 @@ window.addEventListener('mousedown', (e) => {
       const targetBlockType = world.getBlock(bx, by, bz);
       if (targetBlockType !== BlockType.AIR) {
         world.setBlock(bx, by, bz, BlockType.AIR);
+        // ブロック破壊音の再生
+        SoundManager.playBreak(targetBlockType);
         
         // 破壊ブロックの中央座標にドロップアイテムをスポーン
         spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
@@ -447,9 +454,11 @@ window.addEventListener('mousedown', (e) => {
       // 右クリックした対象がドアの場合、開閉をトグルする
       if (clickedBlockType === BlockType.DOOR_CLOSED) {
         world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_OPEN);
+        SoundManager.playPlace(BlockType.DOOR_OPEN);
         return;
       } else if (clickedBlockType === BlockType.DOOR_OPEN) {
         world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_CLOSED);
+        SoundManager.playPlace(BlockType.DOOR_CLOSED);
         return;
       }
 
@@ -490,6 +499,7 @@ window.addEventListener('mousedown', (e) => {
       if (!collides || isTorch) {
         // 選択されたブロックを設置し、インベントリから消費
         world.setBlock(bx, by, bz, activeBlockType);
+        SoundManager.playPlace(activeBlockType);
         inventory[activeBlockType]--;
         syncHotbarUI();
       }
@@ -509,6 +519,7 @@ const menuOverlay = document.getElementById('menu-overlay');
 if (startBtn && menuOverlay) {
   startBtn.addEventListener('click', () => {
     input.requestLock();
+    SoundManager.init();
   });
 
   const hotbar = document.getElementById('hotbar');

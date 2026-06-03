@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { CONFIG } from '../config.ts';
 import { InputHandler } from '../input/InputHandler.ts';
 import { World } from '../world/World.ts';
+import { SoundManager } from '../system/SoundManager.ts';
 
 export type CameraMode = '1PV' | '3PV_BACK' | '3PV_FRONT';
 
@@ -301,6 +302,9 @@ export class Player {
     if (this.isDead) return;
     this.hp = Math.max(0, this.hp - amount);
     
+    // ダメージ効果音の再生
+    SoundManager.playDamage();
+
     // 赤く点滅するフラッシュ表現（簡易）
     const overlay = document.getElementById('damage-overlay');
     if (overlay) {
@@ -364,6 +368,7 @@ export class Player {
     if (input.isActionActive('jump') && this.isGrounded) {
       this.body.velocity.y = this.jumpForce;
       this.isGrounded = false;
+      SoundManager.playJump();
     }
   }
 

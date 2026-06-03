@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { CONFIG } from '../config.ts';
 import { Player } from '../player/Player.ts';
+import { SoundManager } from '../system/SoundManager.ts';
 
 export class Mob {
   public mesh: THREE.Group;
@@ -223,6 +224,9 @@ export class Mob {
     this.hp -= amount;
     this.damageFlashTime = 0.2; // 0.2秒間赤くフラッシュ
     this.setMaterials(true);
+
+    // 攻撃ヒット音の再生
+    SoundManager.playHit();
 
     // ノックバック処理
     this.body.velocity.y = 4.0; // 少し上に弾む
