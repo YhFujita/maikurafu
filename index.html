@@ -782,6 +782,11 @@
       transform: translateY(-1px);
       box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
     }
+    .armor-btn.active {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+      background: rgba(59, 130, 246, 0.2) !important;
+    }
   </style>
 </head>
 <body>
@@ -942,6 +947,17 @@
         <h3>ホットバーのわりあて</h3>
         <div class="inventory-hotbar-slots" id="inventory-hotbar-slots">
           <!-- JSで実際のホットバーと同期して生成されます -->
+        </div>
+      </div>
+      
+      <!-- キャラクターのそうび（きせかえ） -->
+      <div class="inventory-section">
+        <h3>そうび（きせかえ）</h3>
+        <div id="armor-selection" style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          <button class="armor-btn active" data-armor="none" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 2px solid transparent; color: white; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">なし</button>
+          <button class="armor-btn" data-armor="leather" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(161, 98, 7, 0.2); border: 2px solid transparent; color: #f59e0b; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">革のそうび</button>
+          <button class="armor-btn" data-armor="iron" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(156, 163, 175, 0.2); border: 2px solid transparent; color: #d1d5db; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">鉄のそうび</button>
+          <button class="armor-btn" data-armor="diamond" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(6, 182, 212, 0.2); border: 2px solid transparent; color: #22d3ee; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">ダイヤそうび</button>
         </div>
       </div>
 

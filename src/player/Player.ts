@@ -6,6 +6,7 @@ import { World } from '../world/World.ts';
 import { SoundManager } from '../system/SoundManager.ts';
 
 export type CameraMode = '1PV' | '3PV_BACK' | '3PV_FRONT';
+export type ArmorType = 'none' | 'leather' | 'iron' | 'diamond';
 
 export class Player {
   public position: THREE.Vector3;
@@ -21,6 +22,10 @@ export class Player {
   private leftLeg!: THREE.Group;
   private rightLeg!: THREE.Group;
   private cameraMode: CameraMode = '1PV';
+
+  // 防具（着せ替え）関連
+  public armorType: ArmorType = 'none';
+  private armorMat!: THREE.MeshStandardMaterial;
 
   // 武器（剣）関連
   private sword1PV!: THREE.Group;
@@ -104,6 +109,28 @@ export class Player {
     const legMat = new THREE.MeshStandardMaterial({ color: 0x2b2b80, roughness: 0.9 });  // 青ズボン
     const hairMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 }); // 髪
 
+    // 防具マテリアルの初期化（初期状態は非表示）
+    this.armorMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.8,
+      metalness: 0.1,
+      visible: false
+    });
+
+    // 防具用ジオメトリの定義
+    const helmetGeo = new THREE.BoxGeometry(0.44, 0.44, 0.44);
+    const chestBodyGeo = new THREE.BoxGeometry(0.44, 0.62, 0.24);
+    
+    // 肩・股関節を軸に動かすため、ジオメトリの原点をオフセット
+    const sleeveGeo = new THREE.BoxGeometry(0.24, 0.35, 0.24);
+    sleeveGeo.translate(0, -0.175, 0); // 肩〜上腕
+    
+    const leggingLegGeo = new THREE.BoxGeometry(0.23, 0.4, 0.23);
+    leggingLegGeo.translate(0, -0.2, 0); // 脚の上部
+    
+    const bootGeo = new THREE.BoxGeometry(0.24, 0.2, 0.24);
+    bootGeo.translate(0, -0.5, 0); // 脚の下部（足先）
+
     // 頭（頭＋髪の二重構造で立体的に）
     const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
     this.head = new THREE.Mesh(headGeo, headMat);
@@ -115,6 +142,13 @@ export class Player {
     const hair = new THREE.Mesh(hairGeo, hairMat);
     hair.position.y = 0.15;
     this.head.add(hair);
+
+    // 兜 (ヘルメット) を頭に追加
+    const helmet = new THREE.Mesh(helmetGeo, this.armorMat);
+    helmet.castShadow = true;
+    helmet.receiveShadow = true;
+    this.head.add(helmet);
+
     this.avatar.add(this.head);
 
     // 胴体
@@ -123,6 +157,13 @@ export class Player {
     this.bodyMesh.position.y = 0.0;
     this.bodyMesh.castShadow = true;
     this.bodyMesh.receiveShadow = true;
+
+    // 鎧 (チェストプレート) の胴体を胴体に追加
+    const chestBody = new THREE.Mesh(chestBodyGeo, this.armorMat);
+    chestBody.castShadow = true;
+    chestBody.receiveShadow = true;
+    this.bodyMesh.add(chestBody);
+
     this.avatar.add(this.bodyMesh);
 
     // 腕と脚は肩・股関節を軸に回転させるため、Pivot用Groupを噛ませる
@@ -135,6 +176,13 @@ export class Player {
     const leftArmMesh = new THREE.Mesh(limbGeo, armMat);
     leftArmMesh.castShadow = true;
     leftArmMesh.receiveShadow = true;
+
+    // 鎧の左袖を追加
+    const leftSleeve = new THREE.Mesh(sleeveGeo, this.armorMat);
+    leftSleeve.castShadow = true;
+    leftSleeve.receiveShadow = true;
+    leftArmMesh.add(leftSleeve);
+
     this.leftArm.add(leftArmMesh);
     this.leftArm.position.set(0.3, 0.3, 0);
     this.avatar.add(this.leftArm);
@@ -144,6 +192,13 @@ export class Player {
     const rightArmMesh = new THREE.Mesh(limbGeo, armMat);
     rightArmMesh.castShadow = true;
     rightArmMesh.receiveShadow = true;
+
+    // 鎧の右袖を追加
+    const rightSleeve = new THREE.Mesh(sleeveGeo, this.armorMat);
+    rightSleeve.castShadow = true;
+    rightSleeve.receiveShadow = true;
+    rightArmMesh.add(rightSleeve);
+
     this.rightArm.add(rightArmMesh);
     this.rightArm.position.set(-0.3, 0.3, 0);
     this.avatar.add(this.rightArm);
@@ -153,6 +208,19 @@ export class Player {
     const leftLegMesh = new THREE.Mesh(limbGeo, legMat);
     leftLegMesh.castShadow = true;
     leftLegMesh.receiveShadow = true;
+
+    // レギンスの左脚を追加
+    const leftLegging = new THREE.Mesh(leggingLegGeo, this.armorMat);
+    leftLegging.castShadow = true;
+    leftLegging.receiveShadow = true;
+    leftLegMesh.add(leftLegging);
+
+    // ブーツの左足を追加
+    const leftBoot = new THREE.Mesh(bootGeo, this.armorMat);
+    leftBoot.castShadow = true;
+    leftBoot.receiveShadow = true;
+    leftLegMesh.add(leftBoot);
+
     this.leftLeg.add(leftLegMesh);
     this.leftLeg.position.set(0.1, -0.3, 0);
     this.avatar.add(this.leftLeg);
@@ -162,6 +230,19 @@ export class Player {
     const rightLegMesh = new THREE.Mesh(limbGeo, legMat);
     rightLegMesh.castShadow = true;
     rightLegMesh.receiveShadow = true;
+
+    // レギンスの右脚を追加
+    const rightLegging = new THREE.Mesh(leggingLegGeo, this.armorMat);
+    rightLegging.castShadow = true;
+    rightLegging.receiveShadow = true;
+    rightLegMesh.add(rightLegging);
+
+    // ブーツの右足を追加
+    const rightBoot = new THREE.Mesh(bootGeo, this.armorMat);
+    rightBoot.castShadow = true;
+    rightBoot.receiveShadow = true;
+    rightLegMesh.add(rightBoot);
+
     this.rightLeg.add(rightLegMesh);
     this.rightLeg.position.set(-0.1, -0.3, 0);
     this.avatar.add(this.rightLeg);
@@ -298,8 +379,44 @@ export class Player {
     this.lastVelocityY = this.body.velocity.y; // 落下速度を記録
   }
 
+  // 装備の切り替え（マテリアルの色と表示フラグを変更）
+  public setArmor(type: ArmorType): void {
+    this.armorType = type;
+    if (type === 'none') {
+      this.armorMat.visible = false;
+    } else {
+      this.armorMat.visible = true;
+      if (type === 'leather') {
+        this.armorMat.color.setHex(0x8b5a2b);
+        this.armorMat.roughness = 0.9;
+        this.armorMat.metalness = 0.0;
+      } else if (type === 'iron') {
+        this.armorMat.color.setHex(0xd8d8d8);
+        this.armorMat.roughness = 0.4;
+        this.armorMat.metalness = 0.8;
+      } else if (type === 'diamond') {
+        this.armorMat.color.setHex(0x22d3ee);
+        this.armorMat.roughness = 0.3;
+        this.armorMat.metalness = 0.6;
+      }
+      this.armorMat.needsUpdate = true;
+    }
+  }
+
   public takeDamage(amount: number): void {
     if (this.isDead) return;
+
+    // 防具によるダメージ軽減
+    if (amount > 0) {
+      if (this.armorType === 'leather') {
+        amount = Math.max(1, Math.floor(amount * 0.9));
+      } else if (this.armorType === 'iron') {
+        amount = Math.max(1, Math.floor(amount * 0.7));
+      } else if (this.armorType === 'diamond') {
+        amount = Math.max(1, Math.floor(amount * 0.4));
+      }
+    }
+
     this.hp = Math.max(0, this.hp - amount);
     
     // ダメージ効果音の再生
@@ -457,7 +574,7 @@ export class Player {
     } else {
       // 三人称視点
       this.avatar.visible = true;
-      this.head.visible = (this.cameraMode !== '3PV_FRONT'); // 前方から自分を見る時は頭が見えるように
+      this.head.visible = (this.cameraMode === '3PV_FRONT'); // 前方から自分を見る時は頭が見えるように
 
       const dist = 4.0;
       const offset = Player.tempVec3.set(0, eyeHeight + 0.4, 0);
@@ -493,7 +610,7 @@ export class Player {
     return this.yaw;
   }
 
-  // セーブデータ用：プレイヤーの位置、HP、向きを取得
+  // セーブデータ用：プレイヤーの位置、HP、向き、装備状態を取得
   public getSaveData(): {
     x: number;
     y: number;
@@ -501,6 +618,7 @@ export class Player {
     hp: number;
     yaw: number;
     pitch: number;
+    armorType: ArmorType;
   } {
     return {
       x: this.body.position.x,
@@ -509,10 +627,11 @@ export class Player {
       hp: this.hp,
       yaw: this.yaw,
       pitch: this.pitch,
+      armorType: this.armorType,
     };
   }
 
-  // ロードデータ用：プレイヤーの位置、HP、向きを復元・同期
+  // ロードデータ用：プレイヤーの位置、HP、向き、装備状態を復元・同期
   public loadSaveData(data: {
     x: number;
     y: number;
@@ -520,11 +639,19 @@ export class Player {
     hp: number;
     yaw: number;
     pitch: number;
+    armorType?: ArmorType;
   }): void {
     if (!data) return;
 
     this.hp = typeof data.hp === 'number' ? data.hp : CONFIG.PLAYER_MAX_HP;
     this.isDead = this.hp <= 0;
+
+    // 装備のロード
+    if (data.armorType) {
+      this.setArmor(data.armorType);
+    } else {
+      this.setArmor('none');
+    }
 
     // 死亡画面の表示状態を更新
     const deathScreen = document.getElementById('death-screen');

@@ -642,6 +642,18 @@ const allBlocks = [
   BlockType.SWORD,
 ];
 
+function syncArmorUI() {
+  const armorType = player.armorType;
+  const buttons = document.querySelectorAll('.armor-btn');
+  buttons.forEach(btn => {
+    if (btn.getAttribute('data-armor') === armorType) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
 function openInventory() {
   if (!inventoryModal) return;
   document.exitPointerLock();
@@ -649,6 +661,7 @@ function openInventory() {
   selectedInventoryBlock = null;
   renderInventoryItemList();
   renderInventoryHotbarSlots();
+  syncArmorUI();
 }
 
 function closeInventory() {
@@ -660,6 +673,18 @@ function closeInventory() {
 if (inventoryCloseBtn) {
   inventoryCloseBtn.addEventListener('click', closeInventory);
 }
+
+// 装備切り替えボタンのイベントリスナー登録
+const armorButtons = document.querySelectorAll('.armor-btn');
+armorButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const armor = btn.getAttribute('data-armor') as any;
+    if (armor) {
+      player.setArmor(armor);
+      syncArmorUI();
+    }
+  });
+});
 
 function renderInventoryItemList() {
   if (!inventoryItemList) return;
