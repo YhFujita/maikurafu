@@ -259,12 +259,39 @@ function updateAccountIdList(newId?: string) {
     localStorage.setItem('maikurafu_account_ids', JSON.stringify(savedIds));
   }
   
-  listEl.innerHTML = '';
-  savedIds.forEach(id => {
-    const option = document.createElement('option');
-    option.value = id;
-    listEl.appendChild(option);
-  });
+  const renderList = (ids: string[]) => {
+    listEl.innerHTML = '';
+    ids.forEach(id => {
+      const option = document.createElement('option');
+      option.value = id;
+      listEl.appendChild(option);
+    });
+  };
+  
+  renderList(savedIds);
+
+  // サーバーからもアカウント一覧を取得してマージする（非同期）
+  if (CONFIG.GAS_WEB_APP_URL) {
+    const worldId = worldIdInput ? worldIdInput.value.trim() || 'shared_world_1' : 'shared_world_1';
+    fetch(`${CONFIG.GAS_WEB_APP_URL}?action=listAccounts&worldId=${encodeURIComponent(worldId)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.accounts && Array.isArray(data.accounts)) {
+          let updated = false;
+          data.accounts.forEach((acc: string) => {
+            if (!savedIds.includes(acc)) {
+              savedIds.push(acc);
+              updated = true;
+            }
+          });
+          if (updated) {
+            localStorage.setItem('maikurafu_account_ids', JSON.stringify(savedIds));
+            renderList(savedIds);
+          }
+        }
+      })
+      .catch(err => console.warn('Failed to fetch accounts from server:', err));
+  }
 }
 // 初期化時にリストを構築
 updateAccountIdList();

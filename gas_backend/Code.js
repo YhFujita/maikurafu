@@ -40,8 +40,29 @@ function saveChunkedData(sheet, rowIndex, data) {
 }
 
 function doGet(e) {
-  const accountId = e.parameter.accountId;
   const worldId = e.parameter.worldId || 'shared_world_1'; // 将来の拡張用：デフォルトワールドID
+
+  if (e.parameter.action === 'listAccounts') {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const playerSheet = ss.getSheetByName('PlayerData');
+    let accounts = [];
+    if (playerSheet && playerSheet.getLastRow() >= 2) {
+      const ids = playerSheet.getRange(2, 1, playerSheet.getLastRow() - 1, 1).getValues();
+      const suffix = '_' + worldId;
+      for (let i = 0; i < ids.length; i++) {
+        const fullId = ids[i][0];
+        if (fullId && fullId.endsWith(suffix)) {
+          const accId = fullId.substring(0, fullId.length - suffix.length);
+          if (accId && !accounts.includes(accId)) {
+            accounts.push(accId);
+          }
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ accounts: accounts })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const accountId = e.parameter.accountId;
 
   if (!accountId) {
     return ContentService.createTextOutput(JSON.stringify({ error: 'accountId is required' })).setMimeType(ContentService.MimeType.JSON);
