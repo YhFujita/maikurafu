@@ -218,6 +218,55 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillStyle = 'rgb(180, 140, 20)';
   ctx.fillRect(doorStartX + 14, doorStartY + 11, 1, 1); // 鍵穴
 
+  // 14: 剣 (col: 2, row: 3)
+  const swordStartX = 2 * tileSize;
+  const swordStartY = 3 * tileSize;
+  ctx.clearRect(swordStartX, swordStartY, tileSize, tileSize);
+
+  // 柄 (茶色)
+  ctx.fillStyle = 'rgb(120, 80, 40)';
+  ctx.fillRect(swordStartX + 2, swordStartY + 13, 1, 1);
+  ctx.fillRect(swordStartX + 3, swordStartY + 12, 1, 1);
+  ctx.fillRect(swordStartX + 4, swordStartY + 11, 1, 1);
+  ctx.fillStyle = 'rgb(90, 60, 30)'; // 柄頭
+  ctx.fillRect(swordStartX + 1, swordStartY + 14, 1, 1);
+
+  // 鍔 (金色/黄色)
+  ctx.fillStyle = 'rgb(230, 190, 50)';
+  ctx.fillRect(swordStartX + 5, swordStartY + 10, 1, 1);
+  ctx.fillRect(swordStartX + 3, swordStartY + 11, 1, 1);
+  ctx.fillRect(swordStartX + 4, swordStartY + 12, 1, 1);
+  ctx.fillRect(swordStartX + 5, swordStartY + 12, 1, 1);
+  ctx.fillRect(swordStartX + 2, swordStartY + 12, 1, 1);
+  ctx.fillRect(swordStartX + 3, swordStartY + 13, 1, 1);
+
+  // 刃の影 (濃いグレー)
+  ctx.fillStyle = 'rgb(120, 120, 120)';
+  const shadowSpots = [
+    [5, 11], [6, 10], [7, 9], [8, 8], [9, 7], [10, 6], [11, 5], [12, 4], [13, 3]
+  ];
+  shadowSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(swordStartX + sx, swordStartY + sy, 1, 1);
+  });
+
+  // 刃の本体 (明るいグレー)
+  ctx.fillStyle = 'rgb(180, 180, 180)';
+  const bladeSpots = [
+    [5, 10], [6, 9], [7, 8], [8, 7], [9, 6], [10, 5], [11, 4], [12, 3], [13, 2], [14, 1]
+  ];
+  bladeSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(swordStartX + sx, swordStartY + sy, 1, 1);
+  });
+
+  // 刃の光沢/エッジ (白色)
+  ctx.fillStyle = 'rgb(240, 240, 240)';
+  const highlightSpots = [
+    [4, 9], [5, 8], [6, 7], [7, 6], [8, 5], [9, 4], [10, 3], [11, 2], [12, 1], [13, 0]
+  ];
+  highlightSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(swordStartX + sx, swordStartY + sy, 1, 1);
+  });
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
 

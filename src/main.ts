@@ -34,7 +34,7 @@ const droppedItems: DroppedItem[] = [];
 const mobs: Mob[] = [];
 
 
-// インベントリの管理（初期状態で各64個所持）
+// インベントリの管理（初期状態で各64個所持、剣は1個）
 const inventory: Record<BlockType, number> = {
   [BlockType.AIR]: 0,
   [BlockType.GROUND]: 64,
@@ -50,6 +50,7 @@ const inventory: Record<BlockType, number> = {
   [BlockType.GLASS]: 64,
   [BlockType.DOOR_CLOSED]: 64,
   [BlockType.DOOR_OPEN]: 0,
+  [BlockType.SWORD]: 1, // 初期状態で1個所持
 };
 
 // 設定UIの初期化
@@ -86,11 +87,11 @@ const hotbarPages = [
     BlockType.GLASS,       // 10: ガラス
     BlockType.DOOR_CLOSED, // 11: ドア（しめる）
     BlockType.COAL_ORE,    // 12: 石炭
+    BlockType.SWORD,       // 13: いしのけん
     BlockType.GROUND,
     BlockType.DIRT,
     BlockType.STONE,
     BlockType.WOOD,
-    BlockType.PLANK,
     BlockType.TORCH,
   ]
 ];
@@ -216,7 +217,7 @@ function animate(time: number) {
   physics.step(deltaTime);
 
   // プレイヤーと入力の更新
-  player.update(input, deltaTime, world);
+  player.update(input, deltaTime, world, activeBlockType);
   
   // 昼夜サイクルの更新
   timeManager.update(deltaTime, player.position);
@@ -365,6 +366,9 @@ window.addEventListener('mousedown', (e) => {
     const shouldPlace = config.invertClicks ? isLeftClick : isRightClick;
 
     if (shouldDestroy) {
+      // 破壊/攻撃時は常に剣を振る
+      player.swing();
+
       // まず敵Mobへの攻撃当たり判定を行う
       const mobMeshes: THREE.Object3D[] = [];
       mobs.forEach(m => {
@@ -394,7 +398,9 @@ window.addEventListener('mousedown', (e) => {
           kbDir.y = 0.2; // 上方向へ弾む
           kbDir.normalize();
 
-          const isDead = hitMob.takeDamage(2, kbDir);
+          // 剣なら4ダメージ（ゾンビを一撃）、素手なら2ダメージ
+          const damage = (activeBlockType === BlockType.SWORD) ? 4 : 2;
+          const isDead = hitMob.takeDamage(damage, kbDir);
           if (isDead) {
             // ゾンビ死亡時に確率で石炭や石などをドロップ
             const dropType = Math.random() < 0.4 ? BlockType.COAL_ORE : BlockType.STONE;
@@ -423,6 +429,9 @@ window.addEventListener('mousedown', (e) => {
 
       
     } else if (shouldPlace) {
+      // 剣は設置できない
+      if (activeBlockType === BlockType.SWORD) return;
+
       // クリックした対象のブロックを特定する
       const clickedTarget = point.clone().sub(normal.clone().multiplyScalar(0.1));
       const ctx_x = Math.floor(clickedTarget.x);
@@ -590,6 +599,7 @@ const allBlocks = [
   BlockType.TORCH,
   BlockType.GLASS,
   BlockType.DOOR_CLOSED,
+  BlockType.SWORD,
 ];
 
 function openInventory() {

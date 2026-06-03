@@ -21,6 +21,11 @@ export class Player {
   private rightLeg!: THREE.Group;
   private cameraMode: CameraMode = '1PV';
 
+  // 武器（剣）関連
+  private sword1PV!: THREE.Group;
+  private sword3PV!: THREE.Group;
+  private swingTime: number = 0;
+
   // サバイバル関連
   public hp: number = CONFIG.PLAYER_MAX_HP;
   private isDead: boolean = false;
@@ -69,6 +74,21 @@ export class Player {
     this.avatar = new THREE.Group();
     this.buildAvatar();
     scene.add(this.avatar);
+
+    // 剣モデルの構築とアタッチ
+    this.sword1PV = this.buildSword();
+    this.sword1PV.position.set(0.24, -0.24, -0.38);
+    this.sword1PV.rotation.set(
+      (-30 * Math.PI) / 180, // 前に少し倒す
+      (45 * Math.PI) / 180,  // 斜めに向ける
+      (15 * Math.PI) / 180
+    );
+    this.camera.add(this.sword1PV);
+
+    this.sword3PV = this.buildSword();
+    this.sword3PV.position.set(0, -0.6, 0.1);
+    this.sword3PV.rotation.x = Math.PI / 2; // 前方に持たせる
+    this.rightArm.add(this.sword3PV);
 
     // カメラの初期同期
     this.syncCamera();
@@ -146,7 +166,44 @@ export class Player {
     this.avatar.add(this.rightLeg);
   }
 
-  public update(input: InputHandler, deltaTime: number, voxelWorld: World): void {
+  private buildSword(): THREE.Group {
+    const sword = new THREE.Group();
+
+    // マテリアル定義
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.8 });
+    const guardMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5, metalness: 0.5 });
+    const gripMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+
+    // 刃
+    const bladeGeo = new THREE.BoxGeometry(0.06, 0.45, 0.02);
+    bladeGeo.translate(0, 0.225, 0);
+    const blade = new THREE.Mesh(bladeGeo, bladeMat);
+    blade.castShadow = true;
+    blade.receiveShadow = true;
+    blade.position.y = 0.02;
+    sword.add(blade);
+
+    // 鍔
+    const guardGeo = new THREE.BoxGeometry(0.16, 0.04, 0.04);
+    const guard = new THREE.Mesh(guardGeo, guardMat);
+    guard.castShadow = true;
+    guard.receiveShadow = true;
+    guard.position.y = 0;
+    sword.add(guard);
+
+    // 柄
+    const gripGeo = new THREE.BoxGeometry(0.04, 0.12, 0.04);
+    gripGeo.translate(0, -0.06, 0);
+    const grip = new THREE.Mesh(gripGeo, gripMat);
+    grip.castShadow = true;
+    grip.receiveShadow = true;
+    grip.position.y = -0.02;
+    sword.add(grip);
+
+    return sword;
+  }
+
+  public update(input: InputHandler, deltaTime: number, voxelWorld: World, activeBlockType: number): void {
     // 死亡時は更新処理を行わない
     if (this.isDead) return;
 
@@ -168,6 +225,16 @@ export class Player {
       this.body.velocity.x *= 0.8;
       this.body.velocity.z *= 0.8;
       return;
+    }
+
+    // 剣の可視化状態の同期 (BlockType.SWORD = 14)
+    const hasSword = (activeBlockType === 14);
+    if (this.cameraMode === '1PV') {
+      this.sword1PV.visible = hasSword;
+      this.sword3PV.visible = false;
+    } else {
+      this.sword1PV.visible = false;
+      this.sword3PV.visible = hasSword;
     }
 
     this.handleRotation(input);
@@ -320,16 +387,48 @@ export class Player {
       const angle = Math.sin(time) * 0.8; // スイング幅の最大値
 
       this.leftArm.rotation.x = angle;
-      this.rightArm.rotation.x = -angle;
+      if (this.swingTime <= 0) {
+        this.rightArm.rotation.x = -angle;
+      }
       this.leftLeg.rotation.x = -angle;
       this.rightLeg.rotation.x = angle;
     } else {
       // 立ち止まっている時は手足を滑らかに直立に戻す
       const lerpFactor = 10 * deltaTime;
       this.leftArm.rotation.x += (0 - this.leftArm.rotation.x) * lerpFactor;
-      this.rightArm.rotation.x += (0 - this.rightArm.rotation.x) * lerpFactor;
+      if (this.swingTime <= 0) {
+        this.rightArm.rotation.x += (0 - this.rightArm.rotation.x) * lerpFactor;
+      }
       this.leftLeg.rotation.x += (0 - this.leftLeg.rotation.x) * lerpFactor;
       this.rightLeg.rotation.x += (0 - this.rightLeg.rotation.x) * lerpFactor;
+    }
+
+    // スイングアニメーションの更新
+    if (this.swingTime > 0) {
+      this.swingTime -= deltaTime;
+      const progress = (0.15 - this.swingTime) / 0.15; // 0.0 -> 1.0
+      const swingAngle = Math.sin(progress * Math.PI) * 1.2; // スイング幅
+
+      if (this.cameraMode === '1PV') {
+        // 一人称：画面右下の剣を前に突き出すように振る
+        this.sword1PV.rotation.x = (-30 * Math.PI) / 180 + swingAngle;
+        this.sword1PV.rotation.y = (45 * Math.PI) / 180 - swingAngle * 0.5;
+        this.sword1PV.position.z = -0.38 + swingAngle * 0.15;
+      } else {
+        // 三人称：アバターの右腕を前方に大きくスイング
+        this.rightArm.rotation.x = -Math.PI / 3 - swingAngle * 1.5;
+        this.rightArm.rotation.y = -swingAngle * 0.5;
+      }
+    } else {
+      // 待機時の位置補正 (一人称用)
+      if (this.cameraMode === '1PV') {
+        this.sword1PV.rotation.set(
+          (-30 * Math.PI) / 180,
+          (45 * Math.PI) / 180,
+          (15 * Math.PI) / 180
+        );
+        this.sword1PV.position.set(0.24, -0.24, -0.38);
+      }
     }
   }
 
@@ -376,6 +475,12 @@ export class Player {
     const posDisplay = document.getElementById('pos-display');
     if (posDisplay) {
       posDisplay.textContent = `${this.position.x.toFixed(1)}, ${this.position.y.toFixed(1)}, ${this.position.z.toFixed(1)}`;
+    }
+  }
+
+  public swing(): void {
+    if (this.swingTime <= 0) {
+      this.swingTime = 0.15; // 0.15秒のタイマーを設定
     }
   }
 

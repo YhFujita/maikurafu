@@ -13,6 +13,7 @@ export enum BlockType {
   GLASS = 11,   // ガラスブロック
   DOOR_CLOSED = 12, // ドアブロック（閉）
   DOOR_OPEN = 13,   // ドアブロック（開）
+  SWORD = 14,       // 剣（武器）
 }
 
 export interface BlockProperties {
@@ -133,5 +134,12 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 13, back: 13, left: 13, right: 13, top: 13, bottom: 13 },
+  },
+  [BlockType.SWORD]: {
+    id: BlockType.SWORD,
+    name: 'いしのけん',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 14, back: 14, left: 14, right: 14, top: 14, bottom: 14 },
   },
 };
