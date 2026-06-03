@@ -47,8 +47,18 @@ export class TimeManager {
   }
 
   public update(deltaTime: number, playerPosition: THREE.Vector3): void {
+    // 太陽が地平線の上（昼）か下（夜）かによって時間の進む速度を変える
+    const currentAngle = this.time * Math.PI * 2;
+    const currentSin = Math.sin(currentAngle);
+    let speedFactor = 1.0;
+    if (currentSin > -0.1) {
+      speedFactor = 0.35; // 昼はゆっくり進める（昼が約3倍長くなる）
+    } else {
+      speedFactor = 2.5;  // 夜は早く進める（夜が早く明ける）
+    }
+
     // 時間を進める
-    this.time = (this.time + this.timeScale * deltaTime) % 1.0;
+    this.time = (this.time + this.timeScale * speedFactor * deltaTime) % 1.0;
 
     // 太陽の角度（角度 = time * 2 * PI）
     const angle = this.time * Math.PI * 2;

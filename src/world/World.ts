@@ -16,7 +16,7 @@ export class World {
     const texture = createProceduralTextureAtlas();
 
     // マテリアルにテクスチャアトラスと頂点カラーを結合
-    this.material = new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
       map: texture,
       vertexColors: true, // 面ごとの濃淡（影）を反映
       roughness: 0.85,
@@ -24,6 +24,21 @@ export class World {
       alphaTest: 0.5,     // 透過テクスチャ用（0.5以下のアルファ値を除外）
       side: THREE.DoubleSide, // 松明などの裏面も描画する
     });
+
+    // 松明が夜間でも明るく周囲を照らすように、頂点カラーベースの自己発光エフェクトをシェーダーに追加
+    mat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'vec3 totalEmissiveRadiance = emissive;',
+        `
+        // 頂点カラーから松明光成分（最低輝度0.52を超える部分）を抽出し、自己発光として加算する
+        vec3 torchLight = max(vec3(0.0), vColor - vec3(0.52));
+        // 温かみのあるオレンジ色の自己発光を1.5倍で加算（夜間でも綺麗に光る）
+        vec3 totalEmissiveRadiance = emissive + torchLight * 1.5;
+        `
+      );
+    };
+
+    this.material = mat;
 
   }
 
