@@ -166,7 +166,10 @@ export class Chunk {
 
             let shouldDrawFace = false;
 
-            if (this.isOutOfBounds(nx, ny, nz)) {
+            if (blockType === BlockType.TORCH) {
+              // 松明は中空・非固体ブロックなので、常に全方位の面を描画して透き通らせる
+              shouldDrawFace = true;
+            } else if (this.isOutOfBounds(nx, ny, nz)) {
               const neighborBlock = world.getBlock(globalX + face.dir[0], globalY + face.dir[1], globalZ + face.dir[2]);
               shouldDrawFace = !BLOCKS[neighborBlock].isSolid;
             } else {
@@ -175,14 +178,24 @@ export class Chunk {
             }
 
             if (shouldDrawFace) {
+              const isTorch = (blockType === BlockType.TORCH);
+
               // 頂点の追加
               for (const corner of face.corners) {
-                const vx = globalX + corner[0];
-                const vy = globalY + corner[1];
-                const vz = globalZ + corner[2];
+                let vx = globalX + corner[0];
+                let vy = globalY + corner[1];
+                let vz = globalZ + corner[2];
+
+                if (isTorch) {
+                  // 松明専用の細長い棒状アバターを生成 (幅14cm, 高さ65cm)
+                  vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
+                  vy = globalY + corner[1] * 0.65;
+                  vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                }
 
                 positions.push(vx, vy, vz);
                 normals.push(...face.dir);
+
 
                 // 頂点カラー：陰影（アンビエントオクルージョン風）と松明光源の頂点ライトを合成
                 const shadow = FACE_SHADING[face.uvName];

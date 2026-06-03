@@ -21,7 +21,10 @@ export class World {
       vertexColors: true, // 面ごとの濃淡（影）を反映
       roughness: 0.85,
       metalness: 0.05,
+      alphaTest: 0.5,     // 透過テクスチャ用（0.5以下のアルファ値を除外）
+      side: THREE.DoubleSide, // 松明などの裏面も描画する
     });
+
   }
 
   private getChunkKey(cx: number, cy: number, cz: number): string {

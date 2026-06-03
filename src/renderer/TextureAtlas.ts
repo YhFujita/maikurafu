@@ -150,9 +150,7 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const torchStartY = 2 * tileSize;
   ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // 透明でクリア
   ctx.clearRect(torchStartX, torchStartY, tileSize, tileSize);
-  // 周りを少し透過しない背景（マテリアルが透明度非対応の場合に備えて黒寄りに）
-  ctx.fillStyle = 'rgb(20, 20, 20)';
-  ctx.fillRect(torchStartX, torchStartY, tileSize, tileSize);
+
   
   // 棒の部分 (中央下部)
   ctx.fillStyle = 'rgb(120, 80, 40)'; // 茶色
