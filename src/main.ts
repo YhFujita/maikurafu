@@ -102,14 +102,13 @@ const hotbarPages = [
   [
     BlockType.GLASS,       // 1: ガラス
     BlockType.DOOR_CLOSED, // 2: ドア
-    BlockType.COAL_ORE,    // 3: 石炙
-    BlockType.SWORD,       // 4: 剣
-    BlockType.STAIRS,      // 5: 階段
-    BlockType.FENCE,       // 6: 柵
-    BlockType.BED_HEAD,    // 7: ベッド
-    BlockType.FURNACE,     // 8: かまど
-    BlockType.CHEST,       // 9: チェスト
-    BlockType.WATER,       // 10: 水
+    BlockType.COAL_ORE,    // 3: 石炭
+    BlockType.DIAMOND_SWORD, // 4: ダイヤの剣
+    BlockType.HAMMER,        // 5: ハンマー
+    BlockType.STAIRS,      // 6: 階段
+    BlockType.FENCE,       // 7: 柵
+    BlockType.BED_HEAD,    // 8: ベッド
+    BlockType.FURNACE,     // 9: かまど
   ]
 ];
 
@@ -139,6 +138,9 @@ function getSlotIconClass(type: BlockType): string {
     case BlockType.FURNACE:     return 'slot-furnace';
     case BlockType.CHEST:       return 'slot-chest';
     case BlockType.WATER:       return 'slot-water';
+    case BlockType.SWORD:       return 'slot-sword';
+    case BlockType.DIAMOND_SWORD: return 'slot-diamond-sword';
+    case BlockType.HAMMER:      return 'slot-hammer';
     default: return '';
   }
 }
@@ -162,6 +164,11 @@ function syncHotbarUI() {
       countEl.textContent = (inventory[type] || 0).toString();
     }
   });
+
+  const pageIndicator = document.getElementById('hotbar-page-indicator');
+  if (pageIndicator) {
+    pageIndicator.textContent = (activePage + 1).toString();
+  }
 
   selectSlot(activeSlotIndex);
 }
