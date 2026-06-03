@@ -241,6 +241,32 @@ if (hasAutosave) {
 const accountIdInput = document.getElementById('account-id-input') as HTMLInputElement;
 const worldIdInput = document.getElementById('world-id-input') as HTMLInputElement;
 
+// アカウントID履歴の管理
+function updateAccountIdList(newId?: string) {
+  const listEl = document.getElementById('account-id-list');
+  if (!listEl) return;
+  
+  let savedIds: string[] = [];
+  try {
+    const raw = localStorage.getItem('maikurafu_account_ids');
+    if (raw) savedIds = JSON.parse(raw);
+  } catch(e) {}
+  
+  if (newId && !savedIds.includes(newId)) {
+    savedIds.push(newId);
+    localStorage.setItem('maikurafu_account_ids', JSON.stringify(savedIds));
+  }
+  
+  listEl.innerHTML = '';
+  savedIds.forEach(id => {
+    const option = document.createElement('option');
+    option.value = id;
+    listEl.appendChild(option);
+  });
+}
+// 初期化時にリストを構築
+updateAccountIdList();
+
 // レイキャスターの設定（ブロックの設置・破壊用）
 const raycaster = new THREE.Raycaster();
 const maxInteractDistance = 6; // 操作可能距離 (m)
@@ -704,11 +730,14 @@ if (startBtn && menuOverlay) {
 
     // ログイン時にアカウントIDをセット
     if (accountIdInput && accountIdInput.value.trim() !== '') {
-      saveManager.setAccountId(accountIdInput.value.trim());
+      const id = accountIdInput.value.trim();
+      saveManager.setAccountId(id);
+      updateAccountIdList(id); // 履歴に追加
       
-      // スタート時に既存のワールド・プレイヤーデータを自動的にロードする
-      startBtn.textContent = 'ロード中...';
-      startBtn.setAttribute('disabled', 'true');
+      const prevText = startBtn.textContent;
+      startBtn.textContent = 'データをロード中...';
+      startBtn.disabled = true;
+      
       await saveManager.loadData();
       startBtn.textContent = 'ゲームスタート';
       startBtn.removeAttribute('disabled');
@@ -1015,7 +1044,9 @@ if (cloudSaveBtn) {
   cloudSaveBtn.addEventListener('click', async () => {
     // 押下時にアカウントIDとワールドIDをセット
     if (accountIdInput && accountIdInput.value.trim() !== '') {
-      saveManager.setAccountId(accountIdInput.value.trim());
+      const id = accountIdInput.value.trim();
+      saveManager.setAccountId(id);
+      updateAccountIdList(id);
       if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
       
       autoSaveGame(); // バックアップとしてローカルにも保存
@@ -1037,7 +1068,9 @@ if (cloudSaveBtn) {
 if (cloudLoadBtn) {
   cloudLoadBtn.addEventListener('click', async () => {
     if (accountIdInput && accountIdInput.value.trim() !== '') {
-      saveManager.setAccountId(accountIdInput.value.trim());
+      const id = accountIdInput.value.trim();
+      saveManager.setAccountId(id);
+      updateAccountIdList(id);
       if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
       
       const prevText = cloudLoadBtn.textContent;
