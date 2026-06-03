@@ -21,7 +21,7 @@ export const CONFIG = {
   PLAYER_MAX_HP: 10,
   FALL_DAMAGE_MIN_SPEED: -12.0, // ダメージが入り始める落下速度の閾値
   FALL_DAMAGE_FACTOR: 1.5,       // 速度超過分のダメージ倍率
-  
+
   // モンスター設定
   MAX_MOBS: 5,                  // 同時に存在できる敵Mobの最大数
   MOB_SPAWN_RADIUS: 25,         // スポーンさせるプレイヤーからの最大距離
@@ -31,4 +31,7 @@ export const CONFIG = {
   MAX_DROPPED_ITEMS: 30,        // 存在できるドロップアイテムの最大数
   ITEM_DESPAWN_TIME: 30,        // 秒単位の消滅時間
   ITEM_PICKUP_RADIUS: 3.5,      // アイテムを吸い込む半径（吸い寄せをより遠くから開始）
+
+  // クラウドセーブ機能設定
+  GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzKtNw2WKxcfTh8bIqK5-9NqxHXHR9SFn0SRsL366S97-JodCSj_-fCu3rqJzbF2x7Dcw/exec', // ここにデプロイしたGASのWebアプリURLを設定してください
 };

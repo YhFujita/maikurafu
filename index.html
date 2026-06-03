@@ -928,12 +928,16 @@
       <h1>MAIKURAFU 3D</h1>
       <p class="subtitle">TypeScript & Three.js Voxel Game</p>
       
+      <div style="margin-bottom: 20px; text-align: left;">
+        <label for="account-id-input" style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">アカウントID (空欄でオフラインプレイ):</label>
+        <input type="text" id="account-id-input" placeholder="例: user_A" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
+      </div>
       <button id="start-btn">ゲームスタート</button>
       <button id="config-btn">設定変更</button>
+      
       <div class="save-load-section">
-        <button id="save-json-btn" class="menu-action-btn">世界をセーブ (JSON)</button>
-        <button id="load-json-btn" class="menu-action-btn">世界をロード (JSON)</button>
-        <input type="file" id="load-file-input" accept=".json" style="display: none;">
+        <button id="cloud-save-btn" class="menu-action-btn">クラウド手動セーブ</button>
+        <button id="cloud-load-btn" class="menu-action-btn">クラウドからロード</button>
       </div>
       
       <div class="instructions">
@@ -985,6 +989,11 @@
       <div class="hud-row">アクティブチャンク数: <span id="chunks-display">0</span></div>
       <div class="hud-row">物理ボディ数: <span id="bodies-display">0</span></div>
     </div>
+  </div>
+
+  <!-- セーブトースト通知 -->
+  <div id="save-toast" style="position: absolute; top: 20px; right: 20px; background: rgba(40, 167, 69, 0.9); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 100; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    セーブしました
   </div>
 
   <!-- 設定モーダル -->

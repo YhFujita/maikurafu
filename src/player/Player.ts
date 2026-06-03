@@ -626,8 +626,9 @@ export class Player {
     let isSleeping = false;
     if (!isMoving && this.isGrounded && this.voxelWorld) {
       const bx = Math.floor(this.position.x);
-      // 足元のブロックを確認（少しめり込むことも考慮し、Y-0.2付近をチェック）
-      const by = Math.floor(this.position.y - 0.2);
+      // 足元のブロックを確認（少しめり込むことも考慮し、足元付近をチェック）
+      const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+      const by = Math.floor(this.position.y - halfHeight - 0.1);
       const bz = Math.floor(this.position.z);
       const belowBlock = this.voxelWorld.getBlock(bx, by, bz);
       if (belowBlock === BlockType.BED_HEAD || belowBlock === BlockType.BED_FOOT) {
@@ -696,7 +697,7 @@ export class Player {
     } else {
       // 三人称視点
       this.avatar.visible = true;
-      this.head.visible = (this.cameraMode === '3PV_FRONT'); // 前方から自分を見る時は頭が見えるように
+      this.head.visible = true; // 3人称視点では常に頭を表示する
 
       const maxDist = 4.0;
       const offset = Player.tempVec3.set(0, eyeHeight + 0.4, 0);
@@ -716,7 +717,8 @@ export class Player {
       if (this.cameraMode === '3PV_BACK') {
         cameraDir = lookDir.clone().negate(); // 後方
       } else {
-        cameraDir = lookDir.clone();           // 前方
+        // 前方 (Y軸を反転させることで、3PV_BACKと同じように上下アングルを保つ)
+        cameraDir = new THREE.Vector3(lookDir.x, -lookDir.y, lookDir.z).normalize();
       }
 
       // 壁抜け防止：目の位置 → カメラ理想位置の間でDDAレイキャスト

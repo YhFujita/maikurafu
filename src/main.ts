@@ -12,6 +12,7 @@ import { TimeManager } from './system/TimeManager.ts';
 import { DroppedItem } from './item/DroppedItem.ts';
 import { Mob } from './mob/Mob.ts';
 import { SoundManager } from './system/SoundManager.ts';
+import { SaveManager } from './system/SaveManager.ts';
 
 // レンダラーの初期化
 const renderer = new Renderer('canvas-container');
@@ -191,6 +192,41 @@ const world = new World(renderer.scene);
 // カメラの壁抜け防止のため、プレイヤーにワールド参照を設定
 player.setWorld(world);
 
+// クラウドセーブマネージャーの初期化
+const saveManager = new SaveManager(player, world);
+
+saveManager.onSaveCustomData = () => {
+  return {
+    inventory: {
+      blocks: inventory,
+      hotbarPages: hotbarPages,
+      activePage: activePage,
+      activeSlotIndex: activeSlotIndex
+    }
+  };
+};
+
+saveManager.onLoadCustomData = (data: any) => {
+  if (data && data.inventory) {
+    const inv = data.inventory;
+    if (inv.blocks) {
+      Object.assign(inventory, inv.blocks);
+    }
+    if (inv.hotbarPages) {
+      hotbarPages[0] = [...inv.hotbarPages[0]];
+      hotbarPages[1] = [...inv.hotbarPages[1]];
+    }
+    if (typeof inv.activePage === 'number') {
+      activePage = inv.activePage;
+      slotBlocks = hotbarPages[activePage];
+    }
+    if (typeof inv.activeSlotIndex === 'number') {
+      activeSlotIndex = inv.activeSlotIndex;
+    }
+    syncHotbarUI();
+  }
+};
+
 // オートセーブデータがあれば自動ロード
 const hasAutosave = loadAutoSave();
 if (hasAutosave) {
@@ -200,6 +236,9 @@ if (hasAutosave) {
   // 初回起動時はデフォルト位置で世界を初期構築
   world.generateWorldAround(player.position.x, player.position.z);
 }
+
+// アカウントID入力の管理
+const accountIdInput = document.getElementById('account-id-input') as HTMLInputElement;
 
 // レイキャスターの設定（ブロックの設置・破壊用）
 const raycaster = new THREE.Raycaster();
@@ -647,6 +686,15 @@ let loopStarted = false; // ループ開始フラグを外出し
 
 if (startBtn && menuOverlay) {
   startBtn.addEventListener('click', () => {
+    // ログイン時にアカウントIDをセット
+    if (accountIdInput && accountIdInput.value.trim() !== '') {
+      saveManager.setAccountId(accountIdInput.value.trim());
+      saveManager.startAutoSave(3); // 3分ごとのクラウドオートセーブを開始
+    } else {
+      saveManager.setAccountId('');
+      saveManager.stopAutoSave(); // オフラインプレイ時はオートセーブ停止
+    }
+
     input.requestLock();
     SoundManager.init();
     
@@ -859,7 +907,7 @@ function renderInventoryHotbarSlots() {
 }
 
 // ==========================================
-// セーブ＆ロードシステム (LocalStorage & JSON)
+// セーブ＆ロードシステム (LocalStorage & Cloud)
 // ==========================================
 
 // LocalStorage オートセーブデータのロード
@@ -889,6 +937,8 @@ function loadAutoSave(): boolean {
       }
       syncHotbarUI();
     }
+    // クラウドロード時はワールド差分をクラウドから読むため、
+    // ここではLocalのワールド復元は行わないか、補助的に行う
     if (data.world) {
       world.setModifiedBlocksData(data.world);
     }
@@ -900,7 +950,7 @@ function loadAutoSave(): boolean {
   }
 }
 
-// LocalStorage へのオートセーブ実行
+// LocalStorage へのオートセーブ実行 (ローカル用バックアップ)
 function autoSaveGame() {
   const saveData = {
     version: '1.0.0',
@@ -918,111 +968,49 @@ function autoSaveGame() {
   console.log('Game auto-saved to localStorage.');
 }
 
-// JSONファイルとしてのゲーム状態のダウンロード（セーブ）
-function saveGameToJSON() {
-  // セーブ実行前にオートセーブも実行しておく
-  autoSaveGame();
+// UIイベントの登録 (Cloud Save)
+const cloudSaveBtn = document.getElementById('cloud-save-btn');
+const cloudLoadBtn = document.getElementById('cloud-load-btn');
 
-  const saveData = {
-    version: '1.0.0',
-    timestamp: Date.now(),
-    player: player.getSaveData(),
-    inventory: {
-      blocks: inventory,
-      hotbarPages: hotbarPages,
-      activePage: activePage,
-      activeSlotIndex: activeSlotIndex
-    },
-    world: world.getModifiedBlocksData()
-  };
-
-  const jsonStr = JSON.stringify(saveData, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `maikurafu_save_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  
-  URL.revokeObjectURL(url);
-}
-
-// アップロードされたJSONテキストからのゲーム状態ロード
-function loadGameFromJSON(jsonText: string) {
-  try {
-    const data = JSON.parse(jsonText);
-    
-    // プレイヤーのロード
-    if (data.player) {
-      player.loadSaveData(data.player);
+if (cloudSaveBtn) {
+  cloudSaveBtn.addEventListener('click', async () => {
+    // 押下時にアカウントIDをセット
+    if (accountIdInput && accountIdInput.value.trim() !== '') {
+      saveManager.setAccountId(accountIdInput.value.trim());
+      autoSaveGame(); // バックアップとしてローカルにも保存
+      
+      const prevText = cloudSaveBtn.textContent;
+      cloudSaveBtn.textContent = 'セーブ中...';
+      cloudSaveBtn.setAttribute('disabled', 'true');
+      
+      await saveManager.saveData();
+      
+      cloudSaveBtn.textContent = prevText;
+      cloudSaveBtn.removeAttribute('disabled');
+    } else {
+      alert('アカウントIDを入力してください');
     }
-
-    // インベントリのロード
-    if (data.inventory) {
-      const inv = data.inventory;
-      if (inv.blocks) {
-        Object.assign(inventory, inv.blocks);
-      }
-      if (inv.hotbarPages) {
-        hotbarPages[0] = [...inv.hotbarPages[0]];
-        hotbarPages[1] = [...inv.hotbarPages[1]];
-      }
-      if (typeof inv.activePage === 'number') {
-        activePage = inv.activePage;
-        slotBlocks = hotbarPages[activePage];
-      }
-      if (typeof inv.activeSlotIndex === 'number') {
-        activeSlotIndex = inv.activeSlotIndex;
-      }
-      syncHotbarUI();
-    }
-
-    // ワールドブロック差分のロード
-    if (data.world) {
-      world.setModifiedBlocksData(data.world);
-      // 世界の再構築
-      world.clearAndRebuild(player.position.x, player.position.z);
-    }
-
-    // ロード成功時にオートセーブデータも上書き更新しておく
-    autoSaveGame();
-    alert('セーブデータを正常にロードしました！');
-  } catch (err) {
-    console.error('Failed to load save data:', err);
-    alert('セーブデータのロードに失敗しました。正しいJSONファイルか確認してください。');
-  }
-}
-
-// UIイベントの登録
-const saveBtn = document.getElementById('save-json-btn');
-const loadBtn = document.getElementById('load-json-btn');
-const fileInput = document.getElementById('load-file-input') as HTMLInputElement;
-
-if (saveBtn) {
-  saveBtn.addEventListener('click', () => {
-    saveGameToJSON();
   });
 }
 
-if (loadBtn && fileInput) {
-  loadBtn.addEventListener('click', () => {
-    fileInput.click();
-  });
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        loadGameFromJSON(text);
-      }
-      fileInput.value = ''; // 連続選択を可能にするためクリア
-    };
-    reader.readAsText(file);
+if (cloudLoadBtn) {
+  cloudLoadBtn.addEventListener('click', async () => {
+    if (accountIdInput && accountIdInput.value.trim() !== '') {
+      saveManager.setAccountId(accountIdInput.value.trim());
+      
+      const prevText = cloudLoadBtn.textContent;
+      cloudLoadBtn.textContent = 'ロード中...';
+      cloudLoadBtn.setAttribute('disabled', 'true');
+      
+      await saveManager.loadData();
+      
+      cloudLoadBtn.textContent = prevText;
+      cloudLoadBtn.removeAttribute('disabled');
+    } else {
+      alert('アカウントIDを入力してください');
+    }
   });
 }
+
 
 
