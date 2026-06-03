@@ -60,6 +60,8 @@ const inventory: Record<BlockType, number> = {
   [BlockType.FURNACE]: 64, // かまど
   [BlockType.CHEST]: 64,   // チェスト
   [BlockType.WATER]: 64,   // 水
+  [BlockType.DIAMOND_SWORD]: 1, // ダイヤの剣
+  [BlockType.HAMMER]: 1,        // ハンマー
 };
 
 // 設定UIの初期化
