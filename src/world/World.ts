@@ -203,6 +203,14 @@ export class World {
     
     // バージョンの決定
     let version = this.chunkVersions.get(chunkKey);
+    
+    // 初期スポーン地点周辺（半径約100ブロック）は、過去の建物が埋もれないよう強制的にV1（平地）とする
+    const spawnRadius = 6;
+    if (Math.abs(chunk.x) <= spawnRadius && Math.abs(chunk.z) <= spawnRadius) {
+      version = 1;
+      this.chunkVersions.set(chunkKey, 1);
+    }
+    
     if (version === undefined) {
       if (this.modifiedBlocks.has(chunkKey)) {
         // セーブデータに変更があるがバージョン指定がない場合、古いワールドなのでV1（平地）とする
