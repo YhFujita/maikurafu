@@ -55,6 +55,20 @@ export class SaveManager {
         if (this.onLoadCustomData && data.playerData.customData) {
           this.onLoadCustomData(data.playerData.customData);
         }
+      } else {
+        // 新規プレイヤーの場合、既存の建物（初期位置）を避けるためにランダムな遠方へスポーンさせる
+        const spawnRange = 300; // ±300ブロックの範囲
+        // 初期リスポーン位置は(8,8)なので、そこから大きく離す
+        const randX = Math.floor(Math.random() * spawnRange * 2) - spawnRange + 100;
+        const randZ = Math.floor(Math.random() * spawnRange * 2) - spawnRange + 100;
+        
+        // 少し高めの位置から落下させる
+        this.player.position.set(randX, 30, randZ);
+        this.player.body.position.set(randX, 30, randZ);
+        this.player.body.velocity.set(0, 0, 0);
+        
+        // リスポーン地点も更新しておく
+        (this.player as any).spawnPosition.set(randX, 30, randZ);
       }
       
       // ワールド再描画
