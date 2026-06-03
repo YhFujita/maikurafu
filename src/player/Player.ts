@@ -492,5 +492,60 @@ export class Player {
   public getYaw(): number {
     return this.yaw;
   }
+
+  // セーブデータ用：プレイヤーの位置、HP、向きを取得
+  public getSaveData(): {
+    x: number;
+    y: number;
+    z: number;
+    hp: number;
+    yaw: number;
+    pitch: number;
+  } {
+    return {
+      x: this.body.position.x,
+      y: this.body.position.y,
+      z: this.body.position.z,
+      hp: this.hp,
+      yaw: this.yaw,
+      pitch: this.pitch,
+    };
+  }
+
+  // ロードデータ用：プレイヤーの位置、HP、向きを復元・同期
+  public loadSaveData(data: {
+    x: number;
+    y: number;
+    z: number;
+    hp: number;
+    yaw: number;
+    pitch: number;
+  }): void {
+    if (!data) return;
+
+    this.hp = typeof data.hp === 'number' ? data.hp : CONFIG.PLAYER_MAX_HP;
+    this.isDead = this.hp <= 0;
+
+    // 死亡画面の表示状態を更新
+    const deathScreen = document.getElementById('death-screen');
+    if (deathScreen) {
+      deathScreen.style.display = this.isDead ? 'flex' : 'none';
+    }
+
+    this.yaw = typeof data.yaw === 'number' ? data.yaw : 0;
+    this.pitch = typeof data.pitch === 'number' ? data.pitch : 0;
+
+    // 物理剛体の位置と速度を同期
+    this.body.position.set(data.x, data.y, data.z);
+    this.body.velocity.set(0, 0, 0);
+    this.lastVelocityY = 0;
+
+    // プレイヤーのグラフィック表現位置の同期
+    this.position.set(data.x, data.y, data.z);
+
+    // カメラとアバター描画の即時更新
+    this.syncCamera();
+    this.updateHUD();
+  }
 }
 

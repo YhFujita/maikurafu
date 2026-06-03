@@ -65,6 +65,10 @@ if (respawnBtn) {
     player.respawn();
     input.requestLock();
     SoundManager.init();
+    if (!loopStarted) {
+      loopStarted = true;
+      requestAnimationFrame(animate);
+    }
   });
 }
 
@@ -169,7 +173,16 @@ function selectSlot(index: number) {
 
 // ワールドの初期化
 const world = new World(renderer.scene);
-world.generateWorldAround(player.position.x, player.position.z);
+
+// オートセーブデータがあれば自動ロード
+const hasAutosave = loadAutoSave();
+if (hasAutosave) {
+  // 自動ロードした座標を中心に世界を初期構築
+  world.clearAndRebuild(player.position.x, player.position.z);
+} else {
+  // 初回起動時はデフォルト位置で世界を初期構築
+  world.generateWorldAround(player.position.x, player.position.z);
+}
 
 // レイキャスターの設定（ブロックの設置・破壊用）
 const raycaster = new THREE.Raycaster();
@@ -203,6 +216,7 @@ function spawnDroppedItem(type: BlockType, pos: THREE.Vector3) {
 const tempThrowDir = new THREE.Vector3();
 const tempThrowPos = new THREE.Vector3();
 let mobSpawnTimer = 0;
+let autoSaveTimer = 0; // 自動セーブ用タイマー
 
 // アニメーションループ
 let lastTime = 0;
@@ -341,6 +355,13 @@ function animate(time: number) {
   // 必要に応じて周辺ワールド生成
   if (input.isLocked) {
     world.generateWorldAround(player.position.x, player.position.z);
+  }
+
+  // 5秒に1回自動セーブを実行（GC負荷を抑えるため時間経過で行う）
+  autoSaveTimer += deltaTime;
+  if (autoSaveTimer > 5.0) {
+    autoSaveTimer = 0;
+    autoSaveGame();
   }
 
   // レンダリング実行
@@ -516,22 +537,25 @@ window.addEventListener('contextmenu', (e) => {
 const startBtn = document.getElementById('start-btn');
 const menuOverlay = document.getElementById('menu-overlay');
 
+let loopStarted = false; // ループ開始フラグを外出し
+
 if (startBtn && menuOverlay) {
   startBtn.addEventListener('click', () => {
     input.requestLock();
     SoundManager.init();
+    
+    // ループが開始していなければ、ポインターロックの成否に関わらずゲームループを開始する
+    if (!loopStarted) {
+      loopStarted = true;
+      requestAnimationFrame(animate);
+    }
   });
 
   const hotbar = document.getElementById('hotbar');
   const hud = document.getElementById('hud');
 
-  let loopStarted = false;
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement === document.body) {
-      if (!loopStarted) {
-        loopStarted = true;
-        requestAnimationFrame(animate);
-      }
       if (hotbar) hotbar.style.display = 'flex';
       if (hud) hud.style.display = 'block';
       if (inventoryModal) inventoryModal.style.display = 'none';
@@ -694,6 +718,173 @@ function renderInventoryHotbarSlots() {
     });
 
     inventoryHotbarSlots.appendChild(slotEl);
+  });
+}
+
+// ==========================================
+// セーブ＆ロードシステム (LocalStorage & JSON)
+// ==========================================
+
+// LocalStorage オートセーブデータのロード
+function loadAutoSave(): boolean {
+  const jsonText = localStorage.getItem('maikurafu_autosave');
+  if (!jsonText) return false;
+  try {
+    const data = JSON.parse(jsonText);
+    if (data.player) {
+      player.loadSaveData(data.player);
+    }
+    if (data.inventory) {
+      const inv = data.inventory;
+      if (inv.blocks) {
+        Object.assign(inventory, inv.blocks);
+      }
+      if (inv.hotbarPages) {
+        hotbarPages[0] = [...inv.hotbarPages[0]];
+        hotbarPages[1] = [...inv.hotbarPages[1]];
+      }
+      if (typeof inv.activePage === 'number') {
+        activePage = inv.activePage;
+        slotBlocks = hotbarPages[activePage];
+      }
+      if (typeof inv.activeSlotIndex === 'number') {
+        activeSlotIndex = inv.activeSlotIndex;
+      }
+      syncHotbarUI();
+    }
+    if (data.world) {
+      world.setModifiedBlocksData(data.world);
+    }
+    console.log('Game auto-saved state successfully loaded from localStorage.');
+    return true;
+  } catch (e) {
+    console.warn('Failed to parse autosave data:', e);
+    return false;
+  }
+}
+
+// LocalStorage へのオートセーブ実行
+function autoSaveGame() {
+  const saveData = {
+    version: '1.0.0',
+    timestamp: Date.now(),
+    player: player.getSaveData(),
+    inventory: {
+      blocks: inventory,
+      hotbarPages: hotbarPages,
+      activePage: activePage,
+      activeSlotIndex: activeSlotIndex
+    },
+    world: world.getModifiedBlocksData()
+  };
+  localStorage.setItem('maikurafu_autosave', JSON.stringify(saveData));
+  console.log('Game auto-saved to localStorage.');
+}
+
+// JSONファイルとしてのゲーム状態のダウンロード（セーブ）
+function saveGameToJSON() {
+  // セーブ実行前にオートセーブも実行しておく
+  autoSaveGame();
+
+  const saveData = {
+    version: '1.0.0',
+    timestamp: Date.now(),
+    player: player.getSaveData(),
+    inventory: {
+      blocks: inventory,
+      hotbarPages: hotbarPages,
+      activePage: activePage,
+      activeSlotIndex: activeSlotIndex
+    },
+    world: world.getModifiedBlocksData()
+  };
+
+  const jsonStr = JSON.stringify(saveData, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `maikurafu_save_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  
+  URL.revokeObjectURL(url);
+}
+
+// アップロードされたJSONテキストからのゲーム状態ロード
+function loadGameFromJSON(jsonText: string) {
+  try {
+    const data = JSON.parse(jsonText);
+    
+    // プレイヤーのロード
+    if (data.player) {
+      player.loadSaveData(data.player);
+    }
+
+    // インベントリのロード
+    if (data.inventory) {
+      const inv = data.inventory;
+      if (inv.blocks) {
+        Object.assign(inventory, inv.blocks);
+      }
+      if (inv.hotbarPages) {
+        hotbarPages[0] = [...inv.hotbarPages[0]];
+        hotbarPages[1] = [...inv.hotbarPages[1]];
+      }
+      if (typeof inv.activePage === 'number') {
+        activePage = inv.activePage;
+        slotBlocks = hotbarPages[activePage];
+      }
+      if (typeof inv.activeSlotIndex === 'number') {
+        activeSlotIndex = inv.activeSlotIndex;
+      }
+      syncHotbarUI();
+    }
+
+    // ワールドブロック差分のロード
+    if (data.world) {
+      world.setModifiedBlocksData(data.world);
+      // 世界の再構築
+      world.clearAndRebuild(player.position.x, player.position.z);
+    }
+
+    // ロード成功時にオートセーブデータも上書き更新しておく
+    autoSaveGame();
+    alert('セーブデータを正常にロードしました！');
+  } catch (err) {
+    console.error('Failed to load save data:', err);
+    alert('セーブデータのロードに失敗しました。正しいJSONファイルか確認してください。');
+  }
+}
+
+// UIイベントの登録
+const saveBtn = document.getElementById('save-json-btn');
+const loadBtn = document.getElementById('load-json-btn');
+const fileInput = document.getElementById('load-file-input') as HTMLInputElement;
+
+if (saveBtn) {
+  saveBtn.addEventListener('click', () => {
+    saveGameToJSON();
+  });
+}
+
+if (loadBtn && fileInput) {
+  loadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        loadGameFromJSON(text);
+      }
+      fileInput.value = ''; // 連続選択を可能にするためクリア
+    };
+    reader.readAsText(file);
   });
 }
 

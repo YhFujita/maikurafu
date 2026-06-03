@@ -8,6 +8,8 @@ export class World {
   private chunks: Map<string, Chunk> = new Map();
   private scene: THREE.Scene;
   private material: THREE.Material;
+  // プレイヤーが明示的に変更したブロック差分データ (GC低減のためチャンクごとに Map<localIndex, BlockType> で管理)
+  private modifiedBlocks: Map<string, Map<number, BlockType>> = new Map();
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -69,16 +71,27 @@ export class World {
     const cx = Math.floor(x / CONFIG.CHUNK_SIZE);
     const cy = Math.floor(y / CONFIG.CHUNK_SIZE);
     const cz = Math.floor(z / CONFIG.CHUNK_SIZE);
+    const chunkKey = this.getChunkKey(cx, cy, cz);
+
+    const size = CONFIG.CHUNK_SIZE;
+    const lx = ((x % size) + size) % size;
+    const ly = ((y % size) + size) % size;
+    const lz = ((z % size) + size) % size;
+    const localIndex = lx + ly * size + lz * size * size;
+
+    // 変更差分を永続用マップに記録する
+    let chunkMods = this.modifiedBlocks.get(chunkKey);
+    if (!chunkMods) {
+      chunkMods = new Map();
+      this.modifiedBlocks.set(chunkKey, chunkMods);
+    }
+    chunkMods.set(localIndex, type);
 
     let chunk = this.getChunk(cx, cy, cz);
     if (!chunk) {
       chunk = new Chunk(cx, cy, cz);
-      this.chunks.set(this.getChunkKey(cx, cy, cz), chunk);
+      this.chunks.set(chunkKey, chunk);
     }
-
-    const lx = ((x % CONFIG.CHUNK_SIZE) + CONFIG.CHUNK_SIZE) % CONFIG.CHUNK_SIZE;
-    const ly = ((y % CONFIG.CHUNK_SIZE) + CONFIG.CHUNK_SIZE) % CONFIG.CHUNK_SIZE;
-    const lz = ((z % CONFIG.CHUNK_SIZE) + CONFIG.CHUNK_SIZE) % CONFIG.CHUNK_SIZE;
 
     chunk.setBlock(lx, ly, lz, type);
 
@@ -223,6 +236,19 @@ export class World {
         }
       }
     }
+
+    // 3. プレイヤーによる変更差分を適用する
+    const chunkKey = this.getChunkKey(chunk.x, chunk.y, chunk.z);
+    const chunkMods = this.modifiedBlocks.get(chunkKey);
+    if (chunkMods) {
+      const size = CONFIG.CHUNK_SIZE;
+      for (const [localIndex, type] of chunkMods.entries()) {
+        const lx = localIndex % size;
+        const ly = Math.floor((localIndex % (size * size)) / size);
+        const lz = Math.floor(localIndex / (size * size));
+        chunk.setBlock(lx, ly, lz, type);
+      }
+    }
   }
 
   public getChunkMeshes(): THREE.Mesh[] {
@@ -237,5 +263,51 @@ export class World {
 
   public getChunksCount(): number {
     return this.chunks.size;
+  }
+
+  // セーブデータ用：ブロック変更差分を Record 形式でシリアライズして取得
+  public getModifiedBlocksData(): Record<string, Record<string, number>> {
+    const data: Record<string, Record<string, number>> = {};
+    for (const [chunkKey, chunkMods] of this.modifiedBlocks.entries()) {
+      if (chunkMods.size === 0) continue;
+      const mods: Record<string, number> = {};
+      for (const [localIndex, type] of chunkMods.entries()) {
+        mods[localIndex.toString()] = type;
+      }
+      data[chunkKey] = mods;
+    }
+    return data;
+  }
+
+  // ロードデータ用：Record 形式のデータからブロック変更差分を復元
+  public setModifiedBlocksData(data: Record<string, Record<string, number>>): void {
+    this.modifiedBlocks.clear();
+    if (!data) return;
+    for (const chunkKey of Object.keys(data)) {
+      const chunkMods = new Map<number, BlockType>();
+      const mods = data[chunkKey];
+      for (const localIndexStr of Object.keys(mods)) {
+        const localIndex = parseInt(localIndexStr, 10);
+        const type = mods[localIndexStr] as BlockType;
+        chunkMods.set(localIndex, type);
+      }
+      this.modifiedBlocks.set(chunkKey, chunkMods);
+    }
+  }
+
+  // すべてのチャンクメッシュをクリアし、指定位置の周囲に世界を再生成・描画する
+  public clearAndRebuild(playerX: number, playerZ: number): void {
+    // 既存の全メッシュをシーンから削除し破棄
+    for (const chunk of this.chunks.values()) {
+      if (chunk.mesh) {
+        this.scene.remove(chunk.mesh);
+        chunk.mesh.geometry.dispose();
+        chunk.mesh = null;
+      }
+    }
+    this.chunks.clear();
+
+    // プレイヤー位置を中心にチャンクを生成
+    this.generateWorldAround(playerX, playerZ);
   }
 }
