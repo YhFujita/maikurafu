@@ -176,6 +176,9 @@ function selectSlot(index: number) {
 // ワールドの初期化
 const world = new World(renderer.scene);
 
+// カメラの壁抜け防止のため、プレイヤーにワールド参照を設定
+player.setWorld(world);
+
 // オートセーブデータがあれば自動ロード
 const hasAutosave = loadAutoSave();
 if (hasAutosave) {

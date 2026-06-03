@@ -50,6 +50,9 @@ export class Player {
   private isGrounded: boolean = false;
   private lastVelocityY: number = 0; // 落下ダメージ計算用
 
+  // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
+  private voxelWorld!: World;
+
   // メモリ4GB最適化のための使い回し用オブジェクト（GC削減）
   private static tempVec3 = new THREE.Vector3();
   private static tempVec3_2 = new THREE.Vector3();
@@ -83,6 +86,7 @@ export class Player {
     this.buildAvatar();
     scene.add(this.avatar);
 
+    // ボクセルワールド参照は後からsetWorldで設定
     // 剣モデルの構築とアタッチ
     this.sword1PV = this.buildSword();
     this.sword1PV.position.set(0.24, -0.24, -0.38);
@@ -628,21 +632,75 @@ export class Player {
       this.avatar.visible = true;
       this.head.visible = (this.cameraMode === '3PV_FRONT'); // 前方から自分を見る時は頭が見えるように
 
-      const dist = 4.0;
+      const maxDist = 4.0;
       const offset = Player.tempVec3.set(0, eyeHeight + 0.4, 0);
-      
+
       // カメラ方向ベクトル
       const lookDir = Player.tempVec3_2.set(0, 0, -1).applyQuaternion(cameraRotation);
-      
+
+      // プレイヤーの目の位置（レイキャスト起点）
+      const eyePos = new THREE.Vector3(
+        this.position.x + offset.x,
+        this.position.y + offset.y,
+        this.position.z + offset.z
+      );
+
+      // カメラの理想位置を計算
+      let cameraDir: THREE.Vector3;
+      if (this.cameraMode === '3PV_BACK') {
+        cameraDir = lookDir.clone().negate(); // 後方
+      } else {
+        cameraDir = lookDir.clone();           // 前方
+      }
+
+      // 壁抜け防止：目の位置 → カメラ理想位置の間でDDAレイキャスト
+      const safeDist = this.calcSafeCameraDist(eyePos, cameraDir, maxDist);
+
       if (this.cameraMode === '3PV_BACK') {
         // 後方から追従
-        this.camera.position.copy(this.position).add(offset).sub(lookDir.multiplyScalar(dist));
+        this.camera.position.copy(eyePos).addScaledVector(cameraDir, safeDist);
       } else {
         // 前方から対面
-        this.camera.position.copy(this.position).add(offset).add(lookDir.multiplyScalar(dist));
+        this.camera.position.copy(eyePos).addScaledVector(cameraDir, safeDist);
         this.camera.lookAt(this.position.x, this.position.y + eyeHeight, this.position.z);
       }
     }
+  }
+
+  /**
+   * 視点位置からカメラ方向にレイキャストし、
+   * 壁・屋根ブロックに遮られない安全な距離を返す。
+   * @param origin - レイの起点（プレイヤーの目の高さ）
+   * @param dir    - レイの方向（正規化済み）
+   * @param maxDist - カメラの最大距離
+   * @returns 壁に当たる前の安全な距離
+   */
+  private calcSafeCameraDist(origin: THREE.Vector3, dir: THREE.Vector3, maxDist: number): number {
+    // WorldがまだセットされていなければmaxDistをそのまま返す（フォールバック）
+    if (!this.voxelWorld) return maxDist;
+
+    // DDA（デジタル差分解析）でボクセルグリッドをトレース
+    const MARGIN = 0.2; // ブロック手前のマージン
+    const STEP_SIZE = 0.1; // 1ステップの距離
+    const steps = Math.ceil(maxDist / STEP_SIZE);
+
+    for (let i = 1; i <= steps; i++) {
+      const t = Math.min(i * STEP_SIZE, maxDist);
+      const x = origin.x + dir.x * t;
+      const y = origin.y + dir.y * t;
+      const z = origin.z + dir.z * t;
+
+      const bx = Math.floor(x);
+      const by = Math.floor(y);
+      const bz = Math.floor(z);
+
+      if (this.voxelWorld.getBlock(bx, by, bz) !== 0) {
+        // ブロックに当たった → マージン分手前の距離を返す
+        return Math.max(0, t - MARGIN);
+      }
+    }
+
+    return maxDist;
   }
 
   private updateHUD(): void {
@@ -660,6 +718,14 @@ export class Player {
 
   public getYaw(): number {
     return this.yaw;
+  }
+
+  /**
+   * ボクセルワールドの参照を設定する。
+   * カメラの壁抜け防止に使用するため、Worldの初期化後に呼び出すこと。
+   */
+  public setWorld(world: World): void {
+    this.voxelWorld = world;
   }
 
   // セーブデータ用：プレイヤーの位置、HP、向き、装備状態を取得
