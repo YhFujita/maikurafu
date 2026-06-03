@@ -239,6 +239,7 @@ if (hasAutosave) {
 
 // アカウントID入力の管理
 const accountIdInput = document.getElementById('account-id-input') as HTMLInputElement;
+const worldIdInput = document.getElementById('world-id-input') as HTMLInputElement;
 
 // レイキャスターの設定（ブロックの設置・破壊用）
 const raycaster = new THREE.Raycaster();
@@ -685,10 +686,23 @@ const menuOverlay = document.getElementById('menu-overlay');
 let loopStarted = false; // ループ開始フラグを外出し
 
 if (startBtn && menuOverlay) {
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
+    // ワールドIDのセット（将来用）
+    if (worldIdInput && worldIdInput.value.trim() !== '') {
+      saveManager.setWorldId(worldIdInput.value.trim());
+    }
+
     // ログイン時にアカウントIDをセット
     if (accountIdInput && accountIdInput.value.trim() !== '') {
       saveManager.setAccountId(accountIdInput.value.trim());
+      
+      // スタート時に既存のワールド・プレイヤーデータを自動的にロードする
+      startBtn.textContent = 'ロード中...';
+      startBtn.setAttribute('disabled', 'true');
+      await saveManager.loadData();
+      startBtn.textContent = 'ゲームスタート';
+      startBtn.removeAttribute('disabled');
+      
       saveManager.startAutoSave(3); // 3分ごとのクラウドオートセーブを開始
     } else {
       saveManager.setAccountId('');
@@ -974,9 +988,11 @@ const cloudLoadBtn = document.getElementById('cloud-load-btn');
 
 if (cloudSaveBtn) {
   cloudSaveBtn.addEventListener('click', async () => {
-    // 押下時にアカウントIDをセット
+    // 押下時にアカウントIDとワールドIDをセット
     if (accountIdInput && accountIdInput.value.trim() !== '') {
       saveManager.setAccountId(accountIdInput.value.trim());
+      if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
+      
       autoSaveGame(); // バックアップとしてローカルにも保存
       
       const prevText = cloudSaveBtn.textContent;
@@ -997,6 +1013,7 @@ if (cloudLoadBtn) {
   cloudLoadBtn.addEventListener('click', async () => {
     if (accountIdInput && accountIdInput.value.trim() !== '') {
       saveManager.setAccountId(accountIdInput.value.trim());
+      if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
       
       const prevText = cloudLoadBtn.textContent;
       cloudLoadBtn.textContent = 'ロード中...';

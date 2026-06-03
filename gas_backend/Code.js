@@ -41,6 +41,8 @@ function saveChunkedData(sheet, rowIndex, data) {
 
 function doGet(e) {
   const accountId = e.parameter.accountId;
+  const worldId = e.parameter.worldId || 'shared_world_1'; // 将来の拡張用：デフォルトワールドID
+
   if (!accountId) {
     return ContentService.createTextOutput(JSON.stringify({ error: 'accountId is required' })).setMimeType(ContentService.MimeType.JSON);
   }
@@ -51,16 +53,24 @@ function doGet(e) {
   const worldSheet = ss.getSheetByName('WorldData');
   let worldData = null;
   if (worldSheet && worldSheet.getLastRow() >= 2) {
-    worldData = reconstructData(worldSheet, 2); // 2行目が shared_world_1
+    const ids = worldSheet.getRange(2, 1, worldSheet.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (ids[i][0] === worldId) {
+        worldData = reconstructData(worldSheet, i + 2);
+        break;
+      }
+    }
   }
 
-  // 2. PlayerDataの取得
+  // 2. PlayerDataの取得 (accountId + worldId で一意にする)
+  // ワールドごとにプレイヤーの座標や持ち物が変わるため、複合キーを使用
+  const playerKey = accountId + '_' + worldId;
   const playerSheet = ss.getSheetByName('PlayerData');
   let playerData = null;
   if (playerSheet && playerSheet.getLastRow() >= 2) {
     const ids = playerSheet.getRange(2, 1, playerSheet.getLastRow() - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
-      if (ids[i][0] === accountId) {
+      if (ids[i][0] === playerKey) {
         playerData = reconstructData(playerSheet, i + 2);
         break;
       }
@@ -69,7 +79,9 @@ function doGet(e) {
 
   return ContentService.createTextOutput(JSON.stringify({
     worldData: worldData,
-    playerData: playerData
+    playerData: playerData,
+    worldId: worldId,
+    accountId: accountId
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -77,6 +89,7 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     const accountId = payload.accountId;
+    const worldId = payload.worldId || 'shared_world_1';
     const worldData = payload.worldData;
     const playerData = payload.playerData;
 
@@ -93,29 +106,12 @@ function doPost(e) {
       }
 
       const lastRow = worldSheet.getLastRow();
-      let rowIndex = 2; // shared_world_1 は 2行目固定とする
-      if (lastRow < 2) {
-        worldSheet.getRange(2, 1).setValue('shared_world_1');
-      }
-      worldSheet.getRange(rowIndex, 2).setValue(new Date());
-      saveChunkedData(worldSheet, rowIndex, worldData);
-    }
-
-    // 2. PlayerDataの保存
-    if (playerData) {
-      let playerSheet = ss.getSheetByName('PlayerData');
-      if (!playerSheet) {
-        playerSheet = ss.insertSheet('PlayerData');
-        playerSheet.appendRow(['accountId', 'lastUpdated', 'data_chunk_1', 'data_chunk_2...']);
-      }
-
-      const lastRow = playerSheet.getLastRow();
       let rowIndex = -1;
 
       if (lastRow >= 2) {
-        const ids = playerSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        const ids = worldSheet.getRange(2, 1, lastRow - 1, 1).getValues();
         for (let i = 0; i < ids.length; i++) {
-          if (ids[i][0] === accountId) {
+          if (ids[i][0] === worldId) {
             rowIndex = i + 2;
             break;
           }
@@ -124,7 +120,38 @@ function doPost(e) {
 
       if (rowIndex === -1) {
         rowIndex = lastRow + 1; // 新規追加
-        playerSheet.getRange(rowIndex, 1).setValue(accountId);
+        worldSheet.getRange(rowIndex, 1).setValue(worldId);
+      }
+
+      worldSheet.getRange(rowIndex, 2).setValue(new Date());
+      saveChunkedData(worldSheet, rowIndex, worldData);
+    }
+
+    // 2. PlayerDataの保存 (accountId + worldId で一意にする)
+    if (playerData) {
+      let playerSheet = ss.getSheetByName('PlayerData');
+      if (!playerSheet) {
+        playerSheet = ss.insertSheet('PlayerData');
+        playerSheet.appendRow(['account_world_id', 'lastUpdated', 'data_chunk_1', 'data_chunk_2...']);
+      }
+
+      const playerKey = accountId + '_' + worldId;
+      const lastRow = playerSheet.getLastRow();
+      let rowIndex = -1;
+
+      if (lastRow >= 2) {
+        const ids = playerSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < ids.length; i++) {
+          if (ids[i][0] === playerKey) {
+            rowIndex = i + 2;
+            break;
+          }
+        }
+      }
+
+      if (rowIndex === -1) {
+        rowIndex = lastRow + 1; // 新規追加
+        playerSheet.getRange(rowIndex, 1).setValue(playerKey);
       }
 
       playerSheet.getRange(rowIndex, 2).setValue(new Date());
@@ -140,8 +167,6 @@ function doPost(e) {
 // ==========================================
 // スプレッドシートUIからのJSONインポート機能
 // ==========================================
-
-// --- スプレッドシート起動時のメニュー追加 ---
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('🛠️ Maikurafu 管理')
@@ -149,7 +174,6 @@ function onOpen() {
     .addToUi();
 }
 
-// --- インポートダイアログの表示 ---
 function showImportDialog() {
   const html = HtmlService.createHtmlOutput(`
     <!DOCTYPE html>
@@ -160,7 +184,7 @@ function showImportDialog() {
         body { font-family: sans-serif; padding: 10px; color: #333; }
         label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.9em; }
         input[type="text"] { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        textarea { width: 100%; height: 220px; margin-top: 5px; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
+        textarea { width: 100%; height: 180px; margin-top: 5px; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
         button { margin-top: 20px; padding: 12px 15px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1em; }
         button:hover { background: #2563eb; }
         #status { margin-top: 15px; color: #d97706; font-size: 0.95em; font-weight: bold; text-align: center; }
@@ -170,8 +194,11 @@ function showImportDialog() {
       <h3 style="margin-top:0;">ローカルセーブ移行ツール</h3>
       <p style="font-size: 0.85em; color: #555;">以前ダウンロードした <code>maikurafu_save_xxxx.json</code> をメモ帳等で開き、中身のテキストを下の枠にすべて貼り付けてください。</p>
       
-      <label>どのアカウントのデータとして保存しますか？</label>
+      <label>アカウントID:</label>
       <input type="text" id="accountId" placeholder="例: user_A" value="user_A">
+
+      <label>ワールドID (将来用・通常はそのまま):</label>
+      <input type="text" id="worldId" placeholder="例: shared_world_1" value="shared_world_1">
       
       <label>JSONデータ貼り付け欄:</label>
       <textarea id="jsonText" placeholder='{"version": "1.0.0", ...}'></textarea>
@@ -182,6 +209,7 @@ function showImportDialog() {
       <script>
         function submitData() {
           const accountId = document.getElementById('accountId').value.trim();
+          const worldId = document.getElementById('worldId').value.trim() || 'shared_world_1';
           const jsonText = document.getElementById('jsonText').value.trim();
           
           if(!accountId || !jsonText) {
@@ -203,46 +231,42 @@ function showImportDialog() {
               document.getElementById('status').style.color = '#dc2626';
               document.getElementById('status').innerText = '❌ エラー: ' + err.message;
             })
-            .processImportedJson(accountId, jsonText);
+            .processImportedJson(accountId, worldId, jsonText);
         }
       </script>
     </body>
     </html>
   `)
     .setWidth(450)
-    .setHeight(550);
+    .setHeight(580);
 
   SpreadsheetApp.getUi().showModalDialog(html, 'データのインポート');
 }
 
-// --- インポートされたJSONを処理して保存する関数 ---
-function processImportedJson(targetAccountId, jsonText) {
+function processImportedJson(targetAccountId, targetWorldId, jsonText) {
   try {
     const oldData = JSON.parse(jsonText);
 
-    // 互換性を持たせるためのデータ変換
     const worldData = oldData.world;
     const playerData = oldData.player;
 
-    // 旧仕様ではインベントリが外にあったので、playerDataのcustomData内に格納する
     if (oldData.inventory) {
       playerData.customData = {
         inventory: oldData.inventory
       };
     }
 
-    // doPostをシミュレートして保存処理を実行
     const mockEvent = {
       postData: {
         contents: JSON.stringify({
           accountId: targetAccountId,
+          worldId: targetWorldId,
           worldData: worldData,
           playerData: playerData
         })
       }
     };
 
-    // 既存の保存ロジックを利用する
     const resultJson = doPost(mockEvent).getContent();
     const result = JSON.parse(resultJson);
 

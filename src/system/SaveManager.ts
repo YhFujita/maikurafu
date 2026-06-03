@@ -6,6 +6,7 @@ export class SaveManager {
   private player: Player;
   private world: World;
   private accountId: string | null = null;
+  private worldId: string = 'shared_world_1';
   private autoSaveInterval: number | null = null;
   private isSaving: boolean = false;
   
@@ -24,6 +25,10 @@ export class SaveManager {
   public getAccountId(): string | null {
     return this.accountId;
   }
+  
+  public setWorldId(id: string) {
+    this.worldId = id || 'shared_world_1';
+  }
 
   public async loadData(): Promise<boolean> {
     if (!this.accountId) {
@@ -38,7 +43,7 @@ export class SaveManager {
 
     try {
       this.showToast('データをロード中...');
-      const response = await fetch(`${CONFIG.GAS_WEB_APP_URL}?accountId=${encodeURIComponent(this.accountId)}`);
+      const response = await fetch(`${CONFIG.GAS_WEB_APP_URL}?accountId=${encodeURIComponent(this.accountId)}&worldId=${encodeURIComponent(this.worldId)}`);
       const data = await response.json();
 
       if (data.worldData) {
@@ -88,6 +93,7 @@ export class SaveManager {
 
       const payload = {
         accountId: this.accountId,
+        worldId: this.worldId,
         worldData: worldData,
         playerData: playerData
       };
