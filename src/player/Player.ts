@@ -50,6 +50,7 @@ export class Player {
   // 接地判定用の簡易フラグ
   private isGrounded: boolean = false;
   private isInWater: boolean = false; // 水中判定フラグを追加
+  private isSprintingToggle: boolean = false; // ダッシュのトグルフラグ
   private lastVelocityY: number = 0; // 落下ダメージ計算用
 
   // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
@@ -308,6 +309,11 @@ export class Player {
       }
     }
 
+    // Shiftキーでダッシュのトグル（ON/OFF切り替え）
+    if (input.consumeJustPressed('ShiftLeft') || input.consumeJustPressed('ShiftRight')) {
+      this.isSprintingToggle = !this.isSprintingToggle;
+    }
+
     // 物理ボディから位置を同期
     this.position.set(this.body.position.x, this.body.position.y, this.body.position.z);
     this.handleStepClimb(voxelWorld);
@@ -543,9 +549,8 @@ export class Player {
     const direction = Player.tempDirection.copy(moveVector);
     direction.applyAxisAngle(Player.tempVec3_2.set(0, 1, 0), this.yaw);
 
-    // ダッシュ判定 (Shiftキーが押されている間は1.5倍速)
-    const isSprinting = input.keys['ShiftLeft'] || input.keys['ShiftRight'];
-    let currentSpeed = isSprinting ? this.speed * 1.5 : this.speed;
+    // ダッシュ判定 (トグル式)
+    let currentSpeed = this.isSprintingToggle ? this.speed * 1.5 : this.speed;
 
     // 水中では歩く速度を遅くする
     if (this.isInWater) {
