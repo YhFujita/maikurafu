@@ -148,6 +148,62 @@ export class Chunk {
       }
     }
 
+    const addBox = (
+      x0: number, y0: number, z0: number,
+      x1: number, y1: number, z1: number,
+      uvIndex: number
+    ) => {
+      const subFaces = [
+        { dir: [1, 0, 0], corners: [[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]], uvName: 'right' as const },
+        { dir: [-1, 0, 0], corners: [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], uvName: 'left' as const },
+        { dir: [0, 1, 0], corners: [[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]], uvName: 'top' as const },
+        { dir: [0, -1, 0], corners: [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], uvName: 'bottom' as const },
+        { dir: [0, 0, 1], corners: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], uvName: 'front' as const },
+        { dir: [0, 0, -1], corners: [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]], uvName: 'back' as const }
+      ];
+
+      for (const face of subFaces) {
+        for (const corner of face.corners) {
+          positions.push(corner[0], corner[1], corner[2]);
+          normals.push(...face.dir);
+
+          const shadow = FACE_SHADING[face.uvName];
+          let maxLight = 0.0;
+          for (let i = 0; i < torches.length; i++) {
+            const torch = torches[i];
+            const dx = corner[0] - torch.x;
+            const dy = corner[1] - torch.y;
+            const dz = corner[2] - torch.z;
+            const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+            const light = Math.max(0, 1.0 - dist / 8.0);
+            if (light > maxLight) maxLight = light;
+          }
+          const finalLight = Math.min(1.0, 0.52 + maxLight * 0.48);
+          const finalColor = shadow * finalLight;
+          colors.push(
+            finalColor,
+            finalColor * (0.93 - (1.0 - maxLight) * 0.08),
+            finalColor * (0.85 - (1.0 - maxLight) * 0.15)
+          );
+        }
+
+        const col = uvIndex % atlasGridSize;
+        const row = Math.floor(uvIndex / atlasGridSize);
+        const uMin = col * uvStep;
+        const vMin = 1.0 - (row + 1) * uvStep;
+        const uMax = uMin + uvStep;
+        const vMax = vMin + uvStep;
+
+        uvs.push(uMin, vMin, uMax, vMin, uMax, vMax, uMin, vMax);
+
+        indices.push(
+          vertexCount, vertexCount + 1, vertexCount + 2,
+          vertexCount, vertexCount + 2, vertexCount + 3
+        );
+        vertexCount += 4;
+      }
+    };
+
     for (let cx = 0; cx < this.size; cx++) {
       for (let cy = 0; cy < this.size; cy++) {
         for (let cz = 0; cz < this.size; cz++) {
@@ -158,6 +214,12 @@ export class Chunk {
           const globalX = this.x * this.size + cx;
           const globalY = this.y * this.size + cy;
           const globalZ = this.z * this.size + cz;
+
+          if (blockType === BlockType.STAIRS) {
+            addBox(globalX, globalY, globalZ, globalX + 1.0, globalY + 0.5, globalZ + 1.0, 9); // ベース
+            addBox(globalX, globalY + 0.5, globalZ, globalX + 1.0, globalY + 1.0, globalZ + 0.5, 9); // ステップ
+            continue;
+          }
 
           for (const face of FACES) {
             const nx = cx + face.dir[0];

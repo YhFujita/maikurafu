@@ -14,6 +14,7 @@ export enum BlockType {
   DOOR_CLOSED = 12, // ドアブロック（閉）
   DOOR_OPEN = 13,   // ドアブロック（開）
   SWORD = 14,       // 剣（武器）
+  STAIRS = 15,      // 木の階段
 }
 
 export interface BlockProperties {
@@ -141,5 +142,12 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 14, back: 14, left: 14, right: 14, top: 14, bottom: 14 },
+  },
+  [BlockType.STAIRS]: {
+    id: BlockType.STAIRS,
+    name: 'きのかいだん',
+    isSolid: true,
+    isTransparent: true,
+    uvs: { front: 9, back: 9, left: 9, right: 9, top: 9, bottom: 9 },
   },
 };

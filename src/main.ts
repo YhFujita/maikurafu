@@ -23,7 +23,7 @@ const physics = new PhysicsWorld();
 const input = new InputHandler(document.body);
 
 // プレイヤーの初期化
-const player = new Player(renderer.camera, new THREE.Vector3(8, 5, 8), physics.world, renderer.scene);
+const player = new Player(renderer.camera, new THREE.Vector3(8, 5, 8), physics, renderer.scene);
 
 // 昼夜サイクルマネージャーの初期化
 const timeManager = new TimeManager(renderer.scene);
@@ -52,6 +52,7 @@ const inventory: Record<BlockType, number> = {
   [BlockType.DOOR_CLOSED]: 64,
   [BlockType.DOOR_OPEN]: 0,
   [BlockType.SWORD]: 1, // 初期状態で1個所持
+  [BlockType.STAIRS]: 64, // 階段を追加
 };
 
 // 設定UIの初期化
@@ -94,7 +95,7 @@ const hotbarPages = [
     BlockType.DOOR_CLOSED, // 11: ドア（しめる）
     BlockType.COAL_ORE,    // 12: 石炭
     BlockType.SWORD,       // 13: いしのけん
-    BlockType.GROUND,
+    BlockType.STAIRS,      // 14: きのかいだん
     BlockType.DIRT,
     BlockType.STONE,
     BlockType.WOOD,
@@ -122,6 +123,7 @@ function getSlotIconClass(type: BlockType): string {
     case BlockType.GLASS: return 'slot-glass';
     case BlockType.DOOR_CLOSED: return 'slot-door';
     case BlockType.COAL_ORE: return 'slot-coal';
+    case BlockType.STAIRS: return 'slot-stairs';
     default: return '';
   }
 }
@@ -493,36 +495,37 @@ window.addEventListener('mousedown', (e) => {
       const by = Math.floor(target.y);
       const bz = Math.floor(target.z);
 
-      // プレイヤーの身体と重なっていないか衝突判定 (AABB)
-      const pMinX = player.position.x - CONFIG.PLAYER_RADIUS;
-      const pMaxX = player.position.x + CONFIG.PLAYER_RADIUS;
-      const pMinY = player.position.y - CONFIG.PLAYER_HEIGHT / 2;
-      const pMaxY = player.position.y + CONFIG.PLAYER_HEIGHT / 2;
-      const pMinZ = player.position.z - CONFIG.PLAYER_RADIUS;
-      const pMaxZ = player.position.z + CONFIG.PLAYER_RADIUS;
+      const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+      const px = Math.floor(player.position.x);
+      const py = Math.floor(player.position.y - halfHeight);
+      const pz = Math.floor(player.position.z);
+      const feetY = player.position.y - halfHeight;
 
-      const bMinX = bx;
-      const bMaxX = bx + 1;
-      const bMinY = by;
-      const bMaxY = by + 1;
-      const bMinZ = bz;
-      const bMaxZ = bz + 1;
+      // プレイヤーが完全に占有している2マス（足元と頭）
+      const isOccupiedSpace = (bx === px && bz === pz && (by === py || by === py + 1));
 
-      const collides = (
-        pMinX < bMaxX && pMaxX > bMinX &&
-        pMinY < bMaxY && pMaxY > bMinY &&
-        pMinZ < bMaxZ && pMaxZ > bMinZ
-      );
+      // 縦積み（ジャンプ設置）の特別許可判定（足元の少し上にいる場合）
+      const isJumpingAbove = (!player.body.velocity.y || Math.abs(player.body.velocity.y) > 0.05) && feetY >= by + 0.15;
+      const allowTowerPlace = (isJumpingAbove && bx === px && bz === pz && by === py);
 
-      // 松明(TORCH)などはソリッドでないため、プレイヤーとの重なり衝突判定をスキップして設置可能にする
+      // 松明(TORCH)などはソリッドでないため、占有判定をスキップして設置可能にする
       const isTorch = (activeBlockType === BlockType.TORCH);
 
-      if (!collides || isTorch) {
+      if (isTorch || !isOccupiedSpace || allowTowerPlace) {
         // 選択されたブロックを設置し、インベントリから消費
         world.setBlock(bx, by, bz, activeBlockType);
         SoundManager.playPlace(activeBlockType);
         inventory[activeBlockType]--;
         syncHotbarUI();
+
+        // 縦積みの場合は、プレイヤーを設置ブロックの上に押し上げる
+        if (allowTowerPlace) {
+          player.body.position.y = by + 1.0 + halfHeight + 0.05;
+          player.position.y = player.body.position.y;
+          if (player.body.velocity.y < 0) {
+            player.body.velocity.y = 0; // 落下速度をリセット
+          }
+        }
       }
     }
   }
@@ -639,6 +642,7 @@ const allBlocks = [
   BlockType.TORCH,
   BlockType.GLASS,
   BlockType.DOOR_CLOSED,
+  BlockType.STAIRS, // 木の階段を追加
   BlockType.SWORD,
 ];
 

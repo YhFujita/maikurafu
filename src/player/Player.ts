@@ -4,6 +4,7 @@ import { CONFIG } from '../config.ts';
 import { InputHandler } from '../input/InputHandler.ts';
 import { World } from '../world/World.ts';
 import { SoundManager } from '../system/SoundManager.ts';
+import { PhysicsWorld } from '../physics/PhysicsWorld.ts';
 
 export type CameraMode = '1PV' | '3PV_BACK' | '3PV_FRONT';
 export type ArmorType = 'none' | 'leather' | 'iron' | 'diamond';
@@ -56,7 +57,7 @@ export class Player {
   private static tempQuat_2 = new THREE.Quaternion();
   private static tempDirection = new THREE.Vector3();
 
-  constructor(camera: THREE.PerspectiveCamera, startPos: THREE.Vector3, world: CANNON.World, scene: THREE.Scene) {
+  constructor(camera: THREE.PerspectiveCamera, startPos: THREE.Vector3, physics: PhysicsWorld, scene: THREE.Scene) {
     this.camera = camera;
     this.position = startPos.clone();
     this.spawnPosition = startPos.clone();
@@ -72,9 +73,10 @@ export class Player {
       position: new CANNON.Vec3(startPos.x, startPos.y + halfHeight, startPos.z),
       fixedRotation: true, // 回転を固定 (倒れないようにする)
       linearDamping: 0.1,  // 空気抵抗
+      material: physics.playerMaterial, // 摩擦ゼロマテリアルをアサイン
     });
 
-    world.addBody(this.body);
+    physics.world.addBody(this.body);
 
     // アバターの構築
     this.avatar = new THREE.Group();
@@ -302,6 +304,7 @@ export class Player {
 
     // 物理ボディから位置を同期
     this.position.set(this.body.position.x, this.body.position.y, this.body.position.z);
+    this.handleStepClimb(voxelWorld);
 
     if (!input.isLocked) {
       this.body.velocity.x *= 0.8;
@@ -340,7 +343,8 @@ export class Player {
 
   // 接地状態の判定と落下ダメージの処理
   private checkGrounded(voxelWorld: World): void {
-    const feetY = this.position.y - CONFIG.PLAYER_HEIGHT / 2 - 0.1;
+    const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+    const feetY = this.position.y - halfHeight - 0.05;
     
     const checkPoints = [
       { x: this.position.x, z: this.position.z },
@@ -377,6 +381,54 @@ export class Player {
 
     this.isGrounded = currentGrounded;
     this.lastVelocityY = this.body.velocity.y; // 落下速度を記録
+  }
+
+  // 自動段差上り（ステップアシスト）処理
+  private handleStepClimb(voxelWorld: World): void {
+    // プレイヤーが水平方向に移動しているかチェック
+    const velocityX = this.body.velocity.x;
+    const velocityZ = this.body.velocity.z;
+    const speedSq = velocityX * velocityX + velocityZ * velocityZ;
+    if (speedSq < 0.01) return; // ほとんど移動していない場合は何もしない
+
+    const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+    const feetY = this.position.y - halfHeight;
+
+    // 進行方向ベクトル
+    const speed = Math.sqrt(speedSq);
+    const dirX = velocityX / speed;
+    const dirZ = velocityZ / speed;
+
+    // 進行方向の少し前（衝突半径 + 検知マージン。約0.55m前）
+    const checkDist = CONFIG.PLAYER_RADIUS + 0.15;
+    const checkX = this.position.x + dirX * checkDist;
+    const checkZ = this.position.z + dirZ * checkDist;
+
+    const gx = Math.floor(checkX);
+    const gz = Math.floor(checkZ);
+
+    // プレイヤーが現在立っている足元の高さのグリッド
+    const currentGridY = Math.floor(feetY + 0.15);
+
+    // 進行方向の「足元（段差）」と「頭の上（空気2マス分）」をチェック
+    const stepBlock = voxelWorld.getBlock(gx, currentGridY, gz);
+    const headSpaceBlock = voxelWorld.getBlock(gx, currentGridY + 1, gz);
+    const headSpaceBlock2 = voxelWorld.getBlock(gx, currentGridY + 2, gz);
+
+    // 目の前がソリッドブロックで、その上の空間が空いている場合
+    if (stepBlock !== 0 && headSpaceBlock === 0 && headSpaceBlock2 === 0) {
+      const stepTopY = currentGridY + 1.0;
+      const heightDiff = stepTopY - feetY;
+
+      // 段差の高さが1m以下の場合、スムーズに押し上げる
+      if (heightDiff > 0.05 && heightDiff <= 1.05) {
+        this.body.position.y = stepTopY + halfHeight + 0.05;
+        this.position.y = this.body.position.y;
+        if (this.body.velocity.y < 0) {
+          this.body.velocity.y = 0;
+        }
+      }
+    }
   }
 
   // 装備の切り替え（マテリアルの色と表示フラグを変更）

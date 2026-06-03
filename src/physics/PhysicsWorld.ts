@@ -6,6 +6,7 @@ import { BLOCKS } from '../world/Block.ts';
 
 export class PhysicsWorld {
   public world: CANNON.World;
+  public playerMaterial: CANNON.Material;
   
   // アクティブなブロックの物理ボディを座標キー "x,y,z" で保持
   private blockBodies: Map<string, CANNON.Body> = new Map();
@@ -30,6 +31,18 @@ export class PhysicsWorld {
     );
     this.world.addContactMaterial(defaultContactMaterial);
     this.world.defaultContactMaterial = defaultContactMaterial;
+
+    // プレイヤー専用マテリアルと接触マテリアル（段差引っかかり防止）
+    this.playerMaterial = new CANNON.Material('player');
+    const playerContactMaterial = new CANNON.ContactMaterial(
+      this.playerMaterial,
+      defaultMaterial,
+      {
+        friction: 0.0, // 摩擦ゼロ
+        restitution: 0.0,
+      }
+    );
+    this.world.addContactMaterial(playerContactMaterial);
 
     // 1辺1mのブロック用衝突形状
     this.blockShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
