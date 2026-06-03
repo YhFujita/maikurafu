@@ -10,6 +10,9 @@ export enum BlockType {
   SAND = 8,   // 砂
   COAL_ORE = 9, // 石炭鉱石
   TORCH = 10,   // 松明ブロック
+  GLASS = 11,   // ガラスブロック
+  DOOR_CLOSED = 12, // ドアブロック（閉）
+  DOOR_OPEN = 13,   // ドアブロック（開）
 }
 
 export interface BlockProperties {
@@ -109,5 +112,26 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: true,
     lightLevel: 14,
     uvs: { front: 11, back: 11, left: 11, right: 11, top: 11, bottom: 11 },
+  },
+  [BlockType.GLASS]: {
+    id: BlockType.GLASS,
+    name: 'ガラス',
+    isSolid: true,
+    isTransparent: true,
+    uvs: { front: 12, back: 12, left: 12, right: 12, top: 12, bottom: 12 },
+  },
+  [BlockType.DOOR_CLOSED]: {
+    id: BlockType.DOOR_CLOSED,
+    name: 'ドア（しめる）',
+    isSolid: true,
+    isTransparent: true,
+    uvs: { front: 13, back: 13, left: 13, right: 13, top: 13, bottom: 13 },
+  },
+  [BlockType.DOOR_OPEN]: {
+    id: BlockType.DOOR_OPEN,
+    name: 'ドア（あける）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 13, back: 13, left: 13, right: 13, top: 13, bottom: 13 },
   },
 };

@@ -166,19 +166,35 @@ export class Chunk {
 
             let shouldDrawFace = false;
 
-            if (blockType === BlockType.TORCH) {
-              // 松明は中空・非固体ブロックなので、常に全方位の面を描画して透き通らせる
+            if (blockType === BlockType.TORCH || blockType === BlockType.DOOR_CLOSED || blockType === BlockType.DOOR_OPEN) {
+              // 松明とドアは常に全方位の面を描画する（薄型形状でカリングされると消えるため）
               shouldDrawFace = true;
-            } else if (this.isOutOfBounds(nx, ny, nz)) {
-              const neighborBlock = world.getBlock(globalX + face.dir[0], globalY + face.dir[1], globalZ + face.dir[2]);
-              shouldDrawFace = !BLOCKS[neighborBlock].isSolid;
             } else {
-              const neighborBlock = this.getBlock(nx, ny, nz);
-              shouldDrawFace = !BLOCKS[neighborBlock].isSolid;
+              let neighborBlock: BlockType;
+              if (this.isOutOfBounds(nx, ny, nz)) {
+                neighborBlock = world.getBlock(globalX + face.dir[0], globalY + face.dir[1], globalZ + face.dir[2]);
+              } else {
+                neighborBlock = this.getBlock(nx, ny, nz);
+              }
+
+              const neighborProp = BLOCKS[neighborBlock];
+              // 隣が空気か、透過ブロックの場合に面を描く
+              if (!neighborProp.isSolid || neighborProp.isTransparent) {
+                // 隣が自分自身と同じ種類の透過ブロック（ガラスの隣のガラス等）の場合は面を描かない
+                if (blockProp.isTransparent && neighborBlock === blockType) {
+                  shouldDrawFace = false;
+                } else {
+                  shouldDrawFace = true;
+                }
+              } else {
+                shouldDrawFace = false;
+              }
             }
 
             if (shouldDrawFace) {
               const isTorch = (blockType === BlockType.TORCH);
+              const isDoorClosed = (blockType === BlockType.DOOR_CLOSED);
+              const isDoorOpen = (blockType === BlockType.DOOR_OPEN);
 
               // 頂点の追加
               for (const corner of face.corners) {
@@ -191,6 +207,12 @@ export class Chunk {
                   vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
                   vy = globalY + corner[1] * 0.65;
                   vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                } else if (isDoorClosed) {
+                  // ドア（閉）：X-Y平面に平行な薄い板（Z方向を薄くする、厚さ14cm）
+                  vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                } else if (isDoorOpen) {
+                  // ドア（開）：Y-Z平面に平行な薄い板（X方向を薄くする、厚さ14cm）
+                  vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
                 }
 
                 positions.push(vx, vy, vz);

@@ -463,6 +463,34 @@
     .slot-plank { background: linear-gradient(135deg, #fbbf24, #b45309); }
     .slot-brick { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
     .slot-sand { background: linear-gradient(135deg, #fef08a, #ca8a04); }
+    .slot-torch { background: linear-gradient(135deg, #f97316, #eab308); }
+    .slot-glass { background: linear-gradient(135deg, rgba(240, 248, 255, 0.6), rgba(186, 230, 253, 0.4)); border: 1px solid rgba(255, 255, 255, 0.6); }
+    .slot-coal { background: linear-gradient(135deg, #4b5563, #1f2937); position: relative; }
+    .slot-coal::after { content: ''; position: absolute; width: 6px; height: 6px; background: #111; top: 12px; left: 12px; box-shadow: -6px -6px #111, 6px -4px #111, -4px 6px #111; }
+    .slot-door {
+      background: linear-gradient(135deg, #b45309, #78350f);
+      position: relative;
+    }
+    .slot-door::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 8px;
+      height: 10px;
+      background: rgba(186, 230, 253, 0.8);
+      border-radius: 2px;
+    }
+    .slot-door::after {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 10px;
+      background: rgba(186, 230, 253, 0.8);
+      border-radius: 2px;
+    }
 
     .slot-num {
       position: absolute;
@@ -471,6 +499,16 @@
       font-size: 0.65rem;
       color: #9ca3af;
       font-weight: bold;
+    }
+
+    .slot-count {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 0.75rem;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px #000;
     }
 
     .hotbar-slot.active .slot-num {
@@ -489,8 +527,235 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       transition: opacity 0.2s;
     }
+
+    /* ダメージオーバーレイとデス画面 */
+    #damage-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.4);
+      z-index: 15;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    #death-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(20, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 40;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #death-screen h1 {
+      font-size: 3.5rem;
+      color: #ff3333;
+      text-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+      margin-bottom: 24px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    #respawn-btn {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      border: none;
+      color: white;
+      padding: 16px 40px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+    }
+
+    #respawn-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 12px 30px rgba(239, 68, 68, 0.6);
+    }
+
+    #hp-container {
+      display: flex;
+      gap: 2px;
+      font-size: 1.2rem;
+      margin-top: 8px;
+      color: #ef4444;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* インベントリモーダル */
+    #inventory-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 25;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    #inventory-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .inventory-header h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    .inventory-tip {
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .inventory-section h3 {
+      font-size: 0.95rem;
+      color: #e5e7eb;
+      margin-bottom: 12px;
+      font-weight: 600;
+      border-left: 3px solid #3b82f6;
+      padding-left: 8px;
+    }
+
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .inventory-item {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid transparent;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      padding: 4px;
+    }
+
+    .inventory-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: scale(1.05);
+    }
+
+    .inventory-item.selected {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #3b82f6;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .inventory-item .item-name {
+      font-size: 0.65rem;
+      color: #9ca3af;
+      margin-top: 4px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .inventory-hotbar-slots {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 6px;
+    }
+
+    .inventory-hotbar-slot {
+      flex: 1;
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+
+    .inventory-hotbar-slot:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #60a5fa;
+    }
+
+    .inventory-hotbar-slot .slot-num {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 0.6rem;
+      color: #6b7280;
+    }
+
+    .inventory-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    #inventory-close-btn {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+      transition: all 0.2s;
+    }
+
+    #inventory-close-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+    }
   </style>
-  <script type="module" crossorigin src="./assets/index-UcedE2br.js"></script>
+  <script type="module" crossorigin src="./assets/index-dPziaJgM.js"></script>
 </head>
 <body>
   <!-- 3Dレンダリング用のキャンバスコンテナ -->
@@ -498,6 +763,15 @@
 
   <!-- クロスヘア -->
   <div id="crosshair"></div>
+
+  <!-- ダメージフラッシュ用の赤オーバーレイ -->
+  <div id="damage-overlay"></div>
+
+  <!-- 死亡画面 -->
+  <div id="death-screen">
+    <h1>YOU DIED</h1>
+    <button id="respawn-btn">リスポーン</button>
+  </div>
 
   <!-- メニュー画面 / ポインターロック用 -->
   <div id="menu-overlay">
@@ -522,6 +796,14 @@
           <span class="key-badge">Space</span>
         </div>
         <div class="instruction-row">
+          <span>視点切り替え</span>
+          <span class="key-badge">F5</span>
+        </div>
+        <div class="instruction-row">
+          <span>アイテムを捨てる</span>
+          <span class="key-badge">Q</span>
+        </div>
+        <div class="instruction-row">
           <span>視点移動</span>
           <span>マウス移動</span>
         </div>
@@ -544,6 +826,7 @@
   <!-- 画面左下のHUD -->
   <div id="hud">
     <div class="hud-panel">
+      <div class="hud-row">ライフ: <div id="hp-container">❤❤❤❤❤❤❤❤❤❤</div></div>
       <div class="hud-row">座標: <span id="pos-display">0.0, 0.0, 0.0</span></div>
       <div class="hud-row">アクティブチャンク数: <span id="chunks-display">0</span></div>
       <div class="hud-row">物理ボディ数: <span id="bodies-display">0</span></div>
@@ -588,12 +871,50 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="config-row">
+          <span>影を描画する (Shadows):</span>
+          <label class="switch">
+            <input type="checkbox" id="enable-shadows-chk">
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
+
 
       <div class="config-actions">
         <button id="config-save-btn">保存して閉じる</button>
         <button id="config-default-btn">デフォルトに戻す</button>
         <button id="config-close-btn">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- インベントリ（カバン）画面 -->
+  <div id="inventory-modal" style="display: none;">
+    <div id="inventory-card">
+      <div class="inventory-header">
+        <h2>カバン（インベントリ）</h2>
+        <p class="inventory-tip">ブロックをクリックしてえらび、下のホットバーをクリックするといれかえられます</p>
+      </div>
+      
+      <!-- カバンの中身（利用可能なブロック一覧） -->
+      <div class="inventory-section">
+        <h3>ブロックいちらん</h3>
+        <div class="inventory-grid" id="inventory-item-list">
+          <!-- JSで動的に追加されます -->
+        </div>
+      </div>
+      
+      <!-- ホットバーの割り当てプレビュー -->
+      <div class="inventory-section">
+        <h3>ホットバーのわりあて</h3>
+        <div class="inventory-hotbar-slots" id="inventory-hotbar-slots">
+          <!-- JSで実際のホットバーと同期して生成されます -->
+        </div>
+      </div>
+
+      <div class="inventory-actions">
+        <button id="inventory-close-btn">ゲームにもどる (E)</button>
       </div>
     </div>
   </div>
@@ -604,38 +925,53 @@
       <div class="hotbar-slot active" data-index="0" data-block="1">
         <div class="slot-icon slot-grass"></div>
         <div class="slot-num">1</div>
+        <div class="slot-count" id="count-0">64</div>
       </div>
       <div class="hotbar-slot" data-index="1" data-block="2">
         <div class="slot-icon slot-dirt"></div>
         <div class="slot-num">2</div>
+        <div class="slot-count" id="count-1">64</div>
       </div>
       <div class="hotbar-slot" data-index="2" data-block="3">
         <div class="slot-icon slot-stone"></div>
         <div class="slot-num">3</div>
+        <div class="slot-count" id="count-2">64</div>
       </div>
       <div class="hotbar-slot" data-index="3" data-block="4">
         <div class="slot-icon slot-wood"></div>
         <div class="slot-num">4</div>
+        <div class="slot-count" id="count-3">64</div>
       </div>
       <div class="hotbar-slot" data-index="4" data-block="5">
         <div class="slot-icon slot-leaves"></div>
         <div class="slot-num">5</div>
+        <div class="slot-count" id="count-4">64</div>
       </div>
       <div class="hotbar-slot" data-index="5" data-block="6">
         <div class="slot-icon slot-plank"></div>
         <div class="slot-num">6</div>
+        <div class="slot-count" id="count-5">64</div>
       </div>
       <div class="hotbar-slot" data-index="6" data-block="7">
         <div class="slot-icon slot-brick"></div>
         <div class="slot-num">7</div>
+        <div class="slot-count" id="count-6">64</div>
       </div>
       <div class="hotbar-slot" data-index="7" data-block="8">
         <div class="slot-icon slot-sand"></div>
         <div class="slot-num">8</div>
+        <div class="slot-count" id="count-7">64</div>
+      </div>
+      <div class="hotbar-slot" data-index="8" data-block="10">
+        <div class="slot-icon slot-torch"></div>
+        <div class="slot-num">9</div>
+        <div class="slot-count" id="count-8">64</div>
       </div>
     </div>
-    <div id="hotbar-label">Grass</div>
+    <div id="hotbar-label">くさ</div>
   </div>
+
 
 </body>
 </html>
+

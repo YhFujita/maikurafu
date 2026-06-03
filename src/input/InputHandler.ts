@@ -44,9 +44,14 @@ export class InputHandler {
   private onKeyDown(e: KeyboardEvent): void {
     const key = e.code;
     
-    // ポインターロック中のブラウザデフォルト動作防止（F5:更新, Tab:フォーカス移動など）
-    if (this.isLocked && (key === 'F5' || key === 'KeyQ')) {
+    // ポインターロック中またはゲーム内のブラウザデフォルト動作防止（F5:更新, Tab:フォーカス移動, Eキーなど）
+    if (key === 'Tab') {
       e.preventDefault();
+    }
+    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE')) {
+      if (key === 'KeyE') {
+        e.preventDefault();
+      }
     }
 
     if (!this.keys[key]) {
@@ -71,6 +76,7 @@ export class InputHandler {
   private onPointerLockChange(): void {
     const menuOverlay = document.getElementById('menu-overlay');
     const crosshair = document.getElementById('crosshair');
+    const inventoryModal = document.getElementById('inventory-modal');
 
     if (document.pointerLockElement === this.targetElement) {
       this.isLocked = true;
@@ -79,9 +85,13 @@ export class InputHandler {
     } else {
       this.isLocked = false;
       this.clearKeys();
-      if (menuOverlay) {
-        menuOverlay.style.display = 'flex';
-        menuOverlay.style.opacity = '1';
+      
+      const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+      if (!isInventoryOpen) {
+        if (menuOverlay) {
+          menuOverlay.style.display = 'flex';
+          menuOverlay.style.opacity = '1';
+        }
       }
       if (crosshair) crosshair.style.display = 'none';
     }

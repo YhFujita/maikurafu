@@ -164,10 +164,63 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillStyle = 'rgb(255, 220, 0)';
   ctx.fillRect(torchStartX + 7, torchStartY + 3, 2, 2);
 
+  // 12: ガラス (col: 0, row: 3)
+  const glassStartX = 0 * tileSize;
+  const glassStartY = 3 * tileSize;
+  ctx.clearRect(glassStartX, glassStartY, tileSize, tileSize);
+
+  // 外枠 (白っぽく、少し半透明)
+  ctx.fillStyle = 'rgba(240, 248, 255, 0.8)';
+  ctx.fillRect(glassStartX, glassStartY, tileSize, 1);
+  ctx.fillRect(glassStartX, glassStartY + tileSize - 1, tileSize, 1);
+  ctx.fillRect(glassStartX, glassStartY, 1, tileSize);
+  ctx.fillRect(glassStartX + tileSize - 1, glassStartY, 1, tileSize);
+
+  // 反射光の斜線
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.fillRect(glassStartX + 3, glassStartY + 3, 1, 1);
+  ctx.fillRect(glassStartX + 4, glassStartY + 2, 1, 1);
+  ctx.fillRect(glassStartX + 2, glassStartY + 4, 1, 1);
+
+  ctx.fillRect(glassStartX + 10, glassStartY + 10, 1, 1);
+  ctx.fillRect(glassStartX + 11, glassStartY + 9, 1, 1);
+  ctx.fillRect(glassStartX + 9, glassStartY + 11, 1, 1);
+
+  // 13: ドア (col: 1, row: 3)
+  const doorStartX = 1 * tileSize;
+  const doorStartY = 3 * tileSize;
+  ctx.clearRect(doorStartX, doorStartY, tileSize, tileSize);
+
+  // ベースの木の色 (茶色)
+  ctx.fillStyle = 'rgb(130, 85, 45)';
+  ctx.fillRect(doorStartX, doorStartY, tileSize, tileSize);
+
+  // 木目や影の枠線
+  ctx.fillStyle = 'rgb(90, 55, 25)';
+  ctx.fillRect(doorStartX, doorStartY, tileSize, 1); // 上枠
+  ctx.fillRect(doorStartX, doorStartY + tileSize - 1, tileSize, 1); // 下枠
+  ctx.fillRect(doorStartX, doorStartY, 1, tileSize); // 左枠
+  ctx.fillRect(doorStartX + tileSize - 1, doorStartY, 1, tileSize); // 右枠
+  ctx.fillRect(doorStartX + (tileSize / 2) - 1, doorStartY, 2, tileSize); // 中央の縦線
+
+  // 小窓 (左右に1つずつ、透明化)
+  ctx.clearRect(doorStartX + 2, doorStartY + 2, 4, 5);
+  ctx.clearRect(doorStartX + 10, doorStartY + 2, 4, 5);
+
+  // 小窓のガラス枠（薄いグレーの反射光）
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.fillRect(doorStartX + 2, doorStartY + 2, 4, 1);
+  ctx.fillRect(doorStartX + 10, doorStartY + 2, 4, 1);
+
+  // ドアノブ (金色のピクセル)
+  ctx.fillStyle = 'rgb(230, 190, 50)';
+  ctx.fillRect(doorStartX + 13, doorStartY + 9, 2, 2); // 黄色いノブ
+  ctx.fillStyle = 'rgb(180, 140, 20)';
+  ctx.fillRect(doorStartX + 14, doorStartY + 11, 1, 1); // 鍵穴
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
 
-  
   // マイクラ風のクッキリしたピクセル感を出すためにNearestFilterを適用
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;

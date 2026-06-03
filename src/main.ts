@@ -47,6 +47,9 @@ const inventory: Record<BlockType, number> = {
   [BlockType.SAND]: 64,
   [BlockType.COAL_ORE]: 64,
   [BlockType.TORCH]: 64,
+  [BlockType.GLASS]: 64,
+  [BlockType.DOOR_CLOSED]: 64,
+  [BlockType.DOOR_OPEN]: 0,
 };
 
 // 設定UIの初期化
@@ -66,34 +69,81 @@ if (respawnBtn) {
 let activeBlockType = BlockType.GROUND;
 let activeSlotIndex = 0;
 
-const slotBlocks = [
-  BlockType.GROUND,  // 1: 草
-  BlockType.DIRT,    // 2: 土
-  BlockType.STONE,   // 3: 石
-  BlockType.WOOD,    // 4: 木
-  BlockType.LEAVES,  // 5: 葉
-  BlockType.PLANK,   // 6: 木材
-  BlockType.BRICK,   // 7: レンガ
-  BlockType.SAND,    // 8: 砂
-  BlockType.TORCH,   // 9: 松明
+// ホットバーのページ割り当て
+const hotbarPages = [
+  [
+    BlockType.GROUND,  // 1: 草
+    BlockType.DIRT,    // 2: 土
+    BlockType.STONE,   // 3: 石
+    BlockType.WOOD,    // 4: 木
+    BlockType.LEAVES,  // 5: 葉
+    BlockType.PLANK,   // 6: 木材
+    BlockType.BRICK,   // 7: レンガ
+    BlockType.SAND,    // 8: 砂
+    BlockType.TORCH,   // 9: 松明
+  ],
+  [
+    BlockType.GLASS,       // 10: ガラス
+    BlockType.DOOR_CLOSED, // 11: ドア（しめる）
+    BlockType.COAL_ORE,    // 12: 石炭
+    BlockType.GROUND,
+    BlockType.DIRT,
+    BlockType.STONE,
+    BlockType.WOOD,
+    BlockType.PLANK,
+    BlockType.TORCH,
+  ]
 ];
+
+let activePage = 0;
+let slotBlocks = hotbarPages[activePage];
 
 const hotbarSlots = document.querySelectorAll('.hotbar-slot');
 const hotbarLabel = document.getElementById('hotbar-label');
-const slotCountElements = slotBlocks.map((_, i) => document.getElementById(`count-${i}`));
 
-function updateInventoryUI() {
-  slotBlocks.forEach((type, index) => {
-    const countEl = slotCountElements[index];
+function getSlotIconClass(type: BlockType): string {
+  switch (type) {
+    case BlockType.GROUND: return 'slot-grass';
+    case BlockType.DIRT: return 'slot-dirt';
+    case BlockType.STONE: return 'slot-stone';
+    case BlockType.WOOD: return 'slot-wood';
+    case BlockType.LEAVES: return 'slot-leaves';
+    case BlockType.PLANK: return 'slot-plank';
+    case BlockType.BRICK: return 'slot-brick';
+    case BlockType.SAND: return 'slot-sand';
+    case BlockType.TORCH: return 'slot-torch';
+    case BlockType.GLASS: return 'slot-glass';
+    case BlockType.DOOR_CLOSED: return 'slot-door';
+    case BlockType.COAL_ORE: return 'slot-coal';
+    default: return '';
+  }
+}
+
+function syncHotbarUI() {
+  hotbarSlots.forEach((slot, index) => {
+    const type = slotBlocks[index];
+    slot.setAttribute('data-block', type.toString());
+
+    const iconEl = slot.querySelector('.slot-icon');
+    if (iconEl) {
+      iconEl.className = 'slot-icon';
+      const iconClass = getSlotIconClass(type);
+      if (iconClass) {
+        iconEl.classList.add(iconClass);
+      }
+    }
+
+    const countEl = document.getElementById(`count-${index}`);
     if (countEl) {
-      countEl.textContent = inventory[type].toString();
+      countEl.textContent = (inventory[type] || 0).toString();
     }
   });
+
+  selectSlot(activeSlotIndex);
 }
 
 // 初期インベントリ数の同期
-updateInventoryUI();
-
+syncHotbarUI();
 
 function selectSlot(index: number) {
   if (index < 0 || index >= slotBlocks.length) return;
@@ -171,11 +221,28 @@ function animate(time: number) {
   // 昼夜サイクルの更新
   timeManager.update(deltaTime, player.position);
 
+  // Tabキー押下時のホットバーページ切り替え
+  if (input.consumeJustPressed('Tab')) {
+    activePage = 1 - activePage;
+    slotBlocks = hotbarPages[activePage];
+    syncHotbarUI();
+  }
+
+  // Eキー押下時のインベントリ開閉アクション
+  if (input.consumeJustPressed('KeyE')) {
+    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+    if (isInventoryOpen) {
+      closeInventory();
+    } else {
+      openInventory();
+    }
+  }
+
   // Qキー押下時のアイテム投棄アクション
   if (input.consumeJustPressed('KeyQ')) {
     if (inventory[activeBlockType] > 0) {
       inventory[activeBlockType]--;
-      updateInventoryUI();
+      syncHotbarUI();
 
       // プレイヤーの視線方向にドロップアイテムを放出
       const eyeHeight = CONFIG.PLAYER_HEIGHT / 2 - 0.2;
@@ -207,7 +274,7 @@ function animate(time: number) {
       const dist = item.mesh.position.distanceTo(player.position);
       if (dist < 0.8) {
         inventory[item.blockType] = (inventory[item.blockType] || 0) + 1;
-        updateInventoryUI();
+        syncHotbarUI();
       }
       droppedItems.splice(i, 1);
     }
@@ -356,6 +423,22 @@ window.addEventListener('mousedown', (e) => {
 
       
     } else if (shouldPlace) {
+      // クリックした対象のブロックを特定する
+      const clickedTarget = point.clone().sub(normal.clone().multiplyScalar(0.1));
+      const ctx_x = Math.floor(clickedTarget.x);
+      const cty_y = Math.floor(clickedTarget.y);
+      const ctz_z = Math.floor(clickedTarget.z);
+      const clickedBlockType = world.getBlock(ctx_x, cty_y, ctz_z);
+
+      // 右クリックした対象がドアの場合、開閉をトグルする
+      if (clickedBlockType === BlockType.DOOR_CLOSED) {
+        world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_OPEN);
+        return;
+      } else if (clickedBlockType === BlockType.DOOR_OPEN) {
+        world.setBlock(ctx_x, cty_y, ctz_z, BlockType.DOOR_CLOSED);
+        return;
+      }
+
       // インベントリの残個数チェック
       if (inventory[activeBlockType] <= 0) return;
 
@@ -394,7 +477,7 @@ window.addEventListener('mousedown', (e) => {
         // 選択されたブロックを設置し、インベントリから消費
         world.setBlock(bx, by, bz, activeBlockType);
         inventory[activeBlockType]--;
-        updateInventoryUI();
+        syncHotbarUI();
       }
     }
   }
@@ -426,9 +509,13 @@ if (startBtn && menuOverlay) {
       }
       if (hotbar) hotbar.style.display = 'flex';
       if (hud) hud.style.display = 'block';
+      if (inventoryModal) inventoryModal.style.display = 'none';
     } else {
-      if (hotbar) hotbar.style.display = 'none';
-      if (hud) hud.style.display = 'none';
+      const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+      if (!isInventoryOpen) {
+        if (hotbar) hotbar.style.display = 'none';
+        if (hud) hud.style.display = 'none';
+      }
     }
   });
 }
@@ -481,5 +568,107 @@ window.addEventListener('config-changed', () => {
     }
   });
 });
+
+// インベントリ画面の関連要素の取得と制御ロジック
+const inventoryModal = document.getElementById('inventory-modal');
+const inventoryItemList = document.getElementById('inventory-item-list');
+const inventoryHotbarSlots = document.getElementById('inventory-hotbar-slots');
+const inventoryCloseBtn = document.getElementById('inventory-close-btn');
+
+let selectedInventoryBlock: BlockType | null = null;
+
+const allBlocks = [
+  BlockType.GROUND,
+  BlockType.DIRT,
+  BlockType.STONE,
+  BlockType.WOOD,
+  BlockType.LEAVES,
+  BlockType.PLANK,
+  BlockType.BRICK,
+  BlockType.SAND,
+  BlockType.COAL_ORE,
+  BlockType.TORCH,
+  BlockType.GLASS,
+  BlockType.DOOR_CLOSED,
+];
+
+function openInventory() {
+  if (!inventoryModal) return;
+  document.exitPointerLock();
+  inventoryModal.style.display = 'flex';
+  selectedInventoryBlock = null;
+  renderInventoryItemList();
+  renderInventoryHotbarSlots();
+}
+
+function closeInventory() {
+  if (!inventoryModal) return;
+  inventoryModal.style.display = 'none';
+  input.requestLock();
+}
+
+if (inventoryCloseBtn) {
+  inventoryCloseBtn.addEventListener('click', closeInventory);
+}
+
+function renderInventoryItemList() {
+  if (!inventoryItemList) return;
+  inventoryItemList.innerHTML = '';
+
+  allBlocks.forEach(type => {
+    const prop = BLOCKS[type];
+    const itemEl = document.createElement('div');
+    itemEl.className = 'inventory-item';
+    if (selectedInventoryBlock === type) {
+      itemEl.classList.add('selected');
+    }
+
+    const iconEl = document.createElement('div');
+    iconEl.className = `slot-icon ${getSlotIconClass(type)}`;
+    itemEl.appendChild(iconEl);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'item-name';
+    nameEl.textContent = prop.name;
+    itemEl.appendChild(nameEl);
+
+    itemEl.addEventListener('click', () => {
+      selectedInventoryBlock = type;
+      renderInventoryItemList();
+    });
+
+    inventoryItemList.appendChild(itemEl);
+  });
+}
+
+function renderInventoryHotbarSlots() {
+  if (!inventoryHotbarSlots) return;
+  inventoryHotbarSlots.innerHTML = '';
+
+  slotBlocks.forEach((type, index) => {
+    const slotEl = document.createElement('div');
+    slotEl.className = 'inventory-hotbar-slot';
+    slotEl.setAttribute('data-index', index.toString());
+
+    const iconEl = document.createElement('div');
+    iconEl.className = `slot-icon ${getSlotIconClass(type)}`;
+    slotEl.appendChild(iconEl);
+
+    const numEl = document.createElement('div');
+    numEl.className = 'slot-num';
+    numEl.textContent = (index + 1).toString();
+    slotEl.appendChild(numEl);
+
+    slotEl.addEventListener('click', () => {
+      if (selectedInventoryBlock !== null) {
+        slotBlocks[index] = selectedInventoryBlock;
+        syncHotbarUI();
+        renderInventoryHotbarSlots();
+      }
+    });
+
+    inventoryHotbarSlots.appendChild(slotEl);
+  });
+}
 
 
