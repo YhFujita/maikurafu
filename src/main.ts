@@ -463,48 +463,6 @@ function animate(time: number) {
     syncHotbarUI();
   }
 
-  // Eキー等押下時のインベントリ開閉アクション
-  if (input.consumeJustPressed(configStore.getConfig().keyOpenInventory)) {
-    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
-    if (isInventoryOpen) {
-      closeInventory();
-    } else if (input.isLocked) {
-      openInventory();
-    }
-  }
-
-  // Cキー等押下時のクラフト画面開閉アクション
-  if (input.consumeJustPressed(configStore.getConfig().keyOpenCrafting)) {
-    const craftingModal = document.getElementById('crafting-modal');
-    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
-    if (isCraftingOpen) {
-      closeCrafting();
-    } else if (input.isLocked) {
-      openCrafting();
-    }
-  }
-
-  // Mキー等押下時のマニュアル画面開閉アクション
-  if (input.consumeJustPressed(configStore.getConfig().keyOpenManual)) {
-    const manualModal = document.getElementById('manual-modal');
-    const isManualOpen = manualModal && manualModal.style.display === 'flex';
-    if (isManualOpen) {
-      closeManual();
-    } else if (input.isLocked) {
-      openManual();
-    }
-  }
-
-  // 設定キー等押下時の広域マップ開閉アクション
-  if (input.consumeJustPressed(configStore.getConfig().keyOpenMap)) {
-    const mapModal = document.getElementById('world-map-modal');
-    const isMapOpen = mapModal && mapModal.style.display === 'flex';
-    if (isMapOpen) {
-      closeMap();
-    } else if (input.isLocked) {
-      openMap();
-    }
-  }
 
   // 設定キー等押下時の拠点登録アクション
   if (input.consumeJustPressed(configStore.getConfig().keyRegisterHome)) {
@@ -527,43 +485,6 @@ function animate(time: number) {
     }
   }
 
-  // Escキーで開いているモーダルを閉じる処理
-  if (input.consumeJustPressed('Escape')) {
-    let closedAny = false;
-    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
-    if (isInventoryOpen) {
-      closeInventory();
-      closedAny = true;
-    }
-
-    const craftingModal = document.getElementById('crafting-modal');
-    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
-    if (!closedAny && isCraftingOpen) {
-      closeCrafting();
-      closedAny = true;
-    }
-
-    const manualModal = document.getElementById('manual-modal');
-    const isManualOpen = manualModal && manualModal.style.display === 'flex';
-    if (!closedAny && isManualOpen) {
-      closeManual();
-      closedAny = true;
-    }
-
-    const mapModal = document.getElementById('world-map-modal');
-    const isMapOpen = mapModal && mapModal.style.display === 'flex';
-    if (!closedAny && isMapOpen) {
-      closeMap();
-      closedAny = true;
-    }
-
-    const configModal = document.getElementById('config-modal');
-    const isConfigOpen = configModal && configModal.style.display === 'flex';
-    if (!closedAny && isConfigOpen) {
-      configModal.style.display = 'none';
-      closedAny = true;
-    }
-  }
 
   // Qキー押下時のアイテム投棄アクション
   if (input.consumeJustPressed('KeyQ')) {
@@ -1027,6 +948,147 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
     }
   }
 }
+
+// メニュー・モーダルの開閉キー（ユーザーアクティベーションが必要なアクション）の直接処理
+window.addEventListener('keydown', (e) => {
+  // テキスト入力欄（ログイン時のID入力など）フォーカス時はショートカットキーを無効化する
+  if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+    return;
+  }
+
+  const config = configStore.getConfig();
+
+  // Escapeキーで開いているモーダルを閉じる処理
+  if (e.code === 'Escape') {
+    let closedAny = false;
+
+    const inventoryModal = document.getElementById('inventory-modal');
+    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+    if (isInventoryOpen) {
+      closeInventory();
+      closedAny = true;
+    }
+
+    const craftingModal = document.getElementById('crafting-modal');
+    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
+    if (!closedAny && isCraftingOpen) {
+      closeCrafting();
+      closedAny = true;
+    }
+
+    const manualModal = document.getElementById('manual-modal');
+    const isManualOpen = manualModal && manualModal.style.display === 'flex';
+    if (!closedAny && isManualOpen) {
+      closeManual();
+      closedAny = true;
+    }
+
+    const mapModal = document.getElementById('world-map-modal');
+    const isMapOpen = mapModal && mapModal.style.display === 'flex';
+    if (!closedAny && isMapOpen) {
+      closeMap();
+      closedAny = true;
+    }
+
+    const configModal = document.getElementById('config-modal');
+    const isConfigOpen = configModal && configModal.style.display === 'flex';
+    if (!closedAny && isConfigOpen) {
+      configModal.style.display = 'none';
+      input.lastModalCloseTime = performance.now();
+      input.requestLock();
+      closedAny = true;
+    }
+
+    if (closedAny) {
+      e.preventDefault();
+      // イベントを消費して、InputHandler側での多重入力を防ぐ
+      input.consumeJustPressed('Escape');
+    }
+  }
+
+  // Eキー等押下時のインベントリ開閉アクション
+  if (e.code === config.keyOpenInventory) {
+    const inventoryModal = document.getElementById('inventory-modal');
+    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+    if (isInventoryOpen) {
+      closeInventory();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenInventory);
+    } else if (input.isLocked) {
+      openInventory();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenInventory);
+    }
+  }
+
+  // Cキー等押下時のクラフト画面開閉アクション
+  if (e.code === config.keyOpenCrafting) {
+    const craftingModal = document.getElementById('crafting-modal');
+    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
+    if (isCraftingOpen) {
+      closeCrafting();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenCrafting);
+    } else if (input.isLocked) {
+      openCrafting();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenCrafting);
+    }
+  }
+
+  // Nキー等押下時のマニュアル画面開閉アクション
+  if (e.code === config.keyOpenManual) {
+    const manualModal = document.getElementById('manual-modal');
+    const isManualOpen = manualModal && manualModal.style.display === 'flex';
+    if (isManualOpen) {
+      closeManual();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenManual);
+    } else if (input.isLocked) {
+      openManual();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenManual);
+    }
+  }
+
+  // Mキー等押下時の広域マップ開閉アクション
+  if (e.code === config.keyOpenMap) {
+    const mapModal = document.getElementById('world-map-modal');
+    const isMapOpen = mapModal && mapModal.style.display === 'flex';
+    if (isMapOpen) {
+      closeMap();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenMap);
+    } else if (input.isLocked) {
+      openMap();
+      e.preventDefault();
+      input.consumeJustPressed(config.keyOpenMap);
+    }
+  }
+});
+
+// ポインターロックエラー（拒否など）時のセーフティネット
+document.addEventListener('pointerlockerror', () => {
+  const menuOverlay = document.getElementById('menu-overlay');
+  const inventoryModal = document.getElementById('inventory-modal');
+  const craftingModal = document.getElementById('crafting-modal');
+  const manualModal = document.getElementById('manual-modal');
+  const mapModal = document.getElementById('world-map-modal');
+
+  const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+  const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
+  const isManualOpen = manualModal && manualModal.style.display === 'flex';
+  const isMapOpen = mapModal && mapModal.style.display === 'flex';
+
+  // モーダルがどれも開いていない、かつポインターロックが失敗した場合は、
+  // 操作不能（フリーズ）を防ぐために一時停止メニュー（初期画面）を強制表示する
+  if (!isInventoryOpen && !isCraftingOpen && !isManualOpen && !isMapOpen) {
+    if (menuOverlay) {
+      menuOverlay.style.display = 'flex';
+      menuOverlay.style.opacity = '1';
+    }
+  }
+});
 
 // マウスクリックによるブロックの設置・破壊
 window.addEventListener('mousedown', (e) => {
