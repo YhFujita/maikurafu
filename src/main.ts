@@ -14,6 +14,7 @@ import { TimeManager } from './system/TimeManager.ts';
 import { DroppedItem } from './item/DroppedItem.ts';
 import { Mob } from './mob/Mob.ts';
 import { SaveManager } from './system/SaveManager.ts';
+import { NavigationManager } from './ui/NavigationManager.ts';
 
 // レンダラーの初期化
 const renderer = new Renderer('canvas-container');
@@ -35,6 +36,9 @@ const droppedItems: DroppedItem[] = [];
 
 // 敵Mobの管理
 const mobs: Mob[] = [];
+
+// ナビゲーションの管理
+const navigation = new NavigationManager();
 
 
 // インベントリの管理（初期状態で各64個所持、剣は1個）
@@ -381,6 +385,9 @@ function animate(time: number) {
   // プレイヤーと入力の更新
   player.update(input, deltaTime, world, activeBlockType);
   
+  // コンパスの更新
+  navigation.updateCompass({ position: player.position, camera: renderer.camera });
+
   // 昼夜サイクルの更新
   timeManager.update(deltaTime, player.position);
 
@@ -421,6 +428,36 @@ function animate(time: number) {
     } else {
       openManual();
     }
+  }
+
+  // Vキー押下時の広域マップ開閉アクション
+  if (input.consumeJustPressed('KeyV')) {
+    const mapModal = document.getElementById('world-map-modal');
+    const isMapOpen = mapModal && mapModal.style.display === 'flex';
+    if (isMapOpen) {
+      closeMap();
+    } else {
+      openMap();
+    }
+  }
+
+  // Hキー押下時の拠点登録アクション
+  if (input.consumeJustPressed('KeyH')) {
+    navigation.setHome(player.position);
+    // 画面にメッセージを出す
+    const message = document.createElement('div');
+    message.style.position = 'absolute';
+    message.style.top = '100px';
+    message.style.left = '50%';
+    message.style.transform = 'translateX(-50%)';
+    message.style.color = '#32cd32';
+    message.style.fontSize = '1.5rem';
+    message.style.fontWeight = 'bold';
+    message.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
+    message.style.zIndex = '50';
+    message.textContent = '🏠 ここを拠点に設定しました';
+    document.body.appendChild(message);
+    setTimeout(() => message.remove(), 3000);
   }
 
   // Qキー押下時のアイテム投棄アクション
@@ -1071,6 +1108,21 @@ function closeManual() {
 
 if (manualCloseBtn) {
   manualCloseBtn.addEventListener('click', closeManual);
+}
+
+const mapModal = document.getElementById('world-map-modal');
+
+function openMap() {
+  if (!mapModal) return;
+  document.exitPointerLock();
+  mapModal.style.display = 'flex';
+  navigation.renderMap(world, player.position);
+}
+
+function closeMap() {
+  if (!mapModal) return;
+  mapModal.style.display = 'none';
+  input.requestLock();
 }
 
 if (manualToggleKidsBtn && manualContentNormal && manualContentKids) {

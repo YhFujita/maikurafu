@@ -59,6 +59,10 @@ export class World {
     return this.chunks.get(this.getChunkKey(cx, cy, cz));
   }
 
+  public *getLoadedChunks(): IterableIterator<Chunk> {
+    yield* this.chunks.values();
+  }
+
   public getBlock(x: number, y: number, z: number): BlockType {
     const cx = Math.floor(x / CONFIG.CHUNK_SIZE);
     const cy = Math.floor(y / CONFIG.CHUNK_SIZE);

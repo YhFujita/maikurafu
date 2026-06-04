@@ -48,8 +48,8 @@ export class InputHandler {
     if (key === 'Tab') {
       e.preventDefault();
     }
-    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC' || key === 'KeyM')) {
-      if (key === 'KeyE' || key === 'F5' || key === 'KeyC' || key === 'KeyM') {
+    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC' || key === 'KeyM' || key === 'KeyV' || key === 'KeyH')) {
+      if (key === 'KeyE' || key === 'F5' || key === 'KeyC' || key === 'KeyM' || key === 'KeyV') {
         e.preventDefault();
       }
     }
@@ -91,7 +91,9 @@ export class InputHandler {
       const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
       const manualModal = document.getElementById('manual-modal');
       const isManualOpen = manualModal && manualModal.style.display === 'flex';
-      if (!isInventoryOpen && !isCraftingOpen && !isManualOpen) {
+      const mapModal = document.getElementById('world-map-modal');
+      const isMapOpen = mapModal && mapModal.style.display === 'flex';
+      if (!isInventoryOpen && !isCraftingOpen && !isManualOpen && !isMapOpen) {
         if (menuOverlay) {
           menuOverlay.style.display = 'flex';
           menuOverlay.style.opacity = '1';

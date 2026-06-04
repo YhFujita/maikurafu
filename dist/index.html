@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +9,150 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   <style>
+    /* Compass UI */
+    #compass-container {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      z-index: 10;
+      pointer-events: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    #compass-bar {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    .compass-tick {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateX(-50%);
+    }
+
+    .compass-tick span {
+      font-size: 1.2rem;
+      color: #fff;
+    }
+
+    .compass-tick.minor span {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    #home-marker {
+      position: absolute;
+      top: 2px;
+      font-size: 1.5rem;
+      color: #32cd32;
+      transform: translateX(-50%);
+      text-shadow: 0 0 5px black;
+      transition: left 0.1s linear;
+      display: none;
+    }
+
+    #home-distance {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #32cd32;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px black;
+      font-size: 1.2rem;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+
+    /* Map Modal */
+    #world-map-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #world-map-container {
+      position: relative;
+      width: 80vmin;
+      height: 80vmin;
+      background: #111;
+      border: 4px solid #444;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    }
+
+    #world-map-canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      /* シャープなピクセル表示 */
+    }
+
+    .map-icon {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      pointer-events: none;
+    }
+
+    #map-player-icon {
+      color: #fff;
+      text-shadow: 0 0 5px black;
+    }
+
+    #map-home-icon {
+      color: #32cd32;
+      text-shadow: 0 0 5px black;
+      display: none;
+    }
+
+    .map-close-hint {
+      color: white;
+      margin-top: 15px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-shadow: 0 2px 4px black;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       user-select: none;
     }
-    
-    body, html {
+
+    body,
+    html {
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -43,19 +180,24 @@
       transform: translate(-50%, -50%);
       z-index: 10;
       pointer-events: none;
-      display: none; /* ポインターロック中のみ表示 */
+      display: none;
+      /* ポインターロック中のみ表示 */
     }
-    #crosshair::before, #crosshair::after {
+
+    #crosshair::before,
+    #crosshair::after {
       content: '';
       position: absolute;
       background: rgba(255, 255, 255, 0.8);
     }
+
     #crosshair::before {
       top: 4px;
       left: 0;
       width: 10px;
       height: 2px;
     }
+
     #crosshair::after {
       top: 0;
       left: 4px;
@@ -97,13 +239,16 @@
     ::-webkit-scrollbar {
       width: 6px;
     }
+
     ::-webkit-scrollbar-track {
       background: transparent;
     }
+
     ::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.2);
       border-radius: 3px;
     }
+
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.3);
     }
@@ -162,7 +307,7 @@
       justify-content: center;
       align-items: center;
     }
-    
+
     .recipe-item {
       display: flex;
       align-items: center;
@@ -173,11 +318,11 @@
       padding: 16px;
       transition: background 0.2s ease;
     }
-    
+
     .recipe-item:hover {
       background: rgba(255, 255, 255, 0.1);
     }
-    
+
     .recipe-output {
       display: flex;
       align-items: center;
@@ -186,13 +331,13 @@
       font-size: 1.1rem;
       width: 250px;
     }
-    
+
     .recipe-inputs {
       display: flex;
       gap: 12px;
       flex: 1;
     }
-    
+
     .recipe-input-item {
       display: flex;
       align-items: center;
@@ -202,16 +347,16 @@
       border-radius: 8px;
       font-size: 0.9rem;
     }
-    
+
     .recipe-input-item.lacking {
       color: #ef4444;
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
-    
+
     .recipe-input-item.sufficient {
       color: #10b981;
     }
-    
+
     .craft-btn {
       background: rgba(59, 130, 246, 0.2);
       border: 1px solid rgba(59, 130, 246, 0.5);
@@ -222,12 +367,12 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    
+
     .craft-btn:hover:not(:disabled) {
       background: rgba(59, 130, 246, 0.4);
       color: #fff;
     }
-    
+
     .craft-btn:disabled {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -308,11 +453,13 @@
       width: 100%;
       margin-bottom: 24px;
     }
+
     #config-btn:hover {
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.25);
       transform: translateY(-1px);
     }
+
     #config-btn:active {
       transform: translateY(1px);
     }
@@ -324,6 +471,7 @@
       width: 100%;
       margin-bottom: 24px;
     }
+
     .menu-action-btn {
       flex: 1;
       background: rgba(255, 255, 255, 0.05);
@@ -336,11 +484,13 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
+
     .menu-action-btn:hover {
       background: rgba(255, 255, 255, 0.12);
       border-color: rgba(255, 255, 255, 0.22);
       transform: translateY(-1px);
     }
+
     .menu-action-btn:active {
       transform: translateY(1px);
     }
@@ -427,10 +577,12 @@
       text-align: center;
       transition: all 0.2s;
     }
+
     .key-config-btn:hover {
       background: rgba(255, 255, 255, 0.2);
       border-color: rgba(255, 255, 255, 0.3);
     }
+
     .key-config-btn.waiting {
       background: #3b82f6;
       border-color: #60a5fa;
@@ -438,9 +590,17 @@
     }
 
     @keyframes pulse {
-      0% { opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { opacity: 0.6; }
+      0% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.6;
+      }
     }
 
     /* スイッチ（トグルボタン）のスタイル */
@@ -450,11 +610,13 @@
       width: 44px;
       height: 22px;
     }
+
     .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -466,6 +628,7 @@
       transition: .3s;
       border-radius: 22px;
     }
+
     .slider:before {
       position: absolute;
       content: "";
@@ -477,10 +640,12 @@
       transition: .3s;
       border-radius: 50%;
     }
-    input:checked + .slider {
+
+    input:checked+.slider {
       background-color: #3b82f6;
     }
-    input:checked + .slider:before {
+
+    input:checked+.slider:before {
       transform: translateX(22px);
     }
 
@@ -503,6 +668,7 @@
       box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
       transition: all 0.2s;
     }
+
     #config-save-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
@@ -519,6 +685,7 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     #config-default-btn:hover {
       background: rgba(255, 255, 255, 0.1);
       color: #e5e7eb;
@@ -534,6 +701,7 @@
       transition: all 0.2s;
       text-decoration: underline;
     }
+
     #config-close-btn:hover {
       color: #e5e7eb;
     }
@@ -590,22 +758,68 @@
       border-radius: 6px;
     }
 
-    .slot-grass { background: linear-gradient(135deg, #4ade80, #15803d); }
-    .slot-dirt { background: linear-gradient(135deg, #a16207, #451a03); }
-    .slot-stone { background: linear-gradient(135deg, #9ca3af, #4b5563); }
-    .slot-wood { background: linear-gradient(135deg, #d97706, #78350f); }
-    .slot-leaves { background: linear-gradient(135deg, #22c55e, #14532d); }
-    .slot-plank { background: linear-gradient(135deg, #fbbf24, #b45309); }
-    .slot-brick { background: linear-gradient(135deg, #ef4444, #7f1d1d); }
-    .slot-sand { background: linear-gradient(135deg, #fef08a, #ca8a04); }
-    .slot-torch { background: linear-gradient(135deg, #f97316, #eab308); }
-    .slot-glass { background: linear-gradient(135deg, rgba(240, 248, 255, 0.6), rgba(186, 230, 253, 0.4)); border: 1px solid rgba(255, 255, 255, 0.6); }
-    .slot-coal { background: linear-gradient(135deg, #4b5563, #1f2937); position: relative; }
-    .slot-coal::after { content: ''; position: absolute; width: 6px; height: 6px; background: #111; top: 12px; left: 12px; box-shadow: -6px -6px #111, 6px -4px #111, -4px 6px #111; }
+    .slot-grass {
+      background: linear-gradient(135deg, #4ade80, #15803d);
+    }
+
+    .slot-dirt {
+      background: linear-gradient(135deg, #a16207, #451a03);
+    }
+
+    .slot-stone {
+      background: linear-gradient(135deg, #9ca3af, #4b5563);
+    }
+
+    .slot-wood {
+      background: linear-gradient(135deg, #d97706, #78350f);
+    }
+
+    .slot-leaves {
+      background: linear-gradient(135deg, #22c55e, #14532d);
+    }
+
+    .slot-plank {
+      background: linear-gradient(135deg, #fbbf24, #b45309);
+    }
+
+    .slot-brick {
+      background: linear-gradient(135deg, #ef4444, #7f1d1d);
+    }
+
+    .slot-sand {
+      background: linear-gradient(135deg, #fef08a, #ca8a04);
+    }
+
+    .slot-torch {
+      background: linear-gradient(135deg, #f97316, #eab308);
+    }
+
+    .slot-glass {
+      background: linear-gradient(135deg, rgba(240, 248, 255, 0.6), rgba(186, 230, 253, 0.4));
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .slot-coal {
+      background: linear-gradient(135deg, #4b5563, #1f2937);
+      position: relative;
+    }
+
+    .slot-coal::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: #111;
+      top: 12px;
+      left: 12px;
+      box-shadow: -6px -6px #111, 6px -4px #111, -4px 6px #111;
+    }
+
     .slot-door {
       background: linear-gradient(135deg, #b45309, #78350f);
       position: relative;
     }
+
     .slot-door::before {
       content: '';
       position: absolute;
@@ -616,6 +830,7 @@
       background: rgba(186, 230, 253, 0.8);
       border-radius: 2px;
     }
+
     .slot-door::after {
       content: '';
       position: absolute;
@@ -626,18 +841,20 @@
       background: rgba(186, 230, 253, 0.8);
       border-radius: 2px;
     }
+
     .slot-stairs {
       background: linear-gradient(135deg, #fbbf24, #b45309);
       position: relative;
     }
+
     .slot-stairs::after {
       content: '▲';
       position: absolute;
       font-size: 1.0rem;
-      color: rgba(255,255,255,0.8);
+      color: rgba(255, 255, 255, 0.8);
       top: 8px;
       left: 10px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
     }
 
     /* 柵 (さく) */
@@ -645,20 +862,26 @@
       background: linear-gradient(135deg, #d4a76a, #8b5e2e);
       position: relative;
     }
+
     .slot-fence::before {
       content: '';
       position: absolute;
-      left: 2px; right: 2px;
-      top: 10px; height: 3px;
-      background: rgba(80,50,20,0.7);
+      left: 2px;
+      right: 2px;
+      top: 10px;
+      height: 3px;
+      background: rgba(80, 50, 20, 0.7);
       border-radius: 1px;
     }
+
     .slot-fence::after {
       content: '';
       position: absolute;
-      left: 2px; right: 2px;
-      top: 18px; height: 3px;
-      background: rgba(80,50,20,0.7);
+      left: 2px;
+      right: 2px;
+      top: 18px;
+      height: 3px;
+      background: rgba(80, 50, 20, 0.7);
       border-radius: 1px;
     }
 
@@ -668,21 +891,26 @@
       position: relative;
       overflow: hidden;
     }
+
     .slot-bed::before {
       content: '';
       position: absolute;
-      top: 4px; left: 4px;
-      width: 10px; height: 8px;
+      top: 4px;
+      left: 4px;
+      width: 10px;
+      height: 8px;
       background: #f3f4f6;
       border-radius: 3px;
     }
+
     .slot-bed::after {
       content: '';
       position: absolute;
       bottom: 3px;
-      left: 0; right: 0;
+      left: 0;
+      right: 0;
       height: 3px;
-      background: rgba(120,60,20,0.7);
+      background: rgba(120, 60, 20, 0.7);
     }
 
     /* かまど */
@@ -690,19 +918,25 @@
       background: linear-gradient(135deg, #9ca3af, #4b5563);
       position: relative;
     }
+
     .slot-furnace::before {
       content: '';
       position: absolute;
-      bottom: 5px; left: 7px;
-      width: 18px; height: 12px;
+      bottom: 5px;
+      left: 7px;
+      width: 18px;
+      height: 12px;
       background: #111;
       border-radius: 2px;
     }
+
     .slot-furnace::after {
       content: '';
       position: absolute;
-      bottom: 7px; left: 11px;
-      width: 6px; height: 8px;
+      bottom: 7px;
+      left: 11px;
+      width: 6px;
+      height: 8px;
       background: linear-gradient(to top, #f97316, #fbbf24);
       border-radius: 1px;
     }
@@ -712,19 +946,26 @@
       background: linear-gradient(135deg, #b45309, #78350f);
       position: relative;
     }
+
     .slot-chest::before {
       content: '';
       position: absolute;
-      top: 4px; left: 3px; right: 3px; bottom: 4px;
-      border: 2px solid rgba(80,40,10,0.8);
+      top: 4px;
+      left: 3px;
+      right: 3px;
+      bottom: 4px;
+      border: 2px solid rgba(80, 40, 10, 0.8);
       border-radius: 3px;
     }
+
     .slot-chest::after {
       content: '';
       position: absolute;
-      top: 50%; left: 50%;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
-      width: 6px; height: 5px;
+      width: 6px;
+      height: 5px;
       background: #fbbf24;
       border-radius: 1px;
       box-shadow: 0 2px 0 #92400e;
@@ -732,25 +973,65 @@
 
     /* 水 */
     .slot-water {
-      background: linear-gradient(135deg, rgba(30,100,230,0.6), rgba(10,50,150,0.8));
+      background: linear-gradient(135deg, rgba(30, 100, 230, 0.6), rgba(10, 50, 150, 0.8));
       position: relative;
     }
+
     .slot-water::after {
       content: '';
       position: absolute;
-      top: 50%; left: 10%; right: 10%;
+      top: 50%;
+      left: 10%;
+      right: 10%;
       height: 2px;
-      background: rgba(255,255,255,0.4);
+      background: rgba(255, 255, 255, 0.4);
       border-radius: 1px;
     }
 
     /* 武器 */
-    .slot-sword { background: linear-gradient(135deg, #cbd5e1, #64748b); position: relative; }
-    .slot-sword::after { content: '🗡'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; }
-    .slot-diamond-sword { background: linear-gradient(135deg, #67e8f9, #06b6d4); position: relative; }
-    .slot-diamond-sword::after { content: '🗡'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; color: #fff; text-shadow: 0 0 4px #22d3ee; }
-    .slot-hammer { background: linear-gradient(135deg, #a16207, #451a03); position: relative; }
-    .slot-hammer::after { content: '🔨'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; }
+    .slot-sword {
+      background: linear-gradient(135deg, #cbd5e1, #64748b);
+      position: relative;
+    }
+
+    .slot-sword::after {
+      content: '🗡';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+    }
+
+    .slot-diamond-sword {
+      background: linear-gradient(135deg, #67e8f9, #06b6d4);
+      position: relative;
+    }
+
+    .slot-diamond-sword::after {
+      content: '🗡';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+      color: #fff;
+      text-shadow: 0 0 4px #22d3ee;
+    }
+
+    .slot-hammer {
+      background: linear-gradient(135deg, #a16207, #451a03);
+      position: relative;
+    }
+
+    .slot-hammer::after {
+      content: '🔨';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+    }
 
     .slot-num {
       position: absolute;
@@ -909,14 +1190,15 @@
 
     .inventory-grid {
       display: grid;
-      grid-template-columns: repeat(9, 1fr);
-      gap: 8px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
       background: rgba(0, 0, 0, 0.2);
-      padding: 12px;
+      padding: 16px;
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.05);
-      max-height: 250px;
+      max-height: 400px;
       overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .inventory-item {
@@ -1016,6 +1298,7 @@
       transform: translateY(-1px);
       box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
     }
+
     .armor-btn.active {
       border-color: #3b82f6 !important;
       box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
@@ -1036,7 +1319,7 @@
       justify-content: center;
       align-items: center;
     }
-    
+
     #manual-card {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1055,7 +1338,9 @@
       color: #d1d5db;
     }
 
-    #manual-content h1, #manual-content h2, #manual-content h3 {
+    #manual-content h1,
+    #manual-content h2,
+    #manual-content h3 {
       color: #fff;
       margin-top: 20px;
       margin-bottom: 10px;
@@ -1070,7 +1355,8 @@
       margin-bottom: 20px;
     }
 
-    #manual-content th, #manual-content td {
+    #manual-content th,
+    #manual-content td {
       border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 8px;
       text-align: left;
@@ -1079,21 +1365,30 @@
     #manual-content th {
       background: rgba(255, 255, 255, 0.1);
     }
-    
+
     .manual-close-container {
       display: flex;
       justify-content: flex-end;
       margin-top: 20px;
     }
   </style>
-  <script type="module" crossorigin src="./assets/index-BhzMijLR.js"></script>
+  <script type="module" crossorigin src="./assets/index-CBr00BCP.js"></script>
 </head>
+
 <body>
   <!-- 3Dレンダリング用のキャンバスコンテナ -->
   <div id="canvas-container"></div>
 
   <!-- クロスヘア -->
   <div id="crosshair"></div>
+
+  <div id="compass-container">
+    <div id="compass-bar">
+      <!-- Ticks will be generated by JS -->
+    </div>
+    <div id="home-marker">🏠</div>
+  </div>
+  <div id="home-distance"></div>
 
   <!-- ダメージフラッシュ用の赤オーバーレイ -->
   <div id="damage-overlay"></div>
@@ -1109,24 +1404,28 @@
     <div id="menu-card">
       <h1>MAIKURAFU 3D</h1>
       <p class="subtitle">TypeScript & Three.js Voxel Game</p>
-      
+
       <div style="margin-bottom: 20px; text-align: left;">
-        <label for="account-id-input" style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">アカウントID (空欄でオフラインプレイ):</label>
-        <input type="text" id="account-id-input" list="account-id-list" placeholder="例: user_A" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
+        <label for="account-id-input"
+          style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">アカウントID (空欄でオフラインプレイ):</label>
+        <input type="text" id="account-id-input" list="account-id-list" placeholder="例: user_A"
+          style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
         <datalist id="account-id-list"></datalist>
       </div>
       <div style="margin-bottom: 24px; text-align: left;">
-        <label for="world-id-input" style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">ワールドID (将来用):</label>
-        <input type="text" id="world-id-input" value="shared_world_1" placeholder="例: shared_world_1" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
+        <label for="world-id-input"
+          style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">ワールドID (将来用):</label>
+        <input type="text" id="world-id-input" value="shared_world_1" placeholder="例: shared_world_1"
+          style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
       </div>
       <button id="start-btn">ゲームスタート</button>
       <button id="config-btn">設定変更</button>
-      
+
       <div class="save-load-section">
         <button id="cloud-save-btn" class="menu-action-btn">クラウド手動セーブ</button>
         <button id="cloud-load-btn" class="menu-action-btn">クラウドからロード</button>
       </div>
-      
+
       <div class="instructions">
         <h3>コントロール</h3>
         <div class="instruction-row">
@@ -1179,7 +1478,8 @@
   <!-- 画面左下のHUD -->
   <div id="hud">
     <div class="hud-panel">
-      <div class="hud-row">ライフ: <div id="hp-container">❤❤❤❤❤❤❤❤❤❤</div></div>
+      <div class="hud-row">ライフ: <div id="hp-container">❤❤❤❤❤❤❤❤❤❤</div>
+      </div>
       <div class="hud-row">座標: <span id="pos-display">0.0, 0.0, 0.0</span></div>
       <div class="hud-row">アクティブチャンク数: <span id="chunks-display">0</span></div>
       <div class="hud-row">物理ボディ数: <span id="bodies-display">0</span></div>
@@ -1187,7 +1487,8 @@
   </div>
 
   <!-- セーブトースト通知 -->
-  <div id="save-toast" style="position: absolute; top: 20px; right: 20px; background: rgba(40, 167, 69, 0.9); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 100; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+  <div id="save-toast"
+    style="position: absolute; top: 20px; right: 20px; background: rgba(40, 167, 69, 0.9); color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; z-index: 100; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
     セーブしました
   </div>
 
@@ -1227,7 +1528,7 @@
           <button id="key-break-btn" class="key-config-btn">B</button>
         </div>
       </div>
-      
+
       <div class="config-section">
         <h3>操作オプション</h3>
         <div class="config-row">
@@ -1248,7 +1549,7 @@
 
 
       <div class="config-actions">
-        <button id="config-save-btn">保存して閉じる</button>
+        <button id="config-save-btn">ほぞんして とじる</button>
         <button id="config-default-btn">デフォルトに戻す</button>
         <button id="config-close-btn">キャンセル</button>
       </div>
@@ -1262,7 +1563,7 @@
         <h2>カバン（インベントリ）</h2>
         <p class="inventory-tip">ブロックをクリックしてえらび、下のホットバーをクリックするといれかえられます</p>
       </div>
-      
+
       <!-- カバンの中身（利用可能なブロック一覧） -->
       <div class="inventory-section">
         <h3>ブロックいちらん</h3>
@@ -1270,7 +1571,7 @@
           <!-- JSで動的に追加されます -->
         </div>
       </div>
-      
+
       <!-- ホットバーの割り当てプレビュー -->
       <div class="inventory-section">
         <h3>ホットバーのわりあて</h3>
@@ -1278,15 +1579,20 @@
           <!-- JSで実際のホットバーと同期して生成されます -->
         </div>
       </div>
-      
+
       <!-- キャラクターのそうび（きせかえ） -->
       <div class="inventory-section">
         <h3>そうび（きせかえ）</h3>
-        <div id="armor-selection" style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.05);">
-          <button class="armor-btn active" data-armor="none" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 2px solid transparent; color: white; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">なし</button>
-          <button class="armor-btn" data-armor="leather" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(161, 98, 7, 0.2); border: 2px solid transparent; color: #f59e0b; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">革のそうび</button>
-          <button class="armor-btn" data-armor="iron" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(156, 163, 175, 0.2); border: 2px solid transparent; color: #d1d5db; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">鉄のそうび</button>
-          <button class="armor-btn" data-armor="diamond" style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(6, 182, 212, 0.2); border: 2px solid transparent; color: #22d3ee; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">ダイヤそうび</button>
+        <div id="armor-selection"
+          style="display: flex; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.05);">
+          <button class="armor-btn active" data-armor="none"
+            style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 2px solid transparent; color: white; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">なし</button>
+          <button class="armor-btn" data-armor="leather"
+            style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(161, 98, 7, 0.2); border: 2px solid transparent; color: #f59e0b; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">革のそうび</button>
+          <button class="armor-btn" data-armor="iron"
+            style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(156, 163, 175, 0.2); border: 2px solid transparent; color: #d1d5db; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">鉄のそうび</button>
+          <button class="armor-btn" data-armor="diamond"
+            style="flex: 1; padding: 10px; border-radius: 8px; background: rgba(6, 182, 212, 0.2); border: 2px solid transparent; color: #22d3ee; cursor: pointer; font-family: inherit; font-size: 0.85rem; font-weight: 600; transition: all 0.15s ease;">ダイヤそうび</button>
         </div>
       </div>
 
@@ -1298,18 +1604,21 @@
 
   <!-- クラフト画面 -->
   <div id="crafting-modal" style="display: none;">
-    <div id="crafting-card" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
+    <div id="crafting-card"
+      style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3); max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 20px;">
       <div class="crafting-header" style="text-align: center; margin-bottom: 20px;">
         <h2 style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 10px;">クラフト（作る）</h2>
         <p style="color: #9ca3af; font-size: 0.95rem;">素材を消費して新しいアイテムを作成します</p>
       </div>
-      
+
       <div id="recipe-list" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
         <!-- JSでレシピが動的に追加されます -->
       </div>
-      
+
       <div class="crafting-actions" style="margin-top: 20px; text-align: center;">
-        <button id="crafting-close-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">閉じる (C / Esc)</button>
+        <button id="crafting-close-btn"
+          style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">閉じる
+          (C / Esc)</button>
       </div>
     </div>
   </div>
@@ -1317,22 +1626,62 @@
   <!-- マニュアル画面 -->
   <div id="manual-modal" style="display: none;">
     <div id="manual-card">
+      <div id="manual-header" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <button id="manual-toggle-kids-btn"
+          style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">ひらがなモードにする</button>
+      </div>
       <div id="manual-content">
         <h1>クラフト・素材あつめマニュアル</h1>
         <p>このゲームでは、世界中から素材を集めて新しいアイテムを作り出し、冒険や建築に役立てることができます。<br>ここでは「素材の集め方」「クラフト（合成）のやり方」「全レシピ一覧」をご紹介します。</p>
-        
+
         <h2>⛏️ 1. 基本的な素材の集め方</h2>
         <p>フィールド上にあるブロックを「左クリック（長押し）」で破壊することで、アイテムとして入手できます。<br>一部のブロックは、<strong>見た目とは違うアイテム</strong>を落とすことがあります。</p>
         <table>
-          <tr><th>壊すブロック</th><th>手に入るアイテム</th><th>解説</th></tr>
-          <tr><td><strong>木（原木）</strong></td><td><strong>木（原木）</strong></td><td>全ての基本。まずはこれを集めましょう。</td></tr>
-          <tr><td><strong>石</strong></td><td><strong>丸石</strong></td><td>石を壊すとゴツゴツした丸石になります。石ツールやかまどの材料になります。</td></tr>
-          <tr><td><strong>草ブロック</strong></td><td><strong>土</strong></td><td>表面に草が生えているブロックですが、壊すとただの土になります。</td></tr>
-          <tr><td><strong>葉っぱ</strong></td><td><strong>（なし）または リンゴ</strong></td><td>基本は何も落としませんが、<strong>5%の確率で「リンゴ」</strong>を落とします。</td></tr>
-          <tr><td><strong>石炭鉱石</strong></td><td><strong>石炭（アイテム）</strong></td><td>黒いブツブツがある石。松明の材料や、物を焼くときの燃料になります。</td></tr>
-          <tr><td><strong>鉄鉱石</strong></td><td><strong>鉄鉱石</strong></td><td>茶色いブツブツがある石。そのままでは使えず、石炭と一緒に焼く必要があります。</td></tr>
-          <tr><td><strong>金鉱石</strong></td><td><strong>金鉱石</strong></td><td>黄色いブツブツがある石。鉄と同様に焼く必要があります。</td></tr>
-          <tr><td><strong>ダイヤ鉱石</strong></td><td><strong>ダイヤモンド</strong></td><td>水色のブツブツがある石。最も硬い武器やツールの材料です。</td></tr>
+          <tr>
+            <th>壊すブロック</th>
+            <th>手に入るアイテム</th>
+            <th>解説</th>
+          </tr>
+          <tr>
+            <td><strong>木（原木）</strong></td>
+            <td><strong>木（原木）</strong></td>
+            <td>全ての基本。まずはこれを集めましょう。</td>
+          </tr>
+          <tr>
+            <td><strong>石</strong></td>
+            <td><strong>丸石</strong></td>
+            <td>石を壊すとゴツゴツした丸石になります。石ツールやかまどの材料になります。</td>
+          </tr>
+          <tr>
+            <td><strong>草ブロック</strong></td>
+            <td><strong>土</strong></td>
+            <td>表面に草が生えているブロックですが、壊すとただの土になります。</td>
+          </tr>
+          <tr>
+            <td><strong>葉っぱ</strong></td>
+            <td><strong>（なし）または リンゴ</strong></td>
+            <td>基本は何も落としませんが、<strong>5%の確率で「リンゴ」</strong>を落とします。</td>
+          </tr>
+          <tr>
+            <td><strong>石炭鉱石</strong></td>
+            <td><strong>石炭（アイテム）</strong></td>
+            <td>黒いブツブツがある石。松明の材料や、物を焼くときの燃料になります。</td>
+          </tr>
+          <tr>
+            <td><strong>鉄鉱石</strong></td>
+            <td><strong>鉄鉱石</strong></td>
+            <td>茶色いブツブツがある石。そのままでは使えず、石炭と一緒に焼く必要があります。</td>
+          </tr>
+          <tr>
+            <td><strong>金鉱石</strong></td>
+            <td><strong>金鉱石</strong></td>
+            <td>黄色いブツブツがある石。鉄と同様に焼く必要があります。</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤ鉱石</strong></td>
+            <td><strong>ダイヤモンド</strong></td>
+            <td>水色のブツブツがある石。最も硬い武器やツールの材料です。</td>
+          </tr>
         </table>
 
         <h2>🛠️ 2. クラフト（合成）のやり方</h2>
@@ -1346,60 +1695,384 @@
         <h2>📜 3. 全レシピ一覧</h2>
         <h3>🪵 基本素材・建築ブロック</h3>
         <table>
-          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>使い道</th></tr>
-          <tr><td><strong>木材</strong> ×4</td><td>木(原木) ×1</td><td>建築の基本ブロック。棒などの素材にもなります。</td></tr>
-          <tr><td><strong>木の棒</strong> ×4</td><td>木材 ×2</td><td>ツールの柄（持つところ）や松明の材料になります。</td></tr>
-          <tr><td><strong>松明</strong> ×4</td><td>木の棒 ×1, 石炭 ×1</td><td>暗い場所を明るく照らします。</td></tr>
-          <tr><td><strong>木の階段</strong> ×4</td><td>木材 ×6</td><td>段差をスムーズに登れるようになります。</td></tr>
-          <tr><td><strong>柵</strong> ×3</td><td>木材 ×2, 木の棒 ×4</td><td>動物を囲ったり、装飾に使えます。</td></tr>
-          <tr><td><strong>ドア</strong> ×3</td><td>木材 ×6</td><td>開け閉めできる扉です（右クリックで操作）。</td></tr>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+            <th>使い道</th>
+          </tr>
+          <tr>
+            <td><strong>木材</strong> ×4</td>
+            <td>木(原木) ×1</td>
+            <td>建築の基本ブロック。棒などの素材にもなります。</td>
+          </tr>
+          <tr>
+            <td><strong>木の棒</strong> ×4</td>
+            <td>木材 ×2</td>
+            <td>ツールの柄（持つところ）や松明の材料になります。</td>
+          </tr>
+          <tr>
+            <td><strong>松明</strong> ×4</td>
+            <td>木の棒 ×1, 石炭 ×1</td>
+            <td>暗い場所を明るく照らします。</td>
+          </tr>
+          <tr>
+            <td><strong>木の階段</strong> ×4</td>
+            <td>木材 ×6</td>
+            <td>段差をスムーズに登れるようになります。</td>
+          </tr>
+          <tr>
+            <td><strong>柵</strong> ×3</td>
+            <td>木材 ×2, 木の棒 ×4</td>
+            <td>動物を囲ったり、装飾に使えます。</td>
+          </tr>
+          <tr>
+            <td><strong>ドア</strong> ×3</td>
+            <td>木材 ×6</td>
+            <td>開け閉めできる扉です（右クリックで操作）。</td>
+          </tr>
         </table>
 
         <h3>🛏️ 設備・インテリア</h3>
         <table>
-          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>使い道</th></tr>
-          <tr><td><strong>かまど</strong></td><td>丸石 ×8</td><td>（※現在は飾りブロックです。精錬はCキーのクラフトで行います）</td></tr>
-          <tr><td><strong>チェスト</strong></td><td>木材 ×8</td><td>（※現在は飾りブロックです）</td></tr>
-          <tr><td><strong>ベッド</strong></td><td>木材 ×3, 木(原木) ×3</td><td>右クリックで寝そべることができます。</td></tr>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+            <th>使い道</th>
+          </tr>
+          <tr>
+            <td><strong>かまど</strong></td>
+            <td>丸石 ×8</td>
+            <td>（※現在は飾りブロックです。精錬はCキーのクラフトで行います）</td>
+          </tr>
+          <tr>
+            <td><strong>チェスト</strong></td>
+            <td>木材 ×8</td>
+            <td>（※現在は飾りブロックです）</td>
+          </tr>
+          <tr>
+            <td><strong>ベッド</strong></td>
+            <td>木材 ×3, 木(原木) ×3</td>
+            <td>右クリックで寝そべることができます。</td>
+          </tr>
         </table>
 
         <h3>🔥 精錬（石炭を燃料にして焼くレシピ）</h3>
         <table>
-          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>解説</th></tr>
-          <tr><td><strong>石</strong></td><td>丸石 ×1, 石炭 ×1</td><td>丸石を焼いて、滑らかな元の石ブロックに戻します。</td></tr>
-          <tr><td><strong>ガラス</strong></td><td>砂 ×1, 石炭 ×1</td><td>砂を焼いて透明なガラスブロックを作ります。</td></tr>
-          <tr><td><strong>鉄インゴット</strong></td><td>鉄鉱石 ×1, 石炭 ×1</td><td>鉄のツールや防具の材料になります。</td></tr>
-          <tr><td><strong>金インゴット</strong></td><td>金鉱石 ×1, 石炭 ×1</td><td>（今後の拡張用素材）</td></tr>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+            <th>解説</th>
+          </tr>
+          <tr>
+            <td><strong>石</strong></td>
+            <td>丸石 ×1, 石炭 ×1</td>
+            <td>丸石を焼いて、滑らかな元の石ブロックに戻します。</td>
+          </tr>
+          <tr>
+            <td><strong>ガラス</strong></td>
+            <td>砂 ×1, 石炭 ×1</td>
+            <td>砂を焼いて透明なガラスブロックを作ります。</td>
+          </tr>
+          <tr>
+            <td><strong>鉄インゴット</strong></td>
+            <td>鉄鉱石 ×1, 石炭 ×1</td>
+            <td>鉄のツールや防具の材料になります。</td>
+          </tr>
+          <tr>
+            <td><strong>金インゴット</strong></td>
+            <td>金鉱石 ×1, 石炭 ×1</td>
+            <td>（今後の拡張用素材）</td>
+          </tr>
         </table>
 
         <h3>⛏️ ツール（採掘・伐採など）</h3>
         <table>
-          <tr><th>作り出せるアイテム</th><th>必要な素材</th></tr>
-          <tr><td><strong>木のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 木材（ツルハシ/斧は3, シャベルは1）</td></tr>
-          <tr><td><strong>石のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 丸石（ツルハシ/斧は3, シャベルは1）</td></tr>
-          <tr><td><strong>鉄のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 鉄インゴット（ツルハシ/斧は3, シャベルは1）</td></tr>
-          <tr><td><strong>ダイヤのツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, ダイヤモンド（ツルハシ/斧は3, シャベルは1）</td></tr>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+          </tr>
+          <tr>
+            <td><strong>木のツルハシ・斧・シャベル</strong></td>
+            <td>木の棒 ×2, 木材（ツルハシ/斧は3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>石のツルハシ・斧・シャベル</strong></td>
+            <td>木の棒 ×2, 丸石（ツルハシ/斧は3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>鉄のツルハシ・斧・シャベル</strong></td>
+            <td>木の棒 ×2, 鉄インゴット（ツルハシ/斧は3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤのツルハシ・斧・シャベル</strong></td>
+            <td>木の棒 ×2, ダイヤモンド（ツルハシ/斧は3, シャベルは1）</td>
+          </tr>
         </table>
 
         <h3>⚔️ 武器・防具</h3>
         <table>
-          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>ダメージ/効果</th></tr>
-          <tr><td><strong>石の剣</strong></td><td>木の棒 ×1, 丸石 ×2</td><td>4ダメージ</td></tr>
-          <tr><td><strong>ダイヤの剣</strong></td><td>木の棒 ×1, ダイヤモンド ×2</td><td>6ダメージ（最強の剣！）</td></tr>
-          <tr><td><strong>ハンマー</strong></td><td>木の棒 ×2, 鉄インゴット ×3</td><td>5ダメージ</td></tr>
-          <tr><td><strong>鉄の防具セット</strong></td><td>鉄インゴット ×24</td><td>インベントリから使用</td></tr>
-          <tr><td><strong>ダイヤの防具セット</strong></td><td>ダイヤモンド ×24</td><td>インベントリから使用</td></tr>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+            <th>ダメージ/効果</th>
+          </tr>
+          <tr>
+            <td><strong>石の剣</strong></td>
+            <td>木の棒 ×1, 丸石 ×2</td>
+            <td>4ダメージ</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤの剣</strong></td>
+            <td>木の棒 ×1, ダイヤモンド ×2</td>
+            <td>6ダメージ（最強の剣！）</td>
+          </tr>
+          <tr>
+            <td><strong>ハンマー</strong></td>
+            <td>木の棒 ×2, 鉄インゴット ×3</td>
+            <td>5ダメージ</td>
+          </tr>
+          <tr>
+            <td><strong>鉄の防具セット</strong></td>
+            <td>鉄インゴット ×24</td>
+            <td>インベントリから使用</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤの防具セット</strong></td>
+            <td>ダイヤモンド ×24</td>
+            <td>インベントリから使用</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- ひらがなモード -->
+      <div id="manual-content-kids" style="display: none;">
+        <h1>つくりかた・そざいあつめ マニュアル</h1>
+        <p>このゲームでは、せかいじゅうから そざいをあつめて あたらしいアイテムを つくりだし、ぼうけん や けんちく に やくだてる ことができます。<br>ここでは「そざいの あつめかた」「つくりかた」「ぜんぶの レシピ」を
+          しょうかい します。</p>
+
+        <h2>⛏️ 1. きほんてきな そざいの あつめかた</h2>
+        <p>フィールドにある ブロックを「ひだりクリック（ながおし）」で こわすことで、アイテムとして てにはいります。<br>いちぶのブロックは、<strong>みためとは ちがうアイテム</strong>を おとすことが
+          あります。</p>
+        <table>
+          <tr>
+            <th>こわす ブロック</th>
+            <th>てにはいる アイテム</th>
+            <th>せつめい</th>
+          </tr>
+          <tr>
+            <td><strong>き（げんぼく）</strong></td>
+            <td><strong>き（げんぼく）</strong></td>
+            <td>すべての きほん。まずは これを あつめよう。</td>
+          </tr>
+          <tr>
+            <td><strong>いし</strong></td>
+            <td><strong>まるいし</strong></td>
+            <td>いしを こわすと ゴツゴツした まるいしに なります。いしの どうぐ や かまどの ざいりょうに なります。</td>
+          </tr>
+          <tr>
+            <td><strong>くさ ブロック</strong></td>
+            <td><strong>つち</strong></td>
+            <td>うえに くさが はえている ブロックだけど、こわすと ただの つちに なります。</td>
+          </tr>
+          <tr>
+            <td><strong>はっぱ</strong></td>
+            <td><strong>（なし）または リンゴ</strong></td>
+            <td>きほんは なにも おとさないけれど、<strong>ごく まれに「リンゴ」</strong>を おとします。</td>
+          </tr>
+          <tr>
+            <td><strong>せきたん こうせき</strong></td>
+            <td><strong>せきたん（アイテム）</strong></td>
+            <td>くろい ブツブツが ある いし。たいまつの ざいりょう や、ものを やくときの ねんりょうに なります。</td>
+          </tr>
+          <tr>
+            <td><strong>てつ こうせき</strong></td>
+            <td><strong>てつ こうせき</strong></td>
+            <td>ちゃいろい ブツブツが ある いし。そのままでは つかえず、せきたんと いっしょに やく ひつようが あります。</td>
+          </tr>
+          <tr>
+            <td><strong>きん こうせき</strong></td>
+            <td><strong>きん こうせき</strong></td>
+            <td>きいろい ブツブツが ある いし。てつと おなじように やく ひつようが あります。</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤ こうせき</strong></td>
+            <td><strong>ダイヤモンド</strong></td>
+            <td>みずいろの ブツブツが ある いし。いちばん かたい ぶき や どうぐの ざいりょう です。</td>
+          </tr>
+        </table>
+
+        <h2>🛠️ 2. クラフト（ごうせい）の やりかた</h2>
+        <p>カバンに ひつような そざいを もっている じょうたいで、キーボードの <strong><code>Cキー</code></strong> を おすと「クラフトがめん」が ひらきます。</p>
+        <ol>
+          <li><strong>レシピを えらぶ:</strong> クラフトがめん には つくれる アイテムが ならんでいます。</li>
+          <li><strong>そざいを かくにん:</strong> アイテムの したに「ひつような そざい」と「じぶんが もっている かず」が ひょうじされます。</li>
+          <li><strong>つくる ボタンを おす:</strong> そざいが ぜんぶ たりていると みぎがわの「さくせい」ボタンが おせるように なります。</li>
+        </ol>
+
+        <h2>📜 3. ぜんぶの レシピ</h2>
+        <h3>🪵 きほんの そざい・けんちく ブロック</h3>
+        <table>
+          <tr>
+            <th>つくれる アイテム</th>
+            <th>ひつような そざい</th>
+            <th>つかいみち</th>
+          </tr>
+          <tr>
+            <td><strong>もくざい</strong> ×4</td>
+            <td>き(げんぼく) ×1</td>
+            <td>けんちく の きほん ブロック。ぼう などの ざいりょう にも なります。</td>
+          </tr>
+          <tr>
+            <td><strong>きの ぼう</strong> ×4</td>
+            <td>もくざい ×2</td>
+            <td>どうぐの え（もつところ）や たいまつの ざいりょう に なります。</td>
+          </tr>
+          <tr>
+            <td><strong>たいまつ</strong> ×4</td>
+            <td>きの ぼう ×1, せきたん ×1</td>
+            <td>くらい ばしょを あかるく てらします。</td>
+          </tr>
+          <tr>
+            <td><strong>きの かいだん</strong> ×4</td>
+            <td>もくざい ×6</td>
+            <td>だんさを スムーズに のぼれるように なります。</td>
+          </tr>
+          <tr>
+            <td><strong>さく</strong> ×3</td>
+            <td>もくざい ×2, きの ぼう ×4</td>
+            <td>どうぶつ を かこったり、かざりに つかえます。</td>
+          </tr>
+          <tr>
+            <td><strong>ドア</strong> ×3</td>
+            <td>もくざい ×6</td>
+            <td>あけしめ できる とびら です（みぎクリック で そうさ）。</td>
+          </tr>
+        </table>
+
+        <h3>🛏️ せつび・かぐ</h3>
+        <table>
+          <tr>
+            <th>つくれる アイテム</th>
+            <th>ひつような そざい</th>
+            <th>つかいみち</th>
+          </tr>
+          <tr>
+            <td><strong>かまど</strong></td>
+            <td>まるいし ×8</td>
+            <td>（※いまは かざり ブロックです。Cキーで やく ことができます）</td>
+          </tr>
+          <tr>
+            <td><strong>チェスト</strong></td>
+            <td>もくざい ×8</td>
+            <td>（※いまは かざり ブロックです）</td>
+          </tr>
+          <tr>
+            <td><strong>ベッド</strong></td>
+            <td>もくざい ×3, き(げんぼく) ×3</td>
+            <td>みぎクリック で ねころがる ことができます。</td>
+          </tr>
+        </table>
+
+        <h3>🔥 せいれん（せきたんで やく レシピ）</h3>
+        <table>
+          <tr>
+            <th>つくれる アイテム</th>
+            <th>ひつような そざい</th>
+            <th>せつめい</th>
+          </tr>
+          <tr>
+            <td><strong>いし</strong></td>
+            <td>まるいし ×1, せきたん ×1</td>
+            <td>まるいし を やいて、なめらかな いし ブロックに もどします。</td>
+          </tr>
+          <tr>
+            <td><strong>ガラス</strong></td>
+            <td>すな ×1, せきたん ×1</td>
+            <td>すな を やいて とうめいな ガラス ブロックを つくります。</td>
+          </tr>
+          <tr>
+            <td><strong>てつ インゴット</strong></td>
+            <td>てつ こうせき ×1, せきたん ×1</td>
+            <td>てつの どうぐ や ぼうぐ の ざいりょう に なります。</td>
+          </tr>
+          <tr>
+            <td><strong>きん インゴット</strong></td>
+            <td>きん こうせき ×1, せきたん ×1</td>
+            <td>（これから つかえるように なる そざい）</td>
+          </tr>
+        </table>
+
+        <h3>⛏️ どうぐ（ほる・きる など）</h3>
+        <table>
+          <tr>
+            <th>つくれる アイテム</th>
+            <th>ひつような そざい</th>
+          </tr>
+          <tr>
+            <td><strong>きの ツルハシ・オノ・シャベル</strong></td>
+            <td>きの ぼう ×2, もくざい（ツルハシ/オノは3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>いしの ツルハシ・オノ・シャベル</strong></td>
+            <td>きの ぼう ×2, まるいし（ツルハシ/オノは3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>てつの ツルハシ・オノ・シャベル</strong></td>
+            <td>きの ぼう ×2, てつ インゴット（ツルハシ/オノは3, シャベルは1）</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤの ツルハシ・オノ・シャベル</strong></td>
+            <td>きの ぼう ×2, ダイヤモンド（ツルハシ/オノは3, シャベルは1）</td>
+          </tr>
+        </table>
+
+        <h3>⚔️ ぶき・ぼうぐ</h3>
+        <table>
+          <tr>
+            <th>つくれる アイテム</th>
+            <th>ひつような そざい</th>
+            <th>つよさ/こうか</th>
+          </tr>
+          <tr>
+            <td><strong>いしの けん</strong></td>
+            <td>きの ぼう ×1, まるいし ×2</td>
+            <td>4 ダメージ</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤの けん</strong></td>
+            <td>きの ぼう ×1, ダイヤモンド ×2</td>
+            <td>6 ダメージ（さいきょう の けん！）</td>
+          </tr>
+          <tr>
+            <td><strong>ハンマー</strong></td>
+            <td>きの ぼう ×2, てつ インゴット ×3</td>
+            <td>5 ダメージ</td>
+          </tr>
+          <tr>
+            <td><strong>てつの ぼうぐ</strong></td>
+            <td>てつ インゴット ×24</td>
+            <td>カバン から つかう</td>
+          </tr>
+          <tr>
+            <td><strong>ダイヤの ぼうぐ</strong></td>
+            <td>ダイヤモンド ×24</td>
+            <td>カバン から つかう</td>
+          </tr>
         </table>
       </div>
       <div class="manual-close-container">
-        <button id="manual-close-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">閉じる (M / Esc)</button>
+        <button id="manual-close-btn"
+          style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">とじる
+          (M / Esc)</button>
       </div>
     </div>
   </div>
 
   <!-- 画面下部のホットバー -->
   <div id="hotbar" style="display: none;">
-    <div id="hotbar-page-indicator" style="position: absolute; left: -40px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 8px; color: #60a5fa; font-weight: bold; font-size: 1.2rem; border: 2px solid rgba(96, 165, 250, 0.4); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">1</div>
+    <div id="hotbar-page-indicator"
+      style="position: absolute; left: -40px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 8px; color: #60a5fa; font-weight: bold; font-size: 1.2rem; border: 2px solid rgba(96, 165, 250, 0.4); text-shadow: 0 1px 3px rgba(0,0,0,0.8);">
+      1</div>
     <div class="hotbar-slots">
       <div class="hotbar-slot active" data-index="0" data-block="1">
         <div class="slot-icon slot-grass"></div>
@@ -1447,10 +2120,19 @@
         <div class="slot-count" id="count-8">64</div>
       </div>
     </div>
-    <div id="hotbar-label">くさ</div>
+    <div id="hotbar-label">くさ </div>
   </div>
 
+  <div id="world-map-modal">
+    <div style="color: white; font-size: 2rem; font-weight: bold; margin-bottom: 10px;">広域マップ</div>
+    <div id="world-map-container">
+      <canvas id="world-map-canvas"></canvas>
+      <div id="map-player-icon" class="map-icon">👤</div>
+      <div id="map-home-icon" class="map-icon">🏠</div>
+    </div>
+    <div class="map-close-hint">とじる (V / Esc)</div>
+  </div>
 
 </body>
-</html>
 
+</html>
