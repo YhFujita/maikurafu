@@ -7,6 +7,7 @@ import { BLOCKS, BlockType } from '../world/Block.ts';
 export class PhysicsWorld {
   public world: CANNON.World;
   public playerMaterial: CANNON.Material;
+  public defaultMaterial: CANNON.Material;
   
   // アクティブなブロックの物理ボディを座標キー "x,y,z" で保持
   private blockBodies: Map<string, CANNON.Body> = new Map();
@@ -21,10 +22,10 @@ export class PhysicsWorld {
     this.world.broadphase = new CANNON.SAPBroadphase(this.world);
     (this.world.solver as any).iterations = 5;
 
-    const defaultMaterial = new CANNON.Material('default');
+    this.defaultMaterial = new CANNON.Material('default');
     const defaultContactMaterial = new CANNON.ContactMaterial(
-      defaultMaterial,
-      defaultMaterial,
+      this.defaultMaterial,
+      this.defaultMaterial,
       {
         friction: 0.1,
         restitution: 0.0,
@@ -37,7 +38,7 @@ export class PhysicsWorld {
     this.playerMaterial = new CANNON.Material('player');
     const playerContactMaterial = new CANNON.ContactMaterial(
       this.playerMaterial,
-      defaultMaterial,
+      this.defaultMaterial,
       {
         friction: 0.0, // 摩擦ゼロ
         restitution: 0.0,
@@ -96,6 +97,7 @@ export class PhysicsWorld {
                 shape: shape,
                 // ブロックの中心に配置
                 position: new CANNON.Vec3(x + 0.5, y + yOffset, z + 0.5),
+                material: this.defaultMaterial,
               });
               this.world.addBody(body);
               this.blockBodies.set(key, body);

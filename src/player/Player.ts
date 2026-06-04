@@ -72,19 +72,23 @@ export class Player {
     this.position = startPos.clone();
     this.spawnPosition = startPos.clone();
 
-    // プレイヤーの物理剛体 (Box) を作成
-    const halfWidth = CONFIG.PLAYER_RADIUS;
+    // プレイヤーの物理剛体をカプセル形状 (3つの重ね合わせたSphere) として作成
+    const radius = CONFIG.PLAYER_RADIUS;
     const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
-    const shape = new CANNON.Box(new CANNON.Vec3(halfWidth, halfHeight, halfWidth));
 
     this.body = new CANNON.Body({
       mass: 60, // 質量 (kg)
-      shape: shape,
       position: new CANNON.Vec3(startPos.x, startPos.y + halfHeight, startPos.z),
       fixedRotation: true, // 回転を固定 (倒れないようにする)
       linearDamping: 0.1,  // 空気抵抗
       material: physics.playerMaterial, // 摩擦ゼロマテリアルをアサイン
     });
+
+    const sphereShape = new CANNON.Sphere(radius);
+    // プレイヤーの高さ1.8m、半径0.4mをカバーするため、球体を3つ縦に並べる
+    this.body.addShape(sphereShape, new CANNON.Vec3(0, -0.5, 0)); // 足元付近
+    this.body.addShape(sphereShape, new CANNON.Vec3(0, 0, 0));    // 胴体中心
+    this.body.addShape(sphereShape, new CANNON.Vec3(0, 0.5, 0));   // 頭部付近
 
     physics.world.addBody(this.body);
 
@@ -434,7 +438,7 @@ export class Player {
   // 接地状態の判定と落下ダメージの処理
   private checkGrounded(voxelWorld: World): void {
     const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
-    const feetY = this.position.y - halfHeight - 0.05;
+    const feetY = this.position.y - halfHeight - 0.12; // 判定の深さを広げて浮き上がり時の接地切れを防止
     
     const checkPoints = [
       { x: this.position.x, z: this.position.z },
@@ -456,7 +460,8 @@ export class Player {
       }
     }
 
-    const currentGrounded = onSolidBlock || Math.abs(this.body.velocity.y) < 0.05;
+    // Y速度の判定を緩和（歩行中の微小バウンドによる接地切れを防止）
+    const currentGrounded = onSolidBlock || Math.abs(this.body.velocity.y) < 0.2;
 
     // 着地した瞬間に落下ダメージ判定（水の中では落下ダメージを無効化）
     if (currentGrounded && !this.isGrounded && !this.isInWater) {
