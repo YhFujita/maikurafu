@@ -619,12 +619,16 @@ export class Player {
     const targetVelX = direction.x * currentSpeed;
     const targetVelZ = direction.z * currentSpeed;
 
-    // 地上では素早く加減速、空中では慣性が働き空中制御が弱くなる
-    const accel = this.isGrounded ? 15.0 : 3.0;
-
-    // 目標速度に向かって現在の速度を補間
-    this.body.velocity.x += (targetVelX - this.body.velocity.x) * accel * deltaTime;
-    this.body.velocity.z += (targetVelZ - this.body.velocity.z) * accel * deltaTime;
+    if (this.isGrounded) {
+      // 地上では速度を直接設定する（物理エンジンの衝突応答による減速を打ち消す）
+      this.body.velocity.x = targetVelX;
+      this.body.velocity.z = targetVelZ;
+    } else {
+      // 空中では慣性を維持し、弱い空中制御のみ
+      const accel = 3.0;
+      this.body.velocity.x += (targetVelX - this.body.velocity.x) * accel * deltaTime;
+      this.body.velocity.z += (targetVelZ - this.body.velocity.z) * accel * deltaTime;
+    }
 
     // ジャンプ・浮上
     if (input.isActionActive('jump')) {
