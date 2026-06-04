@@ -130,7 +130,7 @@ export class Chunk {
 
     let vertexCount = 0;
     const atlasCols = 4; // アトラスの列数
-    const atlasRows = 7; // アトラスの行数（武器追加で7行になったため修正）
+    const atlasRows = 16; // アトラスの行数
     const uvStepU = 1.0 / atlasCols; // U方向ステップ (0.25)
     const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/7)
 
