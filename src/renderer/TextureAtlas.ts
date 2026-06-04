@@ -395,6 +395,21 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillStyle = 'rgb(120, 120, 120)'; // ヘッドハイライト
   ctx.fillRect(hammerStartX + 4, hammerStartY + 2, 8, 1);
 
+  // 25: 岩盤 (col: 1, row: 6)
+  const bedrockStartX = 1 * tileSize;
+  const bedrockStartY = 6 * tileSize;
+  // 暗いグレーと黒のノイズ模様
+  ctx.fillStyle = 'rgb(30, 30, 30)';
+  ctx.fillRect(bedrockStartX, bedrockStartY, tileSize, tileSize);
+  for (let i = 0; i < tileSize; i++) {
+    for (let j = 0; j < tileSize; j++) {
+      if (Math.random() > 0.5) {
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgb(15, 15, 15)' : 'rgb(45, 45, 45)';
+        ctx.fillRect(bedrockStartX + i, bedrockStartY + j, 1, 1);
+      }
+    }
+  }
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
 

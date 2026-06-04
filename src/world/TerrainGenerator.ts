@@ -99,7 +99,9 @@ export class TerrainGenerator {
           const globalY = globalChunkY + y;
           let type = BlockType.AIR;
 
-          if (globalY < -4) {
+          if (globalY <= -10) {
+            type = BlockType.BEDROCK;
+          } else if (globalY < -4) {
             const hash = Math.sin((chunk.x * 17.13) + (chunk.y * 31.41) + (chunk.z * 53.57) + (x * 7.1) + (y * 13.3) + (z * 19.9)) * 43758.5453;
             const rand = hash - Math.floor(hash);
             type = rand < 0.05 ? BlockType.COAL_ORE : BlockType.STONE;
@@ -139,7 +141,9 @@ export class TerrainGenerator {
           const globalY = globalChunkY + y;
           let type = BlockType.AIR;
 
-          if (globalY < surfaceY - 3) {
+          if (globalY <= -15) {
+            type = BlockType.BEDROCK;
+          } else if (globalY < surfaceY - 3) {
             const hash = Math.sin((chunk.x * 17.13) + (chunk.y * 31.41) + (chunk.z * 53.57) + (x * 7.1) + (y * 13.3) + (z * 19.9)) * 43758.5453;
             const rand = hash - Math.floor(hash);
             type = rand < 0.05 ? BlockType.COAL_ORE : BlockType.STONE;

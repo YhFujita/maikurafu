@@ -23,6 +23,7 @@ export enum BlockType {
   WATER = 21,       // 水
   DIAMOND_SWORD = 22, // ダイヤの剣（武器）
   HAMMER = 23,        // ハンマー（武器）
+  BEDROCK = 24,       // 岩盤
 }
 
 export interface BlockProperties {
@@ -215,5 +216,12 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 24, back: 24, left: 24, right: 24, top: 24, bottom: 24 },
+  },
+  [BlockType.BEDROCK]: {
+    id: BlockType.BEDROCK,
+    name: 'いわばん',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 25, back: 25, left: 25, right: 25, top: 25, bottom: 25 },
   },
 };

@@ -574,6 +574,9 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
 
       const targetBlockType = world.getBlock(bx, by, bz);
       if (targetBlockType !== BlockType.AIR) {
+        // 岩盤は壊せない
+        if (targetBlockType === BlockType.BEDROCK) return;
+        
         world.setBlock(bx, by, bz, BlockType.AIR);
         // ブロック破壊音の再生
         SoundManager.playBreak(targetBlockType);
