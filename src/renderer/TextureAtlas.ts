@@ -145,24 +145,29 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   });
 
   // 11: 松明 (col: 3, row: 2)
-  // 背景を暗い透明感のある色、または透明に（今回は透過マテリアルでなくても動作するように暗めの灰色ベースでクリアしつつ、棒と火を描画）
+  // 背景を透明にクリア
   const torchStartX = 3 * tileSize;
   const torchStartY = 2 * tileSize;
   ctx.fillStyle = 'rgba(0, 0, 0, 0)'; // 透明でクリア
   ctx.clearRect(torchStartX, torchStartY, tileSize, tileSize);
-
   
-  // 棒の部分 (中央下部)
-  ctx.fillStyle = 'rgb(120, 80, 40)'; // 茶色
-  ctx.fillRect(torchStartX + 7, torchStartY + 6, 2, 10);
+  // 木の棒部分 (幅2, 高さ8) -> Y: 8~16 (UV的には下部)
+  ctx.fillStyle = 'rgb(101, 67, 33)'; // 濃い茶色
+  ctx.fillRect(torchStartX + 7, torchStartY + 8, 2, 8);
   
-  // 炎のベース (オレンジ)
-  ctx.fillStyle = 'rgb(255, 100, 0)';
-  ctx.fillRect(torchStartX + 6, torchStartY + 2, 4, 4);
+  // 側面の炎部分 (幅2, 高さ2) -> Y: 6~8
+  ctx.fillStyle = 'rgb(255, 120, 0)'; // オレンジ
+  ctx.fillRect(torchStartX + 7, torchStartY + 6, 2, 2);
+  ctx.fillStyle = 'rgb(255, 230, 0)'; // 黄色の芯
+  ctx.fillRect(torchStartX + 7, torchStartY + 7, 2, 1);
   
-  // 炎の芯 (黄色)
-  ctx.fillStyle = 'rgb(255, 220, 0)';
-  ctx.fillRect(torchStartX + 7, torchStartY + 3, 2, 2);
+  // 上面の炎部分 (幅2, 高さ2) -> Y: 4~6
+  ctx.fillStyle = 'rgb(255, 240, 100)'; // 明るい黄色
+  ctx.fillRect(torchStartX + 7, torchStartY + 4, 2, 2);
+  
+  // 底面部分 (幅2, 高さ2) -> Y: 14~16
+  ctx.fillStyle = 'rgb(60, 40, 20)'; // 暗い茶色
+  ctx.fillRect(torchStartX + 7, torchStartY + 14, 2, 2);
 
   // 12: ガラス (col: 0, row: 3)
   const glassStartX = 0 * tileSize;

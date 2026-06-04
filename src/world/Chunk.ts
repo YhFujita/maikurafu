@@ -363,10 +363,10 @@ export class Chunk {
                 let vz = globalZ + corner[2];
 
                 if (isTorch) {
-                  // 松明専用の細長い棒状アバターを生成 (幅14cm, 高さ65cm)
-                  vx = globalX + 0.5 + (corner[0] - 0.5) * 0.14;
-                  vy = globalY + corner[1] * 0.65;
-                  vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.14;
+                  // 松明専用の細長い棒状アバターを生成 (幅2/16 = 0.125, 高さ10/16 = 0.625)
+                  vx = globalX + 0.5 + (corner[0] - 0.5) * 0.125;
+                  vy = globalY + corner[1] * 0.625;
+                  vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.125;
                 } else if (isDoorClosed) {
                   if (doorOrientation === 'EW') {
                     // EW向き（東西）の閉扉：X軸方向に薄い板（通路をZ方向に通る場合に壁になる）
@@ -445,13 +445,36 @@ export class Chunk {
               const vMin = 1.0 - (row + 1) * uvStepV;
               const uMax = uMin + uvStepU;
               const vMax = vMin + uvStepV;
+              
+              let finalUMin = uMin;
+              let finalVMin = vMin;
+              let finalUMax = uMax;
+              let finalVMax = vMax;
+
+              if (isTorch) {
+                const tu = uvStepU / 16;
+                const tv = uvStepV / 16;
+                finalUMin = uMin + 7 * tu;
+                finalUMax = uMin + 9 * tu;
+
+                if (face.uvName === 'top') {
+                  finalVMax = vMax - 4 * tv;
+                  finalVMin = vMax - 6 * tv;
+                } else if (face.uvName === 'bottom') {
+                  finalVMax = vMax - 14 * tv;
+                  finalVMin = vMax - 16 * tv;
+                } else {
+                  finalVMax = vMax - 6 * tv;
+                  finalVMin = vMax - 16 * tv;
+                }
+              }
 
               // 4つの角に対応するUVマッピング
               uvs.push(
-                uMin, vMin, // 左下
-                uMax, vMin, // 右下
-                uMax, vMax, // 右上
-                uMin, vMax  // 左上
+                finalUMin, finalVMin, // 左下
+                finalUMax, finalVMin, // 右下
+                finalUMax, finalVMax, // 右上
+                finalUMin, finalVMax  // 左上
               );
 
               // 三角形のインデックス
