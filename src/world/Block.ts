@@ -31,6 +31,24 @@ export enum BlockType {
   IRON_INGOT = 29,    // 鉄インゴット
   GOLD_INGOT = 30,    // 金インゴット
   DIAMOND = 31,       // ダイヤモンド
+  COBBLESTONE = 32,   // 丸石
+  COAL = 33,          // 石炭(アイテム)
+  APPLE = 34,         // リンゴ
+  WOODEN_PICKAXE = 35, // 木のツルハシ
+  STONE_PICKAXE = 36,  // 石のツルハシ
+  IRON_PICKAXE = 37,   // 鉄のツルハシ
+  DIAMOND_PICKAXE = 38, // ダイヤのツルハシ
+  WOODEN_AXE = 39,     // 木の斧
+  STONE_AXE = 40,      // 石の斧
+  IRON_AXE = 41,       // 鉄の斧
+  DIAMOND_AXE = 42,    // ダイヤの斧
+  WOODEN_SHOVEL = 43,  // 木のシャベル
+  STONE_SHOVEL = 44,   // 石のシャベル
+  IRON_SHOVEL = 45,    // 鉄のシャベル
+  DIAMOND_SHOVEL = 46, // ダイヤのシャベル
+  LEATHER_ARMOR_SET = 47, // 革の防具セット
+  IRON_ARMOR_SET = 48,    // 鉄の防具セット
+  DIAMOND_ARMOR_SET = 49, // ダイヤの防具セット
 }
 
 export interface BlockProperties {
@@ -49,6 +67,7 @@ export interface BlockProperties {
     top: number;
     bottom: number;
   };
+  drops?: BlockType; // 指定がない場合は自分自身をドロップ
 }
 
 export const BLOCKS: Record<BlockType, BlockProperties> = {
@@ -61,10 +80,11 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
   },
   [BlockType.GROUND]: {
     id: BlockType.GROUND,
-    name: 'くさ',
+    name: 'くさブロック',
     isSolid: true,
     isTransparent: false,
-    uvs: { front: 3, back: 3, left: 3, right: 3, top: 0, bottom: 1 },
+    uvs: { front: 3, back: 3, left: 3, right: 3, top: 0, bottom: 2 },
+    drops: BlockType.DIRT,
   },
   [BlockType.DIRT]: {
     id: BlockType.DIRT,
@@ -78,7 +98,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     name: 'いし',
     isSolid: true,
     isTransparent: false,
-    uvs: { front: 2, back: 2, left: 2, right: 2, top: 2, bottom: 2 },
+    uvs: { front: 1, back: 1, left: 1, right: 1, top: 1, bottom: 1 },
+    drops: BlockType.COBBLESTONE,
   },
   [BlockType.WOOD]: {
     id: BlockType.WOOD,
@@ -118,10 +139,11 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
   },
   [BlockType.COAL_ORE]: {
     id: BlockType.COAL_ORE,
-    name: 'せきたん',
+    name: 'せきたんこうせき',
     isSolid: true,
     isTransparent: false,
-    uvs: { front: 10, back: 10, left: 10, right: 10, top: 10, bottom: 10 },
+    uvs: { front: 25, back: 25, left: 25, right: 25, top: 25, bottom: 25 },
+    drops: BlockType.COAL,
   },
   [BlockType.TORCH]: {
     id: BlockType.TORCH,
@@ -251,6 +273,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 28, back: 28, left: 28, right: 28, top: 28, bottom: 28 },
+    drops: BlockType.DIAMOND,
   },
   [BlockType.STICK]: {
     id: BlockType.STICK,
@@ -279,5 +302,131 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 32, back: 32, left: 32, right: 32, top: 32, bottom: 32 },
+  },
+  [BlockType.COBBLESTONE]: {
+    id: BlockType.COBBLESTONE,
+    name: '丸石',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 33, back: 33, left: 33, right: 33, top: 33, bottom: 33 },
+  },
+  [BlockType.COAL]: {
+    id: BlockType.COAL,
+    name: '石炭',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 34, back: 34, left: 34, right: 34, top: 34, bottom: 34 },
+  },
+  [BlockType.APPLE]: {
+    id: BlockType.APPLE,
+    name: 'リンゴ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 35, back: 35, left: 35, right: 35, top: 35, bottom: 35 },
+  },
+  [BlockType.WOODEN_PICKAXE]: {
+    id: BlockType.WOODEN_PICKAXE,
+    name: '木のツルハシ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 36, back: 36, left: 36, right: 36, top: 36, bottom: 36 },
+  },
+  [BlockType.STONE_PICKAXE]: {
+    id: BlockType.STONE_PICKAXE,
+    name: '石のツルハシ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 37, back: 37, left: 37, right: 37, top: 37, bottom: 37 },
+  },
+  [BlockType.IRON_PICKAXE]: {
+    id: BlockType.IRON_PICKAXE,
+    name: '鉄のツルハシ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 38, back: 38, left: 38, right: 38, top: 38, bottom: 38 },
+  },
+  [BlockType.DIAMOND_PICKAXE]: {
+    id: BlockType.DIAMOND_PICKAXE,
+    name: 'ダイヤのツルハシ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 39, back: 39, left: 39, right: 39, top: 39, bottom: 39 },
+  },
+  [BlockType.WOODEN_AXE]: {
+    id: BlockType.WOODEN_AXE,
+    name: '木の斧',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 40, back: 40, left: 40, right: 40, top: 40, bottom: 40 },
+  },
+  [BlockType.STONE_AXE]: {
+    id: BlockType.STONE_AXE,
+    name: '石の斧',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 41, back: 41, left: 41, right: 41, top: 41, bottom: 41 },
+  },
+  [BlockType.IRON_AXE]: {
+    id: BlockType.IRON_AXE,
+    name: '鉄の斧',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 42, back: 42, left: 42, right: 42, top: 42, bottom: 42 },
+  },
+  [BlockType.DIAMOND_AXE]: {
+    id: BlockType.DIAMOND_AXE,
+    name: 'ダイヤの斧',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 43, back: 43, left: 43, right: 43, top: 43, bottom: 43 },
+  },
+  [BlockType.WOODEN_SHOVEL]: {
+    id: BlockType.WOODEN_SHOVEL,
+    name: '木のシャベル',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 44, back: 44, left: 44, right: 44, top: 44, bottom: 44 },
+  },
+  [BlockType.STONE_SHOVEL]: {
+    id: BlockType.STONE_SHOVEL,
+    name: '石のシャベル',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 45, back: 45, left: 45, right: 45, top: 45, bottom: 45 },
+  },
+  [BlockType.IRON_SHOVEL]: {
+    id: BlockType.IRON_SHOVEL,
+    name: '鉄のシャベル',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 46, back: 46, left: 46, right: 46, top: 46, bottom: 46 },
+  },
+  [BlockType.DIAMOND_SHOVEL]: {
+    id: BlockType.DIAMOND_SHOVEL,
+    name: 'ダイヤのシャベル',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 47, back: 47, left: 47, right: 47, top: 47, bottom: 47 },
+  },
+  [BlockType.LEATHER_ARMOR_SET]: {
+    id: BlockType.LEATHER_ARMOR_SET,
+    name: '革の防具セット',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 48, back: 48, left: 48, right: 48, top: 48, bottom: 48 },
+  },
+  [BlockType.IRON_ARMOR_SET]: {
+    id: BlockType.IRON_ARMOR_SET,
+    name: '鉄の防具セット',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 49, back: 49, left: 49, right: 49, top: 49, bottom: 49 },
+  },
+  [BlockType.DIAMOND_ARMOR_SET]: {
+    id: BlockType.DIAMOND_ARMOR_SET,
+    name: 'ダイヤの防具セット',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 50, back: 50, left: 50, right: 50, top: 50, bottom: 50 },
   },
 };

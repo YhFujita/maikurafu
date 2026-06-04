@@ -71,6 +71,24 @@ const inventory: Record<BlockType, number> = {
   [BlockType.IRON_INGOT]: 0,
   [BlockType.GOLD_INGOT]: 0,
   [BlockType.DIAMOND]: 0,
+  [BlockType.COBBLESTONE]: 0,
+  [BlockType.COAL]: 0,
+  [BlockType.APPLE]: 0,
+  [BlockType.WOODEN_PICKAXE]: 0,
+  [BlockType.STONE_PICKAXE]: 0,
+  [BlockType.IRON_PICKAXE]: 0,
+  [BlockType.DIAMOND_PICKAXE]: 0,
+  [BlockType.WOODEN_AXE]: 0,
+  [BlockType.STONE_AXE]: 0,
+  [BlockType.IRON_AXE]: 0,
+  [BlockType.DIAMOND_AXE]: 0,
+  [BlockType.WOODEN_SHOVEL]: 0,
+  [BlockType.STONE_SHOVEL]: 0,
+  [BlockType.IRON_SHOVEL]: 0,
+  [BlockType.DIAMOND_SHOVEL]: 0,
+  [BlockType.LEATHER_ARMOR_SET]: 0,
+  [BlockType.IRON_ARMOR_SET]: 0,
+  [BlockType.DIAMOND_ARMOR_SET]: 0,
 };
 
 // 設定UIの初期化
@@ -630,7 +648,18 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
         } else {
           // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
           if (targetBlockType !== BlockType.DOOR_OPEN) {
-            spawnDroppedItem(targetBlockType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+            let dropType = BLOCKS[targetBlockType].drops ?? targetBlockType;
+
+            // 葉っぱ特有のドロップロジック（低確率でリンゴ）
+            if (targetBlockType === BlockType.LEAVES) {
+              const r = Math.random();
+              if (r < 0.05) dropType = BlockType.APPLE;
+              else dropType = BlockType.AIR; // 基本は何も落ちない
+            }
+
+            if (dropType !== BlockType.AIR) {
+              spawnDroppedItem(dropType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+            }
           }
         }
       }
@@ -937,6 +966,24 @@ const allBlocks = [
   BlockType.IRON_INGOT,
   BlockType.GOLD_INGOT,
   BlockType.DIAMOND,
+  BlockType.COBBLESTONE,
+  BlockType.COAL,
+  BlockType.APPLE,
+  BlockType.WOODEN_PICKAXE,
+  BlockType.STONE_PICKAXE,
+  BlockType.IRON_PICKAXE,
+  BlockType.DIAMOND_PICKAXE,
+  BlockType.WOODEN_AXE,
+  BlockType.STONE_AXE,
+  BlockType.IRON_AXE,
+  BlockType.DIAMOND_AXE,
+  BlockType.WOODEN_SHOVEL,
+  BlockType.STONE_SHOVEL,
+  BlockType.IRON_SHOVEL,
+  BlockType.DIAMOND_SHOVEL,
+  BlockType.LEATHER_ARMOR_SET,
+  BlockType.IRON_ARMOR_SET,
+  BlockType.DIAMOND_ARMOR_SET,
 ];
 
 function syncArmorUI() {

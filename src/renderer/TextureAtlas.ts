@@ -4,9 +4,9 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 7; // 行数を7に拡張（武器追加のため）
-  canvas.width  = tileSize * atlasCols;  // 64px
-  canvas.height = tileSize * atlasRows;  // 96px
+  const atlasRows = 13; // 50+個のアイテム対応のため13行に拡張
+  canvas.width  = tileSize * atlasCols;
+  canvas.height = tileSize * atlasRows;
   const ctx = canvas.getContext('2d')!;
 
   // ノイズを乗せたカラー描画関数
@@ -487,6 +487,117 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.lineTo(0 * tileSize + 8, 8 * tileSize + 14);
   ctx.lineTo(0 * tileSize + 2, 8 * tileSize + 8);
   ctx.fill();
+
+  // 33: 丸石 (COBBLESTONE)
+  drawNoiseRect(1, 8, 140, 140, 140, 30);
+  // 丸石特有の粗い線を少し追加
+  ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+  ctx.fillRect(1 * tileSize + 2, 8 * tileSize + 2, 4, 4);
+  ctx.fillRect(1 * tileSize + 10, 8 * tileSize + 8, 4, 4);
+
+  // 34: 石炭アイテム (COAL)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(2 * tileSize, 8 * tileSize, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(30, 30, 30)';
+  ctx.beginPath();
+  ctx.arc(2 * tileSize + 8, 8 * tileSize + 8, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 35: リンゴ (APPLE)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(3 * tileSize, 8 * tileSize, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(220, 20, 20)';
+  ctx.beginPath();
+  ctx.arc(3 * tileSize + 8, 8 * tileSize + 9, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgb(34, 139, 34)'; // 葉っぱ部分
+  ctx.fillRect(3 * tileSize + 7, 8 * tileSize + 3, 2, 3);
+
+  // ツールの共通描画関数 (ツルハシ、斧、シャベル)
+  const drawTool = (index: number, headColor: string, type: 'pickaxe' | 'axe' | 'shovel') => {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const startX = col * tileSize;
+    const startY = row * tileSize;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.fillRect(startX, startY, tileSize, tileSize);
+
+    // 柄 (Stick)
+    ctx.strokeStyle = 'rgb(139, 69, 19)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(startX + 3, startY + 13);
+    ctx.lineTo(startX + 11, startY + 5);
+    ctx.stroke();
+
+    // ヘッド部分
+    ctx.fillStyle = headColor;
+    if (type === 'pickaxe') {
+      ctx.beginPath();
+      ctx.moveTo(startX + 2, startY + 6);
+      ctx.lineTo(startX + 10, startY + 2);
+      ctx.lineTo(startX + 14, startY + 6);
+      ctx.lineTo(startX + 10, startY + 10);
+      ctx.fill();
+    } else if (type === 'axe') {
+      ctx.beginPath();
+      ctx.moveTo(startX + 8, startY + 2);
+      ctx.lineTo(startX + 14, startY + 4);
+      ctx.lineTo(startX + 12, startY + 10);
+      ctx.lineTo(startX + 6, startY + 6);
+      ctx.fill();
+    } else if (type === 'shovel') {
+      ctx.beginPath();
+      ctx.moveTo(startX + 10, startY + 2);
+      ctx.lineTo(startX + 14, startY + 6);
+      ctx.lineTo(startX + 12, startY + 8);
+      ctx.lineTo(startX + 8, startY + 4);
+      ctx.fill();
+    }
+  };
+
+  const woodColor = 'rgb(160, 82, 45)';
+  const stoneColor = 'rgb(169, 169, 169)';
+  const ironColor = 'rgb(220, 220, 220)';
+  const diamondColor = 'rgb(0, 255, 255)';
+
+  // 36~39: ツルハシ
+  drawTool(36, woodColor, 'pickaxe');
+  drawTool(37, stoneColor, 'pickaxe');
+  drawTool(38, ironColor, 'pickaxe');
+  drawTool(39, diamondColor, 'pickaxe');
+
+  // 40~43: 斧
+  drawTool(40, woodColor, 'axe');
+  drawTool(41, stoneColor, 'axe');
+  drawTool(42, ironColor, 'axe');
+  drawTool(43, diamondColor, 'axe');
+
+  // 44~47: シャベル
+  drawTool(44, woodColor, 'shovel');
+  drawTool(45, stoneColor, 'shovel');
+  drawTool(46, ironColor, 'shovel');
+  drawTool(47, diamondColor, 'shovel');
+
+  // 48~50: 防具一式アイテム
+  const drawArmorItem = (index: number, color: string) => {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const startX = col * tileSize;
+    const startY = row * tileSize;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.fillRect(startX, startY, tileSize, tileSize);
+
+    ctx.fillStyle = color;
+    ctx.fillRect(startX + 4, startY + 3, 8, 10);
+    ctx.clearRect(startX + 6, startY + 10, 4, 3); // 脚の間の隙間
+  };
+
+  drawArmorItem(48, 'rgb(160, 82, 45)'); // LEATHER_ARMOR_SET
+  drawArmorItem(49, ironColor);           // IRON_ARMOR_SET
+  drawArmorItem(50, diamondColor);        // DIAMOND_ARMOR_SET
 
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
