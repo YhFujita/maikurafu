@@ -227,7 +227,7 @@ export class Chunk {
           if (blockType === BlockType.FENCE) {
             const uv = 16; // 柵テクスチャ
             
-            // 隣接ブロックが柵や不透過ブロックか判定
+            // 隣接ブロックが柵かどうか判定
             const checkConnect = (dx: number, dz: number) => {
               const nx = cx + dx;
               const ny = cy;
@@ -238,10 +238,7 @@ export class Chunk {
               } else {
                 neighborBlock = this.getBlock(nx, ny, nz);
               }
-              if (neighborBlock === BlockType.AIR) return false;
-              if (neighborBlock === BlockType.FENCE || neighborBlock === BlockType.DOOR_CLOSED || neighborBlock === BlockType.DOOR_OPEN) return true;
-              const prop = BLOCKS[neighborBlock];
-              return prop ? (prop.isSolid && !prop.isTransparent) : false;
+              return neighborBlock === BlockType.FENCE;
             };
 
             const connectN = checkConnect(0, -1);
