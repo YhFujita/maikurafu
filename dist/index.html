@@ -875,7 +875,7 @@
       border-radius: 20px;
       padding: 20px;
       width: 95%;
-      max-width: 650px;
+      max-width: 800px;
       box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
@@ -909,7 +909,7 @@
 
     .inventory-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(9, 1fr);
       gap: 8px;
       background: rgba(0, 0, 0, 0.2);
       padding: 12px;
@@ -1021,8 +1021,72 @@
       box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
       background: rgba(59, 130, 246, 0.2) !important;
     }
+
+    /* マニュアル画面 */
+    #manual-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 60;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    #manual-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px;
+      width: 90%;
+      max-width: 800px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+      max-height: 90vh;
+      overflow-y: auto;
+      text-align: left;
+    }
+
+    #manual-content {
+      line-height: 1.6;
+      color: #d1d5db;
+    }
+
+    #manual-content h1, #manual-content h2, #manual-content h3 {
+      color: #fff;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 5px;
+    }
+
+    #manual-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    #manual-content th, #manual-content td {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px;
+      text-align: left;
+    }
+
+    #manual-content th {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .manual-close-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
   </style>
-  <script type="module" crossorigin src="./assets/index-YabnCiGv.js"></script>
+  <script type="module" crossorigin src="./assets/index-BhzMijLR.js"></script>
 </head>
 <body>
   <!-- 3Dレンダリング用のキャンバスコンテナ -->
@@ -1073,16 +1137,20 @@
           <span class="key-badge">D</span>
         </div>
         <div class="instruction-row">
-          <span>ジャンプ</span>
-          <span class="key-badge">Space</span>
+          <span>ブロックを選択</span>
+          <span>1-9 キー または ホイール</span>
         </div>
         <div class="instruction-row">
-          <span>視点切り替え</span>
-          <span class="key-badge">F5</span>
+          <span>インベントリを開く</span>
+          <span class="key-badge">E</span>
         </div>
         <div class="instruction-row">
-          <span>アイテムを捨てる</span>
-          <span class="key-badge">Q</span>
+          <span>クラフト画面を開く</span>
+          <span class="key-badge">C</span>
+        </div>
+        <div class="instruction-row">
+          <span>マニュアルを見る</span>
+          <span class="key-badge">M</span>
         </div>
         <div class="instruction-row">
           <span>視点移動</span>
@@ -1242,6 +1310,89 @@
       
       <div class="crafting-actions" style="margin-top: 20px; text-align: center;">
         <button id="crafting-close-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">閉じる (C / Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- マニュアル画面 -->
+  <div id="manual-modal" style="display: none;">
+    <div id="manual-card">
+      <div id="manual-content">
+        <h1>クラフト・素材あつめマニュアル</h1>
+        <p>このゲームでは、世界中から素材を集めて新しいアイテムを作り出し、冒険や建築に役立てることができます。<br>ここでは「素材の集め方」「クラフト（合成）のやり方」「全レシピ一覧」をご紹介します。</p>
+        
+        <h2>⛏️ 1. 基本的な素材の集め方</h2>
+        <p>フィールド上にあるブロックを「左クリック（長押し）」で破壊することで、アイテムとして入手できます。<br>一部のブロックは、<strong>見た目とは違うアイテム</strong>を落とすことがあります。</p>
+        <table>
+          <tr><th>壊すブロック</th><th>手に入るアイテム</th><th>解説</th></tr>
+          <tr><td><strong>木（原木）</strong></td><td><strong>木（原木）</strong></td><td>全ての基本。まずはこれを集めましょう。</td></tr>
+          <tr><td><strong>石</strong></td><td><strong>丸石</strong></td><td>石を壊すとゴツゴツした丸石になります。石ツールやかまどの材料になります。</td></tr>
+          <tr><td><strong>草ブロック</strong></td><td><strong>土</strong></td><td>表面に草が生えているブロックですが、壊すとただの土になります。</td></tr>
+          <tr><td><strong>葉っぱ</strong></td><td><strong>（なし）または リンゴ</strong></td><td>基本は何も落としませんが、<strong>5%の確率で「リンゴ」</strong>を落とします。</td></tr>
+          <tr><td><strong>石炭鉱石</strong></td><td><strong>石炭（アイテム）</strong></td><td>黒いブツブツがある石。松明の材料や、物を焼くときの燃料になります。</td></tr>
+          <tr><td><strong>鉄鉱石</strong></td><td><strong>鉄鉱石</strong></td><td>茶色いブツブツがある石。そのままでは使えず、石炭と一緒に焼く必要があります。</td></tr>
+          <tr><td><strong>金鉱石</strong></td><td><strong>金鉱石</strong></td><td>黄色いブツブツがある石。鉄と同様に焼く必要があります。</td></tr>
+          <tr><td><strong>ダイヤ鉱石</strong></td><td><strong>ダイヤモンド</strong></td><td>水色のブツブツがある石。最も硬い武器やツールの材料です。</td></tr>
+        </table>
+
+        <h2>🛠️ 2. クラフト（合成）のやり方</h2>
+        <p>インベントリに必要な素材を持っている状態で、キーボードの <strong><code>Cキー</code></strong> を押すと「クラフト画面」が開きます。</p>
+        <ol>
+          <li><strong>レシピを選ぶ:</strong> クラフト画面には作成できるアイテムの一覧が並んでいます。</li>
+          <li><strong>素材を確認:</strong> 各アイテムの下に「必要な素材」と「自分が持っている数」が表示されます。</li>
+          <li><strong>作成ボタンを押す:</strong> 素材が全て足りていると右側の「作成」ボタンが明るく押せるようになります。</li>
+        </ol>
+
+        <h2>📜 3. 全レシピ一覧</h2>
+        <h3>🪵 基本素材・建築ブロック</h3>
+        <table>
+          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>使い道</th></tr>
+          <tr><td><strong>木材</strong> ×4</td><td>木(原木) ×1</td><td>建築の基本ブロック。棒などの素材にもなります。</td></tr>
+          <tr><td><strong>木の棒</strong> ×4</td><td>木材 ×2</td><td>ツールの柄（持つところ）や松明の材料になります。</td></tr>
+          <tr><td><strong>松明</strong> ×4</td><td>木の棒 ×1, 石炭 ×1</td><td>暗い場所を明るく照らします。</td></tr>
+          <tr><td><strong>木の階段</strong> ×4</td><td>木材 ×6</td><td>段差をスムーズに登れるようになります。</td></tr>
+          <tr><td><strong>柵</strong> ×3</td><td>木材 ×2, 木の棒 ×4</td><td>動物を囲ったり、装飾に使えます。</td></tr>
+          <tr><td><strong>ドア</strong> ×3</td><td>木材 ×6</td><td>開け閉めできる扉です（右クリックで操作）。</td></tr>
+        </table>
+
+        <h3>🛏️ 設備・インテリア</h3>
+        <table>
+          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>使い道</th></tr>
+          <tr><td><strong>かまど</strong></td><td>丸石 ×8</td><td>（※現在は飾りブロックです。精錬はCキーのクラフトで行います）</td></tr>
+          <tr><td><strong>チェスト</strong></td><td>木材 ×8</td><td>（※現在は飾りブロックです）</td></tr>
+          <tr><td><strong>ベッド</strong></td><td>木材 ×3, 木(原木) ×3</td><td>右クリックで寝そべることができます。</td></tr>
+        </table>
+
+        <h3>🔥 精錬（石炭を燃料にして焼くレシピ）</h3>
+        <table>
+          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>解説</th></tr>
+          <tr><td><strong>石</strong></td><td>丸石 ×1, 石炭 ×1</td><td>丸石を焼いて、滑らかな元の石ブロックに戻します。</td></tr>
+          <tr><td><strong>ガラス</strong></td><td>砂 ×1, 石炭 ×1</td><td>砂を焼いて透明なガラスブロックを作ります。</td></tr>
+          <tr><td><strong>鉄インゴット</strong></td><td>鉄鉱石 ×1, 石炭 ×1</td><td>鉄のツールや防具の材料になります。</td></tr>
+          <tr><td><strong>金インゴット</strong></td><td>金鉱石 ×1, 石炭 ×1</td><td>（今後の拡張用素材）</td></tr>
+        </table>
+
+        <h3>⛏️ ツール（採掘・伐採など）</h3>
+        <table>
+          <tr><th>作り出せるアイテム</th><th>必要な素材</th></tr>
+          <tr><td><strong>木のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 木材（ツルハシ/斧は3, シャベルは1）</td></tr>
+          <tr><td><strong>石のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 丸石（ツルハシ/斧は3, シャベルは1）</td></tr>
+          <tr><td><strong>鉄のツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, 鉄インゴット（ツルハシ/斧は3, シャベルは1）</td></tr>
+          <tr><td><strong>ダイヤのツルハシ・斧・シャベル</strong></td><td>木の棒 ×2, ダイヤモンド（ツルハシ/斧は3, シャベルは1）</td></tr>
+        </table>
+
+        <h3>⚔️ 武器・防具</h3>
+        <table>
+          <tr><th>作り出せるアイテム</th><th>必要な素材</th><th>ダメージ/効果</th></tr>
+          <tr><td><strong>石の剣</strong></td><td>木の棒 ×1, 丸石 ×2</td><td>4ダメージ</td></tr>
+          <tr><td><strong>ダイヤの剣</strong></td><td>木の棒 ×1, ダイヤモンド ×2</td><td>6ダメージ（最強の剣！）</td></tr>
+          <tr><td><strong>ハンマー</strong></td><td>木の棒 ×2, 鉄インゴット ×3</td><td>5ダメージ</td></tr>
+          <tr><td><strong>鉄の防具セット</strong></td><td>鉄インゴット ×24</td><td>インベントリから使用</td></tr>
+          <tr><td><strong>ダイヤの防具セット</strong></td><td>ダイヤモンド ×24</td><td>インベントリから使用</td></tr>
+        </table>
+      </div>
+      <div class="manual-close-container">
+        <button id="manual-close-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #f3f4f6; padding: 14px 36px; font-size: 1rem; font-weight: 600; border-radius: 14px; cursor: pointer; transition: all 0.2s ease;">閉じる (M / Esc)</button>
       </div>
     </div>
   </div>

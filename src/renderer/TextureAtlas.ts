@@ -4,7 +4,7 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 13; // 50+個のアイテム対応のため13行に拡張
+  const atlasRows = 16; // 16 * 16 = 256 (power of 2)
   canvas.width  = tileSize * atlasCols;
   canvas.height = tileSize * atlasRows;
   const ctx = canvas.getContext('2d')!;

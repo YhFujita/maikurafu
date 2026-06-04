@@ -48,8 +48,8 @@ export class InputHandler {
     if (key === 'Tab') {
       e.preventDefault();
     }
-    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC')) {
-      if (key === 'KeyE' || key === 'F5' || key === 'KeyC') {
+    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC' || key === 'KeyM')) {
+      if (key === 'KeyE' || key === 'F5' || key === 'KeyC' || key === 'KeyM') {
         e.preventDefault();
       }
     }
@@ -89,7 +89,9 @@ export class InputHandler {
       const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
       const craftingModal = document.getElementById('crafting-modal');
       const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
-      if (!isInventoryOpen && !isCraftingOpen) {
+      const manualModal = document.getElementById('manual-modal');
+      const isManualOpen = manualModal && manualModal.style.display === 'flex';
+      if (!isInventoryOpen && !isCraftingOpen && !isManualOpen) {
         if (menuOverlay) {
           menuOverlay.style.display = 'flex';
           menuOverlay.style.opacity = '1';

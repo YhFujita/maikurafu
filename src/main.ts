@@ -412,6 +412,17 @@ function animate(time: number) {
     }
   }
 
+  // Mキー押下時のマニュアル画面開閉アクション
+  if (input.consumeJustPressed('KeyM')) {
+    const manualModal = document.getElementById('manual-modal');
+    const isManualOpen = manualModal && manualModal.style.display === 'flex';
+    if (isManualOpen) {
+      closeManual();
+    } else {
+      openManual();
+    }
+  }
+
   // Qキー押下時のアイテム投棄アクション
   if (input.consumeJustPressed('KeyQ')) {
     if (inventory[activeBlockType] > 0) {
@@ -1037,6 +1048,25 @@ function closeCrafting() {
 
 if (craftingCloseBtn) {
   craftingCloseBtn.addEventListener('click', closeCrafting);
+}
+
+const manualModal = document.getElementById('manual-modal');
+const manualCloseBtn = document.getElementById('manual-close-btn');
+
+function openManual() {
+  if (!manualModal) return;
+  document.exitPointerLock();
+  manualModal.style.display = 'flex';
+}
+
+function closeManual() {
+  if (!manualModal) return;
+  manualModal.style.display = 'none';
+  input.requestLock();
+}
+
+if (manualCloseBtn) {
+  manualCloseBtn.addEventListener('click', closeManual);
 }
 
 function renderCraftingUI() {
