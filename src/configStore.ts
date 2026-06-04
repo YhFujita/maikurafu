@@ -6,6 +6,11 @@ export interface GameConfig {
   keyJump: string;     // ジャンプ (デフォルト: Space)
   keyPlaceBlock: string; // ブロック設置 (デフォルト: KeyV)
   keyBreakBlock: string; // ブロック破壊 (デフォルト: KeyB)
+  keyOpenMap: string; // マップを開く (デフォルト: KeyM)
+  keyOpenInventory: string; // インベントリ (デフォルト: KeyE)
+  keyOpenCrafting: string; // クラフト (デフォルト: KeyC)
+  keyOpenManual: string; // マニュアル (デフォルト: KeyN)
+  keyRegisterHome: string; // 拠点登録 (デフォルト: KeyH)
   invertClicks: boolean; // 左右クリック反転 (デフォルト: false)
   enableShadows: boolean; // 影のON/OFF (デフォルト: true)
 }
@@ -18,6 +23,11 @@ export const DEFAULT_CONFIG: GameConfig = {
   keyJump: 'Space',
   keyPlaceBlock: 'KeyV',
   keyBreakBlock: 'KeyB',
+  keyOpenMap: 'KeyM',
+  keyOpenInventory: 'KeyE',
+  keyOpenCrafting: 'KeyC',
+  keyOpenManual: 'KeyN',
+  keyRegisterHome: 'KeyH',
   invertClicks: false,
   enableShadows: true,
 };

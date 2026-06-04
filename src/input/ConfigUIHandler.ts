@@ -13,6 +13,11 @@ export class ConfigUIHandler {
     jump: HTMLButtonElement;
     place: HTMLButtonElement;
     break: HTMLButtonElement;
+    map: HTMLButtonElement;
+    inventory: HTMLButtonElement;
+    crafting: HTMLButtonElement;
+    manual: HTMLButtonElement;
+    home: HTMLButtonElement;
   };
   
   private invertClicksChk: HTMLInputElement;
@@ -38,6 +43,11 @@ export class ConfigUIHandler {
       jump: document.getElementById('key-jump-btn') as HTMLButtonElement,
       place: document.getElementById('key-place-btn') as HTMLButtonElement,
       break: document.getElementById('key-break-btn') as HTMLButtonElement,
+      map: document.getElementById('key-map-btn') as HTMLButtonElement,
+      inventory: document.getElementById('key-inventory-btn') as HTMLButtonElement,
+      crafting: document.getElementById('key-crafting-btn') as HTMLButtonElement,
+      manual: document.getElementById('key-manual-btn') as HTMLButtonElement,
+      home: document.getElementById('key-home-btn') as HTMLButtonElement,
     };
 
     this.invertClicksChk = document.getElementById('invert-clicks-chk') as HTMLInputElement;
@@ -65,6 +75,11 @@ export class ConfigUIHandler {
     this.keyButtons.jump.addEventListener('click', () => this.startBinding('keyJump', this.keyButtons.jump));
     this.keyButtons.place.addEventListener('click', () => this.startBinding('keyPlaceBlock', this.keyButtons.place));
     this.keyButtons.break.addEventListener('click', () => this.startBinding('keyBreakBlock', this.keyButtons.break));
+    this.keyButtons.map.addEventListener('click', () => this.startBinding('keyOpenMap', this.keyButtons.map));
+    this.keyButtons.inventory.addEventListener('click', () => this.startBinding('keyOpenInventory', this.keyButtons.inventory));
+    this.keyButtons.crafting.addEventListener('click', () => this.startBinding('keyOpenCrafting', this.keyButtons.crafting));
+    this.keyButtons.manual.addEventListener('click', () => this.startBinding('keyOpenManual', this.keyButtons.manual));
+    this.keyButtons.home.addEventListener('click', () => this.startBinding('keyRegisterHome', this.keyButtons.home));
 
     // 保存ボタン
     this.saveBtn.addEventListener('click', () => {
@@ -103,6 +118,11 @@ export class ConfigUIHandler {
     this.keyButtons.jump.textContent = this.formatKeyName(this.tempConfig.keyJump);
     this.keyButtons.place.textContent = this.formatKeyName(this.tempConfig.keyPlaceBlock);
     this.keyButtons.break.textContent = this.formatKeyName(this.tempConfig.keyBreakBlock);
+    this.keyButtons.map.textContent = this.formatKeyName(this.tempConfig.keyOpenMap);
+    this.keyButtons.inventory.textContent = this.formatKeyName(this.tempConfig.keyOpenInventory);
+    this.keyButtons.crafting.textContent = this.formatKeyName(this.tempConfig.keyOpenCrafting);
+    this.keyButtons.manual.textContent = this.formatKeyName(this.tempConfig.keyOpenManual);
+    this.keyButtons.home.textContent = this.formatKeyName(this.tempConfig.keyRegisterHome);
 
     // チェックボックス
     this.invertClicksChk.checked = this.tempConfig.invertClicks;
@@ -195,6 +215,11 @@ export class ConfigUIHandler {
       keyJump: 'Space',
       keyPlaceBlock: 'KeyV',
       keyBreakBlock: 'KeyB',
+      keyOpenMap: 'KeyM',
+      keyOpenInventory: 'KeyE',
+      keyOpenCrafting: 'KeyC',
+      keyOpenManual: 'KeyN',
+      keyRegisterHome: 'KeyH',
       invertClicks: false,
       enableShadows: true,
     };
@@ -228,6 +253,26 @@ export class ConfigUIHandler {
     if (clickPlaceBadge && keyPlaceBadge) {
       clickPlaceBadge.textContent = config.invertClicks ? '左クリック' : '右クリック';
       keyPlaceBadge.textContent = this.formatKeyName(config.keyPlaceBlock);
+    }
+    const keyMapBadge = this.overlay.querySelector('#key-map-badge');
+    if (keyMapBadge) {
+      keyMapBadge.textContent = this.formatKeyName(config.keyOpenMap);
+    }
+    const keyInventoryBadge = this.overlay.querySelector('#key-inventory-badge');
+    if (keyInventoryBadge) {
+      keyInventoryBadge.textContent = this.formatKeyName(config.keyOpenInventory);
+    }
+    const keyCraftingBadge = this.overlay.querySelector('#key-crafting-badge');
+    if (keyCraftingBadge) {
+      keyCraftingBadge.textContent = this.formatKeyName(config.keyOpenCrafting);
+    }
+    const keyManualBadge = this.overlay.querySelector('#key-manual-badge');
+    if (keyManualBadge) {
+      keyManualBadge.textContent = this.formatKeyName(config.keyOpenManual);
+    }
+    const keyHomeBadge = this.overlay.querySelector('#key-home-badge');
+    if (keyHomeBadge) {
+      keyHomeBadge.textContent = this.formatKeyName(config.keyRegisterHome);
     }
   }
 }

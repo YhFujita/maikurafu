@@ -463,66 +463,106 @@ function animate(time: number) {
     syncHotbarUI();
   }
 
-  // Eキー押下時のインベントリ開閉アクション
-  if (input.consumeJustPressed('KeyE')) {
+  // Eキー等押下時のインベントリ開閉アクション
+  if (input.consumeJustPressed(configStore.getConfig().keyOpenInventory)) {
     const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
     if (isInventoryOpen) {
       closeInventory();
-    } else {
+    } else if (input.isLocked) {
       openInventory();
     }
   }
 
-  // Cキー押下時のクラフト画面開閉アクション
-  if (input.consumeJustPressed('KeyC')) {
+  // Cキー等押下時のクラフト画面開閉アクション
+  if (input.consumeJustPressed(configStore.getConfig().keyOpenCrafting)) {
     const craftingModal = document.getElementById('crafting-modal');
     const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
     if (isCraftingOpen) {
       closeCrafting();
-    } else {
+    } else if (input.isLocked) {
       openCrafting();
     }
   }
 
-  // Mキー押下時のマニュアル画面開閉アクション
-  if (input.consumeJustPressed('KeyM')) {
+  // Mキー等押下時のマニュアル画面開閉アクション
+  if (input.consumeJustPressed(configStore.getConfig().keyOpenManual)) {
     const manualModal = document.getElementById('manual-modal');
     const isManualOpen = manualModal && manualModal.style.display === 'flex';
     if (isManualOpen) {
       closeManual();
-    } else {
+    } else if (input.isLocked) {
       openManual();
     }
   }
 
-  // Vキー押下時の広域マップ開閉アクション
-  if (input.consumeJustPressed('KeyV')) {
+  // 設定キー等押下時の広域マップ開閉アクション
+  if (input.consumeJustPressed(configStore.getConfig().keyOpenMap)) {
     const mapModal = document.getElementById('world-map-modal');
     const isMapOpen = mapModal && mapModal.style.display === 'flex';
     if (isMapOpen) {
       closeMap();
-    } else {
+    } else if (input.isLocked) {
       openMap();
     }
   }
 
-  // Hキー押下時の拠点登録アクション
-  if (input.consumeJustPressed('KeyH')) {
-    navigation.setHome(player.position);
-    // 画面にメッセージを出す
-    const message = document.createElement('div');
-    message.style.position = 'absolute';
-    message.style.top = '100px';
-    message.style.left = '50%';
-    message.style.transform = 'translateX(-50%)';
-    message.style.color = '#32cd32';
-    message.style.fontSize = '1.5rem';
-    message.style.fontWeight = 'bold';
-    message.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
-    message.style.zIndex = '50';
-    message.textContent = '🏠 ここを拠点に設定しました';
-    document.body.appendChild(message);
-    setTimeout(() => message.remove(), 3000);
+  // 設定キー等押下時の拠点登録アクション
+  if (input.consumeJustPressed(configStore.getConfig().keyRegisterHome)) {
+    if (input.isLocked) {
+      navigation.setHome(player.position);
+      // 画面にメッセージを出す
+      const message = document.createElement('div');
+      message.style.position = 'absolute';
+      message.style.top = '100px';
+      message.style.left = '50%';
+      message.style.transform = 'translateX(-50%)';
+      message.style.color = '#32cd32';
+      message.style.fontSize = '1.5rem';
+      message.style.fontWeight = 'bold';
+      message.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
+      message.style.zIndex = '50';
+      message.textContent = '🏠 ここを拠点に設定しました';
+      document.body.appendChild(message);
+      setTimeout(() => message.remove(), 3000);
+    }
+  }
+
+  // Escキーで開いているモーダルを閉じる処理
+  if (input.consumeJustPressed('Escape')) {
+    let closedAny = false;
+    const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
+    if (isInventoryOpen) {
+      closeInventory();
+      closedAny = true;
+    }
+
+    const craftingModal = document.getElementById('crafting-modal');
+    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
+    if (!closedAny && isCraftingOpen) {
+      closeCrafting();
+      closedAny = true;
+    }
+
+    const manualModal = document.getElementById('manual-modal');
+    const isManualOpen = manualModal && manualModal.style.display === 'flex';
+    if (!closedAny && isManualOpen) {
+      closeManual();
+      closedAny = true;
+    }
+
+    const mapModal = document.getElementById('world-map-modal');
+    const isMapOpen = mapModal && mapModal.style.display === 'flex';
+    if (!closedAny && isMapOpen) {
+      closeMap();
+      closedAny = true;
+    }
+
+    const configModal = document.getElementById('config-modal');
+    const isConfigOpen = configModal && configModal.style.display === 'flex';
+    if (!closedAny && isConfigOpen) {
+      configModal.style.display = 'none';
+      closedAny = true;
+    }
   }
 
   // Qキー押下時のアイテム投棄アクション

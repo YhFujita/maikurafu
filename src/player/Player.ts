@@ -90,6 +90,7 @@ export class Player {
 
     // アバターの構築
     this.avatar = new THREE.Group();
+    this.avatar.rotation.order = 'YXZ'; // ヨー(Y)で向きを合わせてからピッチ(X)で倒れるようにする
     this.buildAvatar();
     scene.add(this.avatar);
 
@@ -715,7 +716,7 @@ export class Player {
       // アバターの向きをベッドに合わせる
       this.avatar.rotation.y = bedYaw;
       // 少し浮かせる（ベッドの表面に乗るように調整）
-      this.avatar.position.y -= 0.5;
+      this.avatar.position.y -= 0.7;
     } else {
       // 通常時は直立 (X軸 0度)
       this.avatar.rotation.x += (0 - this.avatar.rotation.x) * 10 * deltaTime;

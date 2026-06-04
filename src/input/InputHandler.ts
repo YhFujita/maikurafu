@@ -62,10 +62,10 @@ export class InputHandler {
     if (key === 'Tab') {
       e.preventDefault();
     }
-    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC' || key === 'KeyM' || key === 'KeyV' || key === 'KeyH')) {
-      if (key === 'KeyE' || key === 'F5' || key === 'KeyC' || key === 'KeyM' || key === 'KeyV') {
-        e.preventDefault();
-      }
+    const config = configStore.getConfig();
+    const configKeys = [config.keyForward, config.keyBackward, config.keyLeft, config.keyRight, config.keyJump, config.keyPlaceBlock, config.keyBreakBlock, config.keyOpenMap, config.keyOpenInventory, config.keyOpenCrafting, config.keyOpenManual, config.keyRegisterHome];
+    if (this.isLocked && (key === 'F5' || key === 'KeyQ' || key === 'KeyE' || key === 'KeyC' || key === 'KeyH' || configKeys.includes(key))) {
+      e.preventDefault();
     }
 
     if (!this.keys[key]) {
