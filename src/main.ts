@@ -1052,6 +1052,10 @@ if (craftingCloseBtn) {
 
 const manualModal = document.getElementById('manual-modal');
 const manualCloseBtn = document.getElementById('manual-close-btn');
+const manualToggleKidsBtn = document.getElementById('manual-toggle-kids-btn');
+const manualContentNormal = document.getElementById('manual-content');
+const manualContentKids = document.getElementById('manual-content-kids');
+let isKidsMode = false;
 
 function openManual() {
   if (!manualModal) return;
@@ -1067,6 +1071,27 @@ function closeManual() {
 
 if (manualCloseBtn) {
   manualCloseBtn.addEventListener('click', closeManual);
+}
+
+if (manualToggleKidsBtn && manualContentNormal && manualContentKids) {
+  manualToggleKidsBtn.addEventListener('click', () => {
+    isKidsMode = !isKidsMode;
+    if (isKidsMode) {
+      manualContentNormal.style.display = 'none';
+      manualContentKids.style.display = 'block';
+      manualToggleKidsBtn.textContent = 'もとの文字にもどす';
+      manualToggleKidsBtn.style.backgroundColor = 'rgba(139, 92, 246, 0.2)';
+      manualToggleKidsBtn.style.borderColor = 'rgba(139, 92, 246, 0.5)';
+      manualToggleKidsBtn.style.color = '#a78bfa';
+    } else {
+      manualContentNormal.style.display = 'block';
+      manualContentKids.style.display = 'none';
+      manualToggleKidsBtn.textContent = 'ひらがなモードにする';
+      manualToggleKidsBtn.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+      manualToggleKidsBtn.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+      manualToggleKidsBtn.style.color = '#60a5fa';
+    }
+  });
 }
 
 function renderCraftingUI() {

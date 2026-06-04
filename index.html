@@ -1317,6 +1317,9 @@
   <!-- マニュアル画面 -->
   <div id="manual-modal" style="display: none;">
     <div id="manual-card">
+      <div id="manual-header" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <button id="manual-toggle-kids-btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">ひらがなモードにする</button>
+      </div>
       <div id="manual-content">
         <h1>クラフト・素材あつめマニュアル</h1>
         <p>このゲームでは、世界中から素材を集めて新しいアイテムを作り出し、冒険や建築に役立てることができます。<br>ここでは「素材の集め方」「クラフト（合成）のやり方」「全レシピ一覧」をご紹介します。</p>
@@ -1389,6 +1392,82 @@
           <tr><td><strong>ハンマー</strong></td><td>木の棒 ×2, 鉄インゴット ×3</td><td>5ダメージ</td></tr>
           <tr><td><strong>鉄の防具セット</strong></td><td>鉄インゴット ×24</td><td>インベントリから使用</td></tr>
           <tr><td><strong>ダイヤの防具セット</strong></td><td>ダイヤモンド ×24</td><td>インベントリから使用</td></tr>
+        </table>
+      </div>
+
+      <!-- ひらがなモード -->
+      <div id="manual-content-kids" style="display: none;">
+        <h1>つくりかた・そざいあつめ マニュアル</h1>
+        <p>このゲームでは、せかいじゅうから そざいをあつめて あたらしいアイテムを つくりだし、ぼうけん や けんちく に やくだてる ことができます。<br>ここでは「そざいの あつめかた」「つくりかた」「ぜんぶの レシピ」を しょうかい します。</p>
+        
+        <h2>⛏️ 1. きほんてきな そざいの あつめかた</h2>
+        <p>フィールドにある ブロックを「ひだりクリック（ながおし）」で こわすことで、アイテムとして てにはいります。<br>いち部のブロックは、<strong>みためとは ちがうアイテム</strong>を おとすことが あります。</p>
+        <table>
+          <tr><th>こわす ブロック</th><th>てにはいる アイテム</th><th>せつめい</th></tr>
+          <tr><td><strong>き（げんぼく）</strong></td><td><strong>き（げんぼく）</strong></td><td>すべての きほん。まずは これを あつめよう。</td></tr>
+          <tr><td><strong>いし</strong></td><td><strong>まるいし</strong></td><td>いしを こわすと ゴツゴツした まるいしに なります。いしの どうぐ や かまどの ざいりょうに なります。</td></tr>
+          <tr><td><strong>くさ ブロック</strong></td><td><strong>つち</strong></td><td>うえに くさが はえている ブロックだけど、こわすと ただの つちに なります。</td></tr>
+          <tr><td><strong>はっぱ</strong></td><td><strong>（なし）または リンゴ</strong></td><td>きほんは なにも おとさないけれど、<strong>ごく まれに「リンゴ」</strong>を おとします。</td></tr>
+          <tr><td><strong>せきたん こうせき</strong></td><td><strong>せきたん（アイテム）</strong></td><td>くろい ブツブツが ある いし。たいまつの ざいりょう や、ものを やくときの ねんりょうに なります。</td></tr>
+          <tr><td><strong>てつ こうせき</strong></td><td><strong>てつ こうせき</strong></td><td>ちゃいろい ブツブツが ある いし。そのままでは つかえず、せきたんと いっしょに やく ひつようが あります。</td></tr>
+          <tr><td><strong>きん こうせき</strong></td><td><strong>きん こうせき</strong></td><td>きいろい ブツブツが ある いし。てつと おなじように やく ひつようが あります。</td></tr>
+          <tr><td><strong>ダイヤ こうせき</strong></td><td><strong>ダイヤモンド</strong></td><td>みずいろの ブツブツが ある いし。いちばん かたい ぶき や どうぐの ざいりょう です。</td></tr>
+        </table>
+
+        <h2>🛠️ 2. クラフト（ごうせい）の やりかた</h2>
+        <p>カバンに ひつような そざいを もっている じょうたいで、キーボードの <strong><code>Cキー</code></strong> を おすと「クラフトがめん」が ひらきます。</p>
+        <ol>
+          <li><strong>レシピを えらぶ:</strong> クラフトがめん には つくれる アイテムが ならんでいます。</li>
+          <li><strong>そざいを かくにん:</strong> アイテムの したに「ひつような そざい」と「じぶんが もっている かず」が ひょうじされます。</li>
+          <li><strong>つくる ボタンを おす:</strong> そざいが ぜんぶ たりていると みぎがわの「さくせい」ボタンが おせるように なります。</li>
+        </ol>
+
+        <h2>📜 3. ぜんぶの レシピ</h2>
+        <h3>🪵 きほんの そざい・けんちく ブロック</h3>
+        <table>
+          <tr><th>つくれる アイテム</th><th>ひつような そざい</th><th>つかいみち</th></tr>
+          <tr><td><strong>もくざい</strong> ×4</td><td>き(げんぼく) ×1</td><td>けんちく の きほん ブロック。ぼう などの ざいりょう にも なります。</td></tr>
+          <tr><td><strong>きの ぼう</strong> ×4</td><td>もくざい ×2</td><td>どうぐの え（もつところ）や たいまつの ざいりょう に なります。</td></tr>
+          <tr><td><strong>たいまつ</strong> ×4</td><td>きの ぼう ×1, せきたん ×1</td><td>くらい ばしょを あかるく てらします。</td></tr>
+          <tr><td><strong>きの かいだん</strong> ×4</td><td>もくざい ×6</td><td>だんさを スムーズに のぼれるように なります。</td></tr>
+          <tr><td><strong>さく</strong> ×3</td><td>もくざい ×2, きの ぼう ×4</td><td>どうぶつ を かこったり、かざりに つかえます。</td></tr>
+          <tr><td><strong>ドア</strong> ×3</td><td>もくざい ×6</td><td>あけしめ できる とびら です（みぎクリック で そうさ）。</td></tr>
+        </table>
+
+        <h3>🛏️ せつび・かぐ</h3>
+        <table>
+          <tr><th>つくれる アイテム</th><th>ひつような そざい</th><th>つかいみち</th></tr>
+          <tr><td><strong>かまど</strong></td><td>まるいし ×8</td><td>（※いまは かざり ブロックです。Cキーで やく ことができます）</td></tr>
+          <tr><td><strong>チェスト</strong></td><td>もくざい ×8</td><td>（※いまは かざり ブロックです）</td></tr>
+          <tr><td><strong>ベッド</strong></td><td>もくざい ×3, き(げんぼく) ×3</td><td>みぎクリック で ねころがる ことができます。</td></tr>
+        </table>
+
+        <h3>🔥 せいれん（せきたんで やく レシピ）</h3>
+        <table>
+          <tr><th>つくれる アイテム</th><th>ひつような そざい</th><th>せつめい</th></tr>
+          <tr><td><strong>いし</strong></td><td>まるいし ×1, せきたん ×1</td><td>まるいし を やいて、なめらかな いし ブロックに もどします。</td></tr>
+          <tr><td><strong>ガラス</strong></td><td>すな ×1, せきたん ×1</td><td>すな を やいて とうめいな ガラス ブロックを つくります。</td></tr>
+          <tr><td><strong>てつ インゴット</strong></td><td>てつ こうせき ×1, せきたん ×1</td><td>てつの どうぐ や ぼうぐ の ざいりょう に なります。</td></tr>
+          <tr><td><strong>きん インゴット</strong></td><td>きん こうせき ×1, せきたん ×1</td><td>（これから つかえるように なる そざい）</td></tr>
+        </table>
+
+        <h3>⛏️ どうぐ（ほる・きる など）</h3>
+        <table>
+          <tr><th>つくれる アイテム</th><th>ひつような そざい</th></tr>
+          <tr><td><strong>きの ツルハシ・オノ・シャベル</strong></td><td>きの ぼう ×2, もくざい（ツルハシ/オノは3, シャベルは1）</td></tr>
+          <tr><td><strong>いしの ツルハシ・オノ・シャベル</strong></td><td>きの ぼう ×2, まるいし（ツルハシ/オノは3, シャベルは1）</td></tr>
+          <tr><td><strong>てつの ツルハシ・オノ・シャベル</strong></td><td>きの ぼう ×2, てつ インゴット（ツルハシ/オノは3, シャベルは1）</td></tr>
+          <tr><td><strong>ダイヤの ツルハシ・オノ・シャベル</strong></td><td>きの ぼう ×2, ダイヤモンド（ツルハシ/オノは3, シャベルは1）</td></tr>
+        </table>
+
+        <h3>⚔️ ぶき・ぼうぐ</h3>
+        <table>
+          <tr><th>つくれる アイテム</th><th>ひつような そざい</th><th>つよさ/こうか</th></tr>
+          <tr><td><strong>いしの けん</strong></td><td>きの ぼう ×1, まるいし ×2</td><td>4 ダメージ</td></tr>
+          <tr><td><strong>ダイヤの けん</strong></td><td>きの ぼう ×1, ダイヤモンド ×2</td><td>6 ダメージ（さいきょう の けん！）</td></tr>
+          <tr><td><strong>ハンマー</strong></td><td>きの ぼう ×2, てつ インゴット ×3</td><td>5 ダメージ</td></tr>
+          <tr><td><strong>てつの ぼうぐ</strong></td><td>てつ インゴット ×24</td><td>カバン から つかう</td></tr>
+          <tr><td><strong>ダイヤの ぼうぐ</strong></td><td>ダイヤモンド ×24</td><td>カバン から つかう</td></tr>
         </table>
       </div>
       <div class="manual-close-container">
