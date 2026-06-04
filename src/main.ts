@@ -62,6 +62,7 @@ const inventory: Record<BlockType, number> = {
   [BlockType.WATER]: 64,   // 水
   [BlockType.DIAMOND_SWORD]: 1, // ダイヤの剣
   [BlockType.HAMMER]: 1,        // ハンマー
+  [BlockType.BEDROCK]: 0,       // 岩盤
 };
 
 // 設定UIの初期化
@@ -909,6 +910,7 @@ const allBlocks = [
   BlockType.WATER,
   BlockType.DIAMOND_SWORD,
   BlockType.HAMMER,
+  BlockType.BEDROCK,
 ];
 
 function syncArmorUI() {
