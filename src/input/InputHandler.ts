@@ -5,6 +5,9 @@ export class InputHandler {
   private justPressedKeys: Record<string, boolean> = {};
   public mouseDelta = { x: 0, y: 0 };
   public isLocked = false;
+  
+  public isLeftClickDown = false;
+  public isRightClickDown = false;
 
   public isActionActive(action: 'forward' | 'backward' | 'left' | 'right' | 'jump'): boolean {
     const config = configStore.getConfig();
@@ -32,6 +35,17 @@ export class InputHandler {
 
     // ポインターロックのステータス変更イベント
     document.addEventListener('pointerlockchange', this.onPointerLockChange.bind(this));
+
+    // マウスクリック状態の追跡
+    window.addEventListener('mousedown', (e) => {
+      if (!this.isLocked) return;
+      if (e.button === 0) this.isLeftClickDown = true;
+      if (e.button === 2) this.isRightClickDown = true;
+    });
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) this.isLeftClickDown = false;
+      if (e.button === 2) this.isRightClickDown = false;
+    });
   }
 
   // ポインターロックの要求

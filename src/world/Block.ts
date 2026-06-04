@@ -68,6 +68,17 @@ export interface BlockProperties {
     bottom: number;
   };
   drops?: BlockType; // 指定がない場合は自分自身をドロップ
+
+  // 破壊・採掘関連のプロパティ
+  hardness?: number; // 壊すのにかかる基準時間（秒）。0や未定義なら瞬時(またはデフォルト値)
+  requiredToolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword' | 'none'; // 適性ツール
+  minToolTier?: number; // ドロップに必要なツールの最低ランク (0:木/手, 1:石, 2:鉄, 3:ダイヤ)
+
+  // ツールとしてのプロパティ（アイテム向け）
+  isTool?: boolean;
+  toolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword';
+  toolTier?: number;
+  speedMultiplier?: number; // 採掘速度の倍率
 }
 
 export const BLOCKS: Record<BlockType, BlockProperties> = {

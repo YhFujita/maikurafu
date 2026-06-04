@@ -19,6 +19,71 @@ import { NavigationManager } from './ui/NavigationManager.ts';
 // レンダラーの初期化
 const renderer = new Renderer('canvas-container');
 
+// ひび割れ（破壊アニメーション）用メッシュの設定
+let isBreakingBlock = false;
+let breakingProgress = 0.0;
+let breakingTargetPos = new THREE.Vector3(-999, -999, -999);
+
+// ひび割れ用の動的テクスチャとキャンバス
+const crackCanvas = document.createElement('canvas');
+crackCanvas.width = 128;
+crackCanvas.height = 128;
+const crackCtx = crackCanvas.getContext('2d')!;
+const crackTexture = new THREE.CanvasTexture(crackCanvas);
+crackTexture.magFilter = THREE.NearestFilter;
+crackTexture.minFilter = THREE.NearestFilter;
+
+const crackMaterial = new THREE.MeshBasicMaterial({
+  map: crackTexture,
+  transparent: true,
+  opacity: 0.8,
+  depthTest: true,
+  depthWrite: false,
+});
+const crackGeometry = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+const crackMesh = new THREE.Mesh(crackGeometry, crackMaterial);
+crackMesh.visible = false;
+renderer.scene.add(crackMesh);
+
+// ひび割れテクスチャを更新する関数
+function updateCrackTexture(progress: number) {
+  crackCtx.clearRect(0, 0, 128, 128);
+  if (progress <= 0) {
+    crackTexture.needsUpdate = true;
+    return;
+  }
+  
+  crackCtx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+  crackCtx.lineWidth = 2;
+  crackCtx.lineCap = 'round';
+  crackCtx.lineJoin = 'round';
+
+  // シード固定的な乱数を生成して進行度に応じて線を増やす
+  const numLines = Math.floor(progress * 40);
+  let seed = 12345;
+  const random = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
+  crackCtx.beginPath();
+  for (let i = 0; i < numLines; i++) {
+    const x1 = random() * 128;
+    const y1 = random() * 128;
+    const x2 = x1 + (random() - 0.5) * 40;
+    const y2 = y1 + (random() - 0.5) * 40;
+    crackCtx.moveTo(x1, y1);
+    crackCtx.lineTo(x2, y2);
+    // 枝分かれ
+    if (random() > 0.5) {
+      crackCtx.lineTo(x2 + (random() - 0.5) * 20, y2 + (random() - 0.5) * 20);
+    }
+  }
+  crackCtx.stroke();
+  crackTexture.needsUpdate = true;
+}
+
+
 // 物理ワールドの初期化
 const physics = new PhysicsWorld();
 
@@ -574,12 +639,154 @@ function animate(time: number) {
   if (input.consumeJustPressed(config.keyPlaceBlock)) {
     performBlockAction(false, true);
   }
-  if (input.consumeJustPressed(config.keyBreakBlock)) {
-    performBlockAction(true, false);
+  // キーバインドによる破壊の単発トリガーは廃止（長押しに移行）
+  // if (input.consumeJustPressed(config.keyBreakBlock)) { ... }
+
+  // --- 連続破壊（長押し）ロジック ---
+  const shouldBreak = config.invertClicks ? input.isRightClickDown : input.isLeftClickDown;
+  
+  if (shouldBreak && input.isLocked) {
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), player.camera);
+    const chunkMeshes = world.getChunkMeshes();
+    const intersects = raycaster.intersectObjects(chunkMeshes);
+    let hitValidBlock = false;
+
+    if (intersects.length > 0 && intersects[0].distance <= maxInteractDistance) {
+      const intersect = intersects[0];
+      const point = intersect.point;
+      const normal = intersect.face?.normal;
+      
+      if (normal) {
+        const target = point.clone().sub(normal.clone().multiplyScalar(0.1));
+        const bx = Math.floor(target.x);
+        const by = Math.floor(target.y);
+        const bz = Math.floor(target.z);
+        const targetBlockType = world.getBlock(bx, by, bz);
+
+        if (targetBlockType !== BlockType.AIR && targetBlockType !== BlockType.BEDROCK) {
+          hitValidBlock = true;
+          
+          const currentTargetPos = new THREE.Vector3(bx, by, bz);
+          if (!isBreakingBlock || !breakingTargetPos.equals(currentTargetPos)) {
+            // 新しいブロックを破壊開始
+            isBreakingBlock = true;
+            breakingTargetPos.copy(currentTargetPos);
+            breakingProgress = 0.0;
+            crackMesh.position.set(bx + 0.5, by + 0.5, bz + 0.5);
+            crackMesh.visible = true;
+            updateCrackTexture(0);
+          } else {
+            // 破壊継続中
+            const blockProps = BLOCKS[targetBlockType];
+            const toolProps = BLOCKS[activeBlockType] || {};
+            
+            let hardness = blockProps.hardness || 1.0;
+            let speed = 1.0; // 基準速度
+            
+            // 手持ちのツール適性チェック
+            const isAppropriateTool = !blockProps.requiredToolCategory || blockProps.requiredToolCategory === 'none' || toolProps.toolCategory === blockProps.requiredToolCategory;
+            
+            if (isAppropriateTool && toolProps.isTool) {
+              speed *= (toolProps.speedMultiplier || 1.0);
+            } else if (!isAppropriateTool && blockProps.requiredToolCategory && blockProps.requiredToolCategory !== 'none') {
+              // 適性ツールでない場合は極端に遅くなる（10分の1）
+              speed *= 0.1;
+            }
+            
+            // 破壊にかかる時間 = hardness * 1.5 (基準係数) / speed
+            const requiredTime = (hardness * 1.5) / speed;
+            breakingProgress += deltaTime / requiredTime;
+            
+            updateCrackTexture(breakingProgress);
+
+            if (breakingProgress >= 1.0) {
+              // 破壊完了
+              executeBlockDestroy(targetBlockType, bx, by, bz);
+              isBreakingBlock = false;
+              crackMesh.visible = false;
+              breakingProgress = 0.0;
+            }
+          }
+        }
+      }
+    }
+    
+    if (!hitValidBlock) {
+      isBreakingBlock = false;
+      crackMesh.visible = false;
+      breakingProgress = 0.0;
+    }
+  } else {
+    isBreakingBlock = false;
+    crackMesh.visible = false;
+    breakingProgress = 0.0;
   }
 
   // レンダリング実行
   renderer.render();
+}
+
+// ブロック破壊処理を実行する関数
+function executeBlockDestroy(targetBlockType: BlockType, bx: number, by: number, bz: number) {
+  // 岩盤は壊せない
+  if (targetBlockType === BlockType.BEDROCK) return;
+  
+  world.setBlock(bx, by, bz, BlockType.AIR);
+  // ブロック破壊音の再生
+  SoundManager.playBreak(targetBlockType);
+
+  // 扉ブロックの場合、上マスも同時に削除する（2マス扉対応）
+  if (targetBlockType === BlockType.DOOR_CLOSED || targetBlockType === BlockType.DOOR_OPEN) {
+    const aboveType = world.getBlock(bx, by + 1, bz);
+    if (aboveType === BlockType.DOOR_CLOSED || aboveType === BlockType.DOOR_OPEN) {
+      world.setBlock(bx, by + 1, bz, BlockType.AIR);
+    }
+    const belowType = world.getBlock(bx, by - 1, bz);
+    if (belowType === BlockType.DOOR_CLOSED || belowType === BlockType.DOOR_OPEN) {
+      world.setBlock(bx, by - 1, bz, BlockType.AIR);
+      world.removeDoorOrientation(bx, by - 1, bz);
+    }
+    world.removeDoorOrientation(bx, by, bz);
+  }
+
+  // ベッドブロックの場合、隐接に配置されたペアブロックも同時に削除（1BEDアイテムのみドロップ）
+  if (targetBlockType === BlockType.BED_HEAD || targetBlockType === BlockType.BED_FOOT) {
+    const pairType = targetBlockType === BlockType.BED_HEAD ? BlockType.BED_FOOT : BlockType.BED_HEAD;
+    const neighbors: [number, number][] = [[bx+1, bz], [bx-1, bz], [bx, bz+1], [bx, bz-1]];
+    for (const [nx, nz] of neighbors) {
+      if (world.getBlock(nx, by, nz) === pairType) {
+        world.setBlock(nx, by, nz, BlockType.AIR);
+        break;
+      }
+    }
+    // ベッドアイテムを必ず1個ドロップ
+    spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+  } else {
+    // 適性ツールによるドロップ判定
+    const blockProps = BLOCKS[targetBlockType];
+    const toolProps = BLOCKS[activeBlockType];
+    const minTier = blockProps.minToolTier || 0;
+    const toolTier = toolProps.isTool ? (toolProps.toolTier || 0) : 0;
+    
+    // ツールのティアが足りている場合のみドロップ
+    if (toolTier >= minTier) {
+      // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
+      if (targetBlockType !== BlockType.DOOR_OPEN) {
+        let dropType = blockProps.drops ?? targetBlockType;
+
+        // 葉っぱ特有のドロップロジック（低確率でリンゴ）
+        if (targetBlockType === BlockType.LEAVES) {
+          const r = Math.random();
+          if (r < 0.05) dropType = BlockType.APPLE;
+          else dropType = BlockType.AIR; // 基本は何も落ちない
+        }
+
+        if (dropType !== BlockType.AIR) {
+          spawnDroppedItem(dropType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+        }
+      }
+    }
+  }
 }
 
 function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
@@ -647,68 +854,7 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
             const idx = mobs.indexOf(hitMob);
             if (idx > -1) mobs.splice(idx, 1);
           }
-          return; // 攻撃ヒット時はブロックの破壊処理をスキップ
-        }
-      }
-
-      // ブロック破壊
-      // 法線の逆方向に少し進んだ点が、交差したブロックの内部座標
-      const target = point.clone().sub(normal.clone().multiplyScalar(0.1));
-      const bx = Math.floor(target.x);
-      const by = Math.floor(target.y);
-      const bz = Math.floor(target.z);
-
-      const targetBlockType = world.getBlock(bx, by, bz);
-      if (targetBlockType !== BlockType.AIR) {
-        // 岩盤は壊せない
-        if (targetBlockType === BlockType.BEDROCK) return;
-        
-        world.setBlock(bx, by, bz, BlockType.AIR);
-        // ブロック破壊音の再生
-        SoundManager.playBreak(targetBlockType);
-
-        // 扉ブロックの場合、上マスも同時に削除する（2マス扉対応）
-        if (targetBlockType === BlockType.DOOR_CLOSED || targetBlockType === BlockType.DOOR_OPEN) {
-          const aboveType = world.getBlock(bx, by + 1, bz);
-          if (aboveType === BlockType.DOOR_CLOSED || aboveType === BlockType.DOOR_OPEN) {
-            world.setBlock(bx, by + 1, bz, BlockType.AIR);
-          }
-          const belowType = world.getBlock(bx, by - 1, bz);
-          if (belowType === BlockType.DOOR_CLOSED || belowType === BlockType.DOOR_OPEN) {
-            world.setBlock(bx, by - 1, bz, BlockType.AIR);
-            world.removeDoorOrientation(bx, by - 1, bz);
-          }
-          world.removeDoorOrientation(bx, by, bz);
-        }
-
-        // ベッドブロックの場合、隐接に配置されたペアブロックも同時に削除（1BEDアイテムのみドロップ）
-        if (targetBlockType === BlockType.BED_HEAD || targetBlockType === BlockType.BED_FOOT) {
-          const pairType = targetBlockType === BlockType.BED_HEAD ? BlockType.BED_FOOT : BlockType.BED_HEAD;
-          const neighbors: [number, number][] = [[bx+1, bz], [bx-1, bz], [bx, bz+1], [bx, bz-1]];
-          for (const [nx, nz] of neighbors) {
-            if (world.getBlock(nx, by, nz) === pairType) {
-              world.setBlock(nx, by, nz, BlockType.AIR);
-              break;
-            }
-          }
-          // ベッドアイテムを必ず1個ドロップ
-          spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
-        } else {
-          // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
-          if (targetBlockType !== BlockType.DOOR_OPEN) {
-            let dropType = BLOCKS[targetBlockType].drops ?? targetBlockType;
-
-            // 葉っぱ特有のドロップロジック（低確率でリンゴ）
-            if (targetBlockType === BlockType.LEAVES) {
-              const r = Math.random();
-              if (r < 0.05) dropType = BlockType.APPLE;
-              else dropType = BlockType.AIR; // 基本は何も落ちない
-            }
-
-            if (dropType !== BlockType.AIR) {
-              spawnDroppedItem(dropType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
-            }
-          }
+          return; // 攻撃ヒット時はスキップ
         }
       }
       
