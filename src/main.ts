@@ -1245,6 +1245,7 @@ function openInventory() {
 function closeInventory() {
   if (!inventoryModal) return;
   inventoryModal.style.display = 'none';
+  input.lastModalCloseTime = performance.now();
   input.requestLock();
 }
 
@@ -1266,6 +1267,7 @@ function openCrafting() {
 function closeCrafting() {
   if (!craftingModal) return;
   craftingModal.style.display = 'none';
+  input.lastModalCloseTime = performance.now();
   input.requestLock();
 }
 
@@ -1289,6 +1291,7 @@ function openManual() {
 function closeManual() {
   if (!manualModal) return;
   manualModal.style.display = 'none';
+  input.lastModalCloseTime = performance.now();
   input.requestLock();
 }
 
@@ -1308,6 +1311,7 @@ function openMap() {
 function closeMap() {
   if (!mapModal) return;
   mapModal.style.display = 'none';
+  input.lastModalCloseTime = performance.now();
   input.requestLock();
 }
 

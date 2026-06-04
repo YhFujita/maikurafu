@@ -8,6 +8,7 @@ export class InputHandler {
   
   public isLeftClickDown = false;
   public isRightClickDown = false;
+  public lastModalCloseTime = 0; // 直近でモーダルを閉じた時間 (ミリ秒)
 
   public isActionActive(action: 'forward' | 'backward' | 'left' | 'right' | 'jump'): boolean {
     const config = configStore.getConfig();
@@ -108,9 +109,13 @@ export class InputHandler {
       const mapModal = document.getElementById('world-map-modal');
       const isMapOpen = mapModal && mapModal.style.display === 'flex';
       if (!isInventoryOpen && !isCraftingOpen && !isManualOpen && !isMapOpen) {
-        if (menuOverlay) {
-          menuOverlay.style.display = 'flex';
-          menuOverlay.style.opacity = '1';
+        // 直近でモーダルを閉じた場合は、初期画面を表示しない（Escキー等の連続押下・貫通制御）
+        const timeSinceClose = performance.now() - this.lastModalCloseTime;
+        if (timeSinceClose > 300) {
+          if (menuOverlay) {
+            menuOverlay.style.display = 'flex';
+            menuOverlay.style.opacity = '1';
+          }
         }
       }
       if (crosshair) crosshair.style.display = 'none';
