@@ -8,10 +8,11 @@ import { BlockType, BLOCKS } from './world/Block.ts';
 import { CONFIG } from './config.ts';
 import { configStore } from './configStore.ts';
 import { ConfigUIHandler } from './input/ConfigUIHandler.ts';
+import { SoundManager } from './system/SoundManager.ts';
+import { RECIPES } from './world/Recipe.ts';
 import { TimeManager } from './system/TimeManager.ts';
 import { DroppedItem } from './item/DroppedItem.ts';
 import { Mob } from './mob/Mob.ts';
-import { SoundManager } from './system/SoundManager.ts';
 import { SaveManager } from './system/SaveManager.ts';
 
 // レンダラーの初期化
@@ -63,9 +64,13 @@ const inventory: Record<BlockType, number> = {
   [BlockType.DIAMOND_SWORD]: 1, // ダイヤの剣
   [BlockType.HAMMER]: 1,        // ハンマー
   [BlockType.BEDROCK]: 0,       // 岩盤
-  [BlockType.IRON_ORE]: 64,
-  [BlockType.GOLD_ORE]: 64,
-  [BlockType.DIAMOND_ORE]: 64,
+  [BlockType.IRON_ORE]: 0,
+  [BlockType.GOLD_ORE]: 0,
+  [BlockType.DIAMOND_ORE]: 0,
+  [BlockType.STICK]: 0,
+  [BlockType.IRON_INGOT]: 0,
+  [BlockType.GOLD_INGOT]: 0,
+  [BlockType.DIAMOND]: 0,
 };
 
 // 設定UIの初期化
@@ -375,6 +380,17 @@ function animate(time: number) {
       closeInventory();
     } else {
       openInventory();
+    }
+  }
+
+  // Cキー押下時のクラフト画面開閉アクション
+  if (input.consumeJustPressed('KeyC')) {
+    const craftingModal = document.getElementById('crafting-modal');
+    const isCraftingOpen = craftingModal && craftingModal.style.display === 'flex';
+    if (isCraftingOpen) {
+      closeCrafting();
+    } else {
+      openCrafting();
     }
   }
 
@@ -917,6 +933,10 @@ const allBlocks = [
   BlockType.IRON_ORE,
   BlockType.GOLD_ORE,
   BlockType.DIAMOND_ORE,
+  BlockType.STICK,
+  BlockType.IRON_INGOT,
+  BlockType.GOLD_INGOT,
+  BlockType.DIAMOND,
 ];
 
 function syncArmorUI() {
@@ -949,6 +969,79 @@ function closeInventory() {
 
 if (inventoryCloseBtn) {
   inventoryCloseBtn.addEventListener('click', closeInventory);
+}
+
+const craftingModal = document.getElementById('crafting-modal');
+const recipeListEl = document.getElementById('recipe-list');
+const craftingCloseBtn = document.getElementById('crafting-close-btn');
+
+function openCrafting() {
+  if (!craftingModal) return;
+  document.exitPointerLock();
+  craftingModal.style.display = 'flex';
+  renderCraftingUI();
+}
+
+function closeCrafting() {
+  if (!craftingModal) return;
+  craftingModal.style.display = 'none';
+  input.requestLock();
+}
+
+if (craftingCloseBtn) {
+  craftingCloseBtn.addEventListener('click', closeCrafting);
+}
+
+function renderCraftingUI() {
+  if (!recipeListEl) return;
+  recipeListEl.innerHTML = '';
+
+  RECIPES.forEach(recipe => {
+    const canCraft = recipe.inputs.every(input => (inventory[input.type] || 0) >= input.count);
+
+    const recipeEl = document.createElement('div');
+    recipeEl.className = 'recipe-item';
+
+    const outputEl = document.createElement('div');
+    outputEl.className = 'recipe-output';
+    outputEl.innerHTML = `<div class="slot-icon ${getSlotIconClass(recipe.output.type)}"></div> <span>${BLOCKS[recipe.output.type].name} x${recipe.output.count}</span>`;
+    
+    const inputsEl = document.createElement('div');
+    inputsEl.className = 'recipe-inputs';
+    
+    recipe.inputs.forEach(input => {
+      const hasCount = inventory[input.type] || 0;
+      const isSufficient = hasCount >= input.count;
+      const inputEl = document.createElement('div');
+      inputEl.className = `recipe-input-item ${isSufficient ? 'sufficient' : 'lacking'}`;
+      inputEl.innerHTML = `<div class="slot-icon ${getSlotIconClass(input.type)}" style="width:24px;height:24px;"></div> <span>${hasCount}/${input.count}</span>`;
+      inputsEl.appendChild(inputEl);
+    });
+
+    const craftBtn = document.createElement('button');
+    craftBtn.className = 'craft-btn';
+    craftBtn.textContent = '作成';
+    craftBtn.disabled = !canCraft;
+    craftBtn.addEventListener('click', () => {
+      if (!craftBtn.disabled) {
+        // 消費
+        recipe.inputs.forEach(input => {
+          inventory[input.type] -= input.count;
+        });
+        // 獲得
+        inventory[recipe.output.type] = (inventory[recipe.output.type] || 0) + recipe.output.count;
+        
+        SoundManager.playPlace(recipe.output.type);
+        syncHotbarUI();
+        renderCraftingUI(); // UI更新
+      }
+    });
+
+    recipeEl.appendChild(outputEl);
+    recipeEl.appendChild(inputsEl);
+    recipeEl.appendChild(craftBtn);
+    recipeListEl.appendChild(recipeEl);
+  });
 }
 
 // 装備切り替えボタンのイベントリスナー登録

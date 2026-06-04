@@ -447,6 +447,47 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   // 28: ダイヤ鉱石
   drawOre(28, 'rgb(0, 255, 255)');
 
+  // 29: 木の棒 (STICK)
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(1 * tileSize, 7 * tileSize, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(139, 69, 19)';
+  ctx.beginPath();
+  ctx.moveTo(1 * tileSize + 4, 7 * tileSize + 12);
+  ctx.lineTo(1 * tileSize + 12, 7 * tileSize + 4);
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // インゴット描画関数
+  const drawIngot = (index: number, color: string) => {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const startX = col * tileSize;
+    const startY = row * tileSize;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+    ctx.fillRect(startX, startY, tileSize, tileSize);
+    
+    ctx.fillStyle = color;
+    ctx.fillRect(startX + 3, startY + 6, 10, 4);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillRect(startX + 3, startY + 6, 10, 1);
+  };
+
+  // 30: 鉄インゴット
+  drawIngot(30, 'rgb(220, 220, 220)');
+  // 31: 金インゴット
+  drawIngot(31, 'rgb(255, 215, 0)');
+
+  // 32: ダイヤモンド
+  ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+  ctx.fillRect(0 * tileSize, 8 * tileSize, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(0, 255, 255)';
+  ctx.beginPath();
+  ctx.moveTo(0 * tileSize + 8, 8 * tileSize + 2);
+  ctx.lineTo(0 * tileSize + 14, 8 * tileSize + 8);
+  ctx.lineTo(0 * tileSize + 8, 8 * tileSize + 14);
+  ctx.lineTo(0 * tileSize + 2, 8 * tileSize + 8);
+  ctx.fill();
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
 
