@@ -696,13 +696,13 @@ export class Player {
         // ベッドの向きを判定する
         const targetType = belowBlock === BlockType.BED_HEAD ? BlockType.BED_FOOT : BlockType.BED_HEAD;
         if (this.voxelWorld.getBlock(bx + 1, by, bz) === targetType) {
-          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI / 2 : -Math.PI / 2; // East/West
+          bedYaw = belowBlock === BlockType.BED_HEAD ? -Math.PI / 2 : Math.PI / 2; // East/West
         } else if (this.voxelWorld.getBlock(bx - 1, by, bz) === targetType) {
-          bedYaw = belowBlock === BlockType.BED_HEAD ? -Math.PI / 2 : Math.PI / 2;
+          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI / 2 : -Math.PI / 2;
         } else if (this.voxelWorld.getBlock(bx, by, bz + 1) === targetType) {
-          bedYaw = belowBlock === BlockType.BED_HEAD ? 0 : Math.PI; // South/North
+          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI : 0; // South/North
         } else if (this.voxelWorld.getBlock(bx, by, bz - 1) === targetType) {
-          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI : 0;
+          bedYaw = belowBlock === BlockType.BED_HEAD ? 0 : Math.PI;
         }
       }
     }
