@@ -698,8 +698,18 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
 
           // プレイヤーの向きから足元方向を決定（前方に足元を配置）
           const yaw = player.getYaw();
-          const footDX = Math.round(-Math.sin(yaw)); // ±1 or 0
-          const footDZ = Math.round(-Math.cos(yaw)); // ±1 or 0
+          let footDX = 0;
+          let footDZ = 0;
+          const sinDir = -Math.sin(yaw);
+          const cosDir = -Math.cos(yaw);
+          
+          // 斜め設置を防ぐため、絶対値が大きい方の軸を主軸とする（縦か横のみ）
+          if (Math.abs(sinDir) > Math.abs(cosDir)) {
+            footDX = Math.sign(sinDir);
+          } else {
+            footDZ = Math.sign(cosDir);
+          }
+          
           const footX = bx + footDX;
           const footZ = bz + footDZ;
 

@@ -50,6 +50,7 @@ export class Player {
   private isGrounded: boolean = false;
   private isInWater: boolean = false; // 水中判定フラグを追加
   public isSprintingToggle: boolean = false; // ダッシュのトグルフラグ
+  private jumpForce: number = 7.5;
   private lastVelocityY: number = 0; // 落下ダメージ計算用
   
   // ライフ自動回復用タイマー
@@ -485,7 +486,11 @@ export class Player {
 
     // 目の前がソリッドブロックで、その上の空間が空いている場合
     if (stepBlock !== 0 && headSpaceBlock === 0 && headSpaceBlock2 === 0) {
-      const stepTopY = currentGridY + 1.0;
+      let stepHeight = 1.0;
+      if (stepBlock === BlockType.BED_HEAD || stepBlock === BlockType.BED_FOOT) {
+        stepHeight = 0.5625;
+      }
+      const stepTopY = currentGridY + stepHeight;
       const heightDiff = stepTopY - feetY;
 
       // 段差の高さが1m以下の場合、スムーズに押し上げる
@@ -677,6 +682,7 @@ export class Player {
 
     // ベッドで寝ているかどうかの判定 (静止時かつ足元がベッド)
     let isSleeping = false;
+    let bedYaw = 0;
     if (!isMoving && this.isGrounded && this.voxelWorld) {
       const bx = Math.floor(this.position.x);
       // 足元のブロックを確認（少しめり込むことも考慮し、足元付近をチェック）
@@ -686,6 +692,18 @@ export class Player {
       const belowBlock = this.voxelWorld.getBlock(bx, by, bz);
       if (belowBlock === BlockType.BED_HEAD || belowBlock === BlockType.BED_FOOT) {
         isSleeping = true;
+        
+        // ベッドの向きを判定する
+        const targetType = belowBlock === BlockType.BED_HEAD ? BlockType.BED_FOOT : BlockType.BED_HEAD;
+        if (this.voxelWorld.getBlock(bx + 1, by, bz) === targetType) {
+          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI / 2 : -Math.PI / 2; // East/West
+        } else if (this.voxelWorld.getBlock(bx - 1, by, bz) === targetType) {
+          bedYaw = belowBlock === BlockType.BED_HEAD ? -Math.PI / 2 : Math.PI / 2;
+        } else if (this.voxelWorld.getBlock(bx, by, bz + 1) === targetType) {
+          bedYaw = belowBlock === BlockType.BED_HEAD ? 0 : Math.PI; // South/North
+        } else if (this.voxelWorld.getBlock(bx, by, bz - 1) === targetType) {
+          bedYaw = belowBlock === BlockType.BED_HEAD ? Math.PI : 0;
+        }
       }
     }
 
@@ -694,6 +712,8 @@ export class Player {
       // 仰向けに倒れる (X軸 -90度)
       const targetRotX = -Math.PI / 2;
       this.avatar.rotation.x += (targetRotX - this.avatar.rotation.x) * 10 * deltaTime;
+      // アバターの向きをベッドに合わせる
+      this.avatar.rotation.y = bedYaw;
       // 少し浮かせる（ベッドの表面に乗るように調整）
       this.avatar.position.y -= 0.5;
     } else {

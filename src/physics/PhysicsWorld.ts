@@ -2,7 +2,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { CONFIG } from '../config.ts';
 import { World } from '../world/World.ts';
-import { BLOCKS } from '../world/Block.ts';
+import { BLOCKS, BlockType } from '../world/Block.ts';
 
 export class PhysicsWorld {
   public world: CANNON.World;
@@ -12,6 +12,7 @@ export class PhysicsWorld {
   private blockBodies: Map<string, CANNON.Body> = new Map();
   // 共通のブロック形状 (ハーフサイズ 0.5m)
   private blockShape: CANNON.Box;
+  private bedShape: CANNON.Box;
 
   constructor() {
     this.world = new CANNON.World();
@@ -46,6 +47,8 @@ export class PhysicsWorld {
 
     // 1辺1mのブロック用衝突形状
     this.blockShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+    // ベッド用衝突形状 (高さ 9/16 = 0.5625)
+    this.bedShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5625 / 2, 0.5));
 
     // 万が一の奈落落下防止プレート (Y = -50)
     const groundBody = new CANNON.Body({
@@ -80,11 +83,19 @@ export class PhysicsWorld {
 
             // まだ剛体が作成されていなければ作成して追加
             if (!this.blockBodies.has(key)) {
+              let shape = this.blockShape;
+              let yOffset = 0.5;
+
+              if (blockType === BlockType.BED_HEAD || blockType === BlockType.BED_FOOT) {
+                shape = this.bedShape;
+                yOffset = 0.5625 / 2;
+              }
+
               const body = new CANNON.Body({
                 mass: 0, // 静的ボディ
-                shape: this.blockShape,
-                // ブロックの中心に配置 (グリッドの左手前下が基準なので、+0.5オフセット)
-                position: new CANNON.Vec3(x + 0.5, y + 0.5, z + 0.5),
+                shape: shape,
+                // ブロックの中心に配置
+                position: new CANNON.Vec3(x + 0.5, y + yOffset, z + 0.5),
               });
               this.world.addBody(body);
               this.blockBodies.set(key, body);
