@@ -223,19 +223,65 @@ export class Chunk {
             continue;
           }
 
-          // 柵：中心ポスト + 上下レール二本
+          // 柵：中心ポスト + 繋がる方向へのレール
           if (blockType === BlockType.FENCE) {
             const uv = 16; // 柵テクスチャ
-            // 中心ポスト
-            addBox(globalX+0.375, globalY,        globalZ+0.375, globalX+0.625, globalY+1.0,   globalZ+0.625, uv);
-            // 上レール（X方向）
-            addBox(globalX,       globalY+0.75,   globalZ+0.375, globalX+1.0,   globalY+0.875, globalZ+0.625, uv);
-            // 上レール（Z方向）
-            addBox(globalX+0.375, globalY+0.75,   globalZ,       globalX+0.625, globalY+0.875, globalZ+1.0,   uv);
-            // 下レール（X方向）
-            addBox(globalX,       globalY+0.5,    globalZ+0.375, globalX+1.0,   globalY+0.5625, globalZ+0.625, uv);
-            // 下レール（Z方向）
-            addBox(globalX+0.375, globalY+0.5,    globalZ,       globalX+0.625, globalY+0.5625, globalZ+1.0,   uv);
+            
+            // 隣接ブロックが柵や不透過ブロックか判定
+            const checkConnect = (dx: number, dz: number) => {
+              const nx = cx + dx;
+              const ny = cy;
+              const nz = cz + dz;
+              let neighborBlock: BlockType;
+              if (this.isOutOfBounds(nx, ny, nz)) {
+                neighborBlock = world.getBlock(globalX + dx, globalY, globalZ + dz);
+              } else {
+                neighborBlock = this.getBlock(nx, ny, nz);
+              }
+              if (neighborBlock === BlockType.AIR) return false;
+              if (neighborBlock === BlockType.FENCE || neighborBlock === BlockType.DOOR_CLOSED || neighborBlock === BlockType.DOOR_OPEN) return true;
+              const prop = BLOCKS[neighborBlock];
+              return prop ? (prop.isSolid && !prop.isTransparent) : false;
+            };
+
+            const connectN = checkConnect(0, -1);
+            const connectS = checkConnect(0, 1);
+            const connectE = checkConnect(1, 0);
+            const connectW = checkConnect(-1, 0);
+
+            // 中心ポスト (幅4/16 = 0.25)
+            const cMin = 0.375;
+            const cMax = 0.625;
+            addBox(globalX+cMin, globalY, globalZ+cMin, globalX+cMax, globalY+1.0, globalZ+cMax, uv);
+
+            // レールの高さと幅 (上レール Y:0.75~0.875, 下レール Y:0.4375~0.5625)
+            const rMin = 0.4375;
+            const rMax = 0.5625;
+            const yTop1 = 0.75;
+            const yTop2 = 0.875;
+            const yBot1 = 0.4375;
+            const yBot2 = 0.5625;
+
+            // 北 (Z-)
+            if (connectN) {
+              addBox(globalX+rMin, globalY+yTop1, globalZ, globalX+rMax, globalY+yTop2, globalZ+cMin, uv);
+              addBox(globalX+rMin, globalY+yBot1, globalZ, globalX+rMax, globalY+yBot2, globalZ+cMin, uv);
+            }
+            // 南 (Z+)
+            if (connectS) {
+              addBox(globalX+rMin, globalY+yTop1, globalZ+cMax, globalX+rMax, globalY+yTop2, globalZ+1.0, uv);
+              addBox(globalX+rMin, globalY+yBot1, globalZ+cMax, globalX+rMax, globalY+yBot2, globalZ+1.0, uv);
+            }
+            // 東 (X+)
+            if (connectE) {
+              addBox(globalX+cMax, globalY+yTop1, globalZ+rMin, globalX+1.0, globalY+yTop2, globalZ+rMax, uv);
+              addBox(globalX+cMax, globalY+yBot1, globalZ+rMin, globalX+1.0, globalY+yBot2, globalZ+rMax, uv);
+            }
+            // 西 (X-)
+            if (connectW) {
+              addBox(globalX, globalY+yTop1, globalZ+rMin, globalX+cMin, globalY+yTop2, globalZ+rMax, uv);
+              addBox(globalX, globalY+yBot1, globalZ+rMin, globalX+cMin, globalY+yBot2, globalZ+rMax, uv);
+            }
             continue;
           }
 
