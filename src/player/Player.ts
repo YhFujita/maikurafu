@@ -45,13 +45,16 @@ export class Player {
 
   private sensitivity: number = 0.002;
   private speed: number = CONFIG.PLAYER_SPEED;
-  private jumpForce: number = CONFIG.PLAYER_JUMP_FORCE;
 
   // 接地判定用の簡易フラグ
   private isGrounded: boolean = false;
   private isInWater: boolean = false; // 水中判定フラグを追加
-  private isSprintingToggle: boolean = false; // ダッシュのトグルフラグ
+  public isSprintingToggle: boolean = false; // ダッシュのトグルフラグ
   private lastVelocityY: number = 0; // 落下ダメージ計算用
+  
+  // ライフ自動回復用タイマー
+  public lastDamageTime: number = 0;
+  private lastRegenTime: number = 0;
 
   // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
   private voxelWorld!: World;
@@ -329,6 +332,15 @@ export class Player {
     // 死亡時は更新処理を行わない
     if (this.isDead) return;
 
+    // 自動回復ロジック（ダメージを受けてから5秒経過で、1秒ごとに1回復）
+    const now = performance.now();
+    if (this.hp < CONFIG.PLAYER_MAX_HP && (now - this.lastDamageTime) > 5000) {
+      if ((now - this.lastRegenTime) > 1000) {
+        this.hp = Math.min(CONFIG.PLAYER_MAX_HP, this.hp + 1);
+        this.lastRegenTime = now;
+      }
+    }
+
     // F5キーで視点モード切り替え
     if (input.consumeJustPressed('F5')) {
       if (this.cameraMode === '1PV') {
@@ -519,6 +531,8 @@ export class Player {
 
   public takeDamage(amount: number): void {
     if (this.isDead) return;
+
+    this.lastDamageTime = performance.now();
 
     // 防具によるダメージ軽減
     if (amount > 0) {
