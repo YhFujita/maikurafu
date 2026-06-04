@@ -686,6 +686,7 @@ function animate(time: number) {
   const shouldBreak = config.invertClicks ? input.isRightClickDown : input.isLeftClickDown;
   
   if (shouldBreak && input.isLocked) {
+    player.swing(); // 長押し中はスイングを繰り返しトリガー
     raycaster.setFromCamera(new THREE.Vector2(0, 0), player.camera);
     const chunkMeshes = world.getChunkMeshes();
     const intersects = raycaster.intersectObjects(chunkMeshes);
@@ -851,7 +852,6 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
     if (shouldDestroy) {
       // 破壊/攻撃時は常に武器を振る
       player.swing();
-      SoundManager.playSwing();
 
       // まず敵Mobへの攻撃当たり判定を行う
       const mobMeshes: THREE.Object3D[] = [];

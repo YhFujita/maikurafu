@@ -96,6 +96,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     uvs: { front: 3, back: 3, left: 3, right: 3, top: 0, bottom: 2 },
     drops: BlockType.DIRT,
+    hardness: 0.5,
+    requiredToolCategory: 'shovel',
   },
   [BlockType.DIRT]: {
     id: BlockType.DIRT,
@@ -103,6 +105,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 1, back: 1, left: 1, right: 1, top: 1, bottom: 1 },
+    hardness: 0.5,
+    requiredToolCategory: 'shovel',
   },
   [BlockType.STONE]: {
     id: BlockType.STONE,
@@ -111,6 +115,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     uvs: { front: 1, back: 1, left: 1, right: 1, top: 1, bottom: 1 },
     drops: BlockType.COBBLESTONE,
+    hardness: 1.5,
+    requiredToolCategory: 'pickaxe',
   },
   [BlockType.WOOD]: {
     id: BlockType.WOOD,
@@ -119,6 +125,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     // 木（原木）は側面が樹皮(4), 天面底面が年輪(5)
     uvs: { front: 4, back: 4, left: 4, right: 4, top: 5, bottom: 5 },
+    hardness: 2.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.LEAVES]: {
     id: BlockType.LEAVES,
@@ -126,6 +134,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 6, back: 6, left: 6, right: 6, top: 6, bottom: 6 },
+    hardness: 0.2,
   },
   [BlockType.PLANK]: {
     id: BlockType.PLANK,
@@ -133,6 +142,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 9, back: 9, left: 9, right: 9, top: 9, bottom: 9 },
+    hardness: 2.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.BRICK]: {
     id: BlockType.BRICK,
@@ -140,6 +151,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 7, back: 7, left: 7, right: 7, top: 7, bottom: 7 },
+    hardness: 2.0,
+    requiredToolCategory: 'pickaxe',
   },
   [BlockType.SAND]: {
     id: BlockType.SAND,
@@ -147,6 +160,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 8, back: 8, left: 8, right: 8, top: 8, bottom: 8 },
+    hardness: 0.5,
+    requiredToolCategory: 'shovel',
   },
   [BlockType.COAL_ORE]: {
     id: BlockType.COAL_ORE,
@@ -155,6 +170,9 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     uvs: { front: 25, back: 25, left: 25, right: 25, top: 25, bottom: 25 },
     drops: BlockType.COAL,
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 0,
   },
   [BlockType.TORCH]: {
     id: BlockType.TORCH,
@@ -170,6 +188,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     uvs: { front: 12, back: 12, left: 12, right: 12, top: 12, bottom: 12 },
+    hardness: 0.3,
   },
   [BlockType.DOOR_CLOSED]: {
     id: BlockType.DOOR_CLOSED,
@@ -177,6 +196,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     uvs: { front: 13, back: 13, left: 13, right: 13, top: 13, bottom: 13 },
+    hardness: 1.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.DOOR_OPEN]: {
     id: BlockType.DOOR_OPEN,
@@ -184,6 +205,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 13, back: 13, left: 13, right: 13, top: 13, bottom: 13 },
+    hardness: 1.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.SWORD]: {
     id: BlockType.SWORD,
@@ -191,6 +214,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 14, back: 14, left: 14, right: 14, top: 14, bottom: 14 },
+    isTool: true,
+    toolCategory: 'sword',
+    toolTier: 1,
+    speedMultiplier: 1.5,
   },
   [BlockType.STAIRS]: {
     id: BlockType.STAIRS,
@@ -198,6 +225,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     uvs: { front: 9, back: 9, left: 9, right: 9, top: 9, bottom: 9 },
+    hardness: 1.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.FENCE]: {
     id: BlockType.FENCE,
@@ -205,6 +234,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,       // 物理衝突あり（通り抜け不可）
     isTransparent: true, // 特殊形状のため通常カリングをスキップ
     uvs: { front: 16, back: 16, left: 16, right: 16, top: 16, bottom: 16 },
+    hardness: 1.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.BED_HEAD]: {
     id: BlockType.BED_HEAD,
@@ -212,6 +243,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true, // 半分の高さなので特殊描画
     uvs: { front: 18, back: 18, left: 18, right: 18, top: 17, bottom: 16 },
+    hardness: 0.5,
   },
   [BlockType.BED_FOOT]: {
     id: BlockType.BED_FOOT,
@@ -219,6 +251,7 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: true,
     uvs: { front: 18, back: 18, left: 18, right: 18, top: 18, bottom: 16 },
+    hardness: 0.5,
   },
   [BlockType.FURNACE]: {
     id: BlockType.FURNACE,
@@ -227,6 +260,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     // 正面（+Z）にかまどの口、その他は石テクスチャ
     uvs: { front: 19, back: 2, left: 2, right: 2, top: 2, bottom: 2 },
+    hardness: 2.0,
+    requiredToolCategory: 'pickaxe',
   },
   [BlockType.CHEST]: {
     id: BlockType.CHEST,
@@ -235,6 +270,8 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: true, // 少し小さい形状なので特殊描画
     // 正面（+Z）に錠前テクスチャ、側面・上面は木材調
     uvs: { front: 20, back: 21, left: 21, right: 21, top: 21, bottom: 16 },
+    hardness: 2.0,
+    requiredToolCategory: 'axe',
   },
   [BlockType.WATER]: {
     id: BlockType.WATER,
@@ -249,6 +286,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 23, back: 23, left: 23, right: 23, top: 23, bottom: 23 },
+    isTool: true,
+    toolCategory: 'sword',
+    toolTier: 3,
+    speedMultiplier: 1.5,
   },
   [BlockType.HAMMER]: {
     id: BlockType.HAMMER,
@@ -256,6 +297,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 24, back: 24, left: 24, right: 24, top: 24, bottom: 24 },
+    isTool: true,
+    toolCategory: 'sword',
+    toolTier: 2,
+    speedMultiplier: 1.5,
   },
   [BlockType.BEDROCK]: {
     id: BlockType.BEDROCK,
@@ -270,6 +315,9 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 26, back: 26, left: 26, right: 26, top: 26, bottom: 26 },
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 1,
   },
   [BlockType.GOLD_ORE]: {
     id: BlockType.GOLD_ORE,
@@ -277,6 +325,9 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 27, back: 27, left: 27, right: 27, top: 27, bottom: 27 },
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 2,
   },
   [BlockType.DIAMOND_ORE]: {
     id: BlockType.DIAMOND_ORE,
@@ -285,6 +336,9 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isTransparent: false,
     uvs: { front: 28, back: 28, left: 28, right: 28, top: 28, bottom: 28 },
     drops: BlockType.DIAMOND,
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 2,
   },
   [BlockType.STICK]: {
     id: BlockType.STICK,
@@ -341,6 +395,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 36, back: 36, left: 36, right: 36, top: 36, bottom: 36 },
+    isTool: true,
+    toolCategory: 'pickaxe',
+    toolTier: 0,
+    speedMultiplier: 2.0,
   },
   [BlockType.STONE_PICKAXE]: {
     id: BlockType.STONE_PICKAXE,
@@ -348,6 +406,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 37, back: 37, left: 37, right: 37, top: 37, bottom: 37 },
+    isTool: true,
+    toolCategory: 'pickaxe',
+    toolTier: 1,
+    speedMultiplier: 4.0,
   },
   [BlockType.IRON_PICKAXE]: {
     id: BlockType.IRON_PICKAXE,
@@ -355,6 +417,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 38, back: 38, left: 38, right: 38, top: 38, bottom: 38 },
+    isTool: true,
+    toolCategory: 'pickaxe',
+    toolTier: 2,
+    speedMultiplier: 6.0,
   },
   [BlockType.DIAMOND_PICKAXE]: {
     id: BlockType.DIAMOND_PICKAXE,
@@ -362,6 +428,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 39, back: 39, left: 39, right: 39, top: 39, bottom: 39 },
+    isTool: true,
+    toolCategory: 'pickaxe',
+    toolTier: 3,
+    speedMultiplier: 8.0,
   },
   [BlockType.WOODEN_AXE]: {
     id: BlockType.WOODEN_AXE,
@@ -369,6 +439,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 40, back: 40, left: 40, right: 40, top: 40, bottom: 40 },
+    isTool: true,
+    toolCategory: 'axe',
+    toolTier: 0,
+    speedMultiplier: 2.0,
   },
   [BlockType.STONE_AXE]: {
     id: BlockType.STONE_AXE,
@@ -376,6 +450,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 41, back: 41, left: 41, right: 41, top: 41, bottom: 41 },
+    isTool: true,
+    toolCategory: 'axe',
+    toolTier: 1,
+    speedMultiplier: 4.0,
   },
   [BlockType.IRON_AXE]: {
     id: BlockType.IRON_AXE,
@@ -383,6 +461,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 42, back: 42, left: 42, right: 42, top: 42, bottom: 42 },
+    isTool: true,
+    toolCategory: 'axe',
+    toolTier: 2,
+    speedMultiplier: 6.0,
   },
   [BlockType.DIAMOND_AXE]: {
     id: BlockType.DIAMOND_AXE,
@@ -390,6 +472,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 43, back: 43, left: 43, right: 43, top: 43, bottom: 43 },
+    isTool: true,
+    toolCategory: 'axe',
+    toolTier: 3,
+    speedMultiplier: 8.0,
   },
   [BlockType.WOODEN_SHOVEL]: {
     id: BlockType.WOODEN_SHOVEL,
@@ -397,6 +483,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 44, back: 44, left: 44, right: 44, top: 44, bottom: 44 },
+    isTool: true,
+    toolCategory: 'shovel',
+    toolTier: 0,
+    speedMultiplier: 2.0,
   },
   [BlockType.STONE_SHOVEL]: {
     id: BlockType.STONE_SHOVEL,
@@ -404,6 +494,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 45, back: 45, left: 45, right: 45, top: 45, bottom: 45 },
+    isTool: true,
+    toolCategory: 'shovel',
+    toolTier: 1,
+    speedMultiplier: 4.0,
   },
   [BlockType.IRON_SHOVEL]: {
     id: BlockType.IRON_SHOVEL,
@@ -411,6 +505,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 46, back: 46, left: 46, right: 46, top: 46, bottom: 46 },
+    isTool: true,
+    toolCategory: 'shovel',
+    toolTier: 2,
+    speedMultiplier: 6.0,
   },
   [BlockType.DIAMOND_SHOVEL]: {
     id: BlockType.DIAMOND_SHOVEL,
@@ -418,6 +516,10 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 47, back: 47, left: 47, right: 47, top: 47, bottom: 47 },
+    isTool: true,
+    toolCategory: 'shovel',
+    toolTier: 3,
+    speedMultiplier: 8.0,
   },
   [BlockType.LEATHER_ARMOR_SET]: {
     id: BlockType.LEATHER_ARMOR_SET,

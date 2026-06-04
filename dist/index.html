@@ -1372,7 +1372,7 @@
       margin-top: 20px;
     }
   </style>
-  <script type="module" crossorigin src="./assets/index-Cm_7FihJ.js"></script>
+  <script type="module" crossorigin src="./assets/index-D5vE936e.js"></script>
 </head>
 
 <body>
@@ -1441,15 +1441,23 @@
         </div>
         <div class="instruction-row">
           <span>インベントリを開く</span>
-          <span class="key-badge">E</span>
+          <span class="key-badge" id="key-inventory-badge">E</span>
         </div>
         <div class="instruction-row">
           <span>クラフト画面を開く</span>
-          <span class="key-badge">C</span>
+          <span class="key-badge" id="key-crafting-badge">C</span>
         </div>
         <div class="instruction-row">
           <span>マニュアルを見る</span>
-          <span class="key-badge">M</span>
+          <span class="key-badge" id="key-manual-badge">N</span>
+        </div>
+        <div class="instruction-row">
+          <span>拠点を登録</span>
+          <span class="key-badge" id="key-home-badge">H</span>
+        </div>
+        <div class="instruction-row">
+          <span>マップを開く</span>
+          <span class="key-badge" id="key-map-badge">M</span>
         </div>
         <div class="instruction-row">
           <span>視点移動</span>
@@ -1526,6 +1534,26 @@
         <div class="config-row">
           <span>ブロックを壊す (Break):</span>
           <button id="key-break-btn" class="key-config-btn">B</button>
+        </div>
+        <div class="config-row">
+          <span>インベントリを開く (Inventory):</span>
+          <button id="key-inventory-btn" class="key-config-btn">E</button>
+        </div>
+        <div class="config-row">
+          <span>クラフト画面を開く (Crafting):</span>
+          <button id="key-crafting-btn" class="key-config-btn">C</button>
+        </div>
+        <div class="config-row">
+          <span>マニュアルを見る (Manual):</span>
+          <button id="key-manual-btn" class="key-config-btn">H</button>
+        </div>
+        <div class="config-row">
+          <span>マップを開く (Map):</span>
+          <button id="key-map-btn" class="key-config-btn">M</button>
+        </div>
+        <div class="config-row">
+          <span>拠点を登録 (Home):</span>
+          <button id="key-home-btn" class="key-config-btn">H</button>
         </div>
       </div>
 

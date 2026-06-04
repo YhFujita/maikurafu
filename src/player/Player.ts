@@ -93,17 +93,36 @@ export class Player {
     this.avatar.rotation.order = 'YXZ'; // ヨー(Y)で向きを合わせてからピッチ(X)で倒れるようにする
     this.buildAvatar();
     scene.add(this.avatar);
+    scene.add(this.camera); // 一人称武器表示のためにカメラをシーンに追加
 
     // ボクセルワールド参照は後からsetWorldで設定
-    // 武器モデルの構築とアタッチ
-    this.weapons1PV[14] = this.buildSword(0xcccccc, 0x78350f, 0xeab308); // 石の剣
-    this.weapons3PV[14] = this.buildSword(0xcccccc, 0x78350f, 0xeab308);
-    this.weapons1PV[22] = this.buildSword(0x00ffff, 0x78350f, 0x0088ff); // ダイヤの剣
-    this.weapons3PV[22] = this.buildSword(0x00ffff, 0x78350f, 0x0088ff);
-    this.weapons1PV[23] = this.buildHammer(); // ハンマー
-    this.weapons3PV[23] = this.buildHammer();
+    // 武器・ツールモデルの構築とアタッチ
+    const toolConfigs: Record<number, { creator: () => THREE.Group }> = {
+      14: { creator: () => this.buildSword(0xcccccc, 0x78350f, 0xeab308) }, // 石の剣
+      22: { creator: () => this.buildSword(0x00ffff, 0x78350f, 0x0088ff) }, // ダイヤの剣
+      23: { creator: () => this.buildHammer() }, // ハンマー
+      // ツルハシ
+      35: { creator: () => this.buildPickaxe(0x8b5a2b) }, // 木のツルハシ
+      36: { creator: () => this.buildPickaxe(0x888888) }, // 石のツルハシ
+      37: { creator: () => this.buildPickaxe(0xdddddd) }, // 鉄のツルハシ
+      38: { creator: () => this.buildPickaxe(0x00ffff) }, // ダイヤのツルハシ
+      // 斧
+      39: { creator: () => this.buildAxe(0x8b5a2b) }, // 木の斧
+      40: { creator: () => this.buildAxe(0x888888) }, // 石の斧
+      41: { creator: () => this.buildAxe(0xdddddd) }, // 鉄の斧
+      42: { creator: () => this.buildAxe(0x00ffff) }, // ダイヤの斧
+      // シャベル
+      43: { creator: () => this.buildShovel(0x8b5a2b) }, // 木のシャベル
+      44: { creator: () => this.buildShovel(0x888888) }, // 石のシャベル
+      45: { creator: () => this.buildShovel(0xdddddd) }, // 鉄のシャベル
+      46: { creator: () => this.buildShovel(0x00ffff) }, // ダイヤのシャベル
+    };
 
-    for (const type of [14, 22, 23]) {
+    for (const typeStr of Object.keys(toolConfigs)) {
+      const type = Number(typeStr);
+      this.weapons1PV[type] = toolConfigs[type].creator();
+      this.weapons3PV[type] = toolConfigs[type].creator();
+
       this.weapons1PV[type].position.set(0.24, -0.24, -0.38);
       this.weapons1PV[type].rotation.set((-30 * Math.PI) / 180, (45 * Math.PI) / 180, (15 * Math.PI) / 180);
       this.weapons1PV[type].visible = false;
@@ -380,8 +399,9 @@ export class Player {
       return;
     }
 
-    // 武器の可視化状態の同期 (BlockType.SWORD = 14, DIAMOND_SWORD = 22, HAMMER = 23)
-    for (const type of [14, 22, 23]) {
+    // 武器・ツールの可視化状態の同期
+    for (const typeStr of Object.keys(this.weapons1PV)) {
+      const type = Number(typeStr);
       const isActive = (activeBlockType === type);
       if (this.cameraMode === '1PV') {
         this.weapons1PV[type].visible = isActive;
@@ -734,7 +754,8 @@ export class Player {
 
       if (this.cameraMode === '1PV') {
         // 一人称：画面右下の武器を前に突き出すように振る
-        for (const type of [14, 22, 23]) {
+        for (const typeStr of Object.keys(this.weapons1PV)) {
+          const type = Number(typeStr);
           this.weapons1PV[type].rotation.x = (-30 * Math.PI) / 180 + swingAngle;
           this.weapons1PV[type].rotation.y = (45 * Math.PI) / 180 - swingAngle * 0.5;
           this.weapons1PV[type].position.z = -0.38 + swingAngle * 0.15;
@@ -747,7 +768,8 @@ export class Player {
     } else {
       // 待機時の位置補正 (一人称用)
       if (this.cameraMode === '1PV') {
-        for (const type of [14, 22, 23]) {
+        for (const typeStr of Object.keys(this.weapons1PV)) {
+          const type = Number(typeStr);
           this.weapons1PV[type].rotation.set(
             (-30 * Math.PI) / 180,
             (45 * Math.PI) / 180,
@@ -863,6 +885,7 @@ export class Player {
   public swing(): void {
     if (this.swingTime <= 0) {
       this.swingTime = 0.15; // 0.15秒のタイマーを設定
+      SoundManager.playSwing(); // スイング音を再生
     }
   }
 
@@ -941,6 +964,78 @@ export class Player {
     // カメラとアバター描画の即時更新
     this.syncCamera();
     this.updateHUD();
+  }
+
+  private buildPickaxe(headColor: number, gripColor: number = 0x78350f): THREE.Group {
+    const pickaxe = new THREE.Group();
+    const handleMat = new THREE.MeshStandardMaterial({ color: gripColor, roughness: 0.9 });
+    const headMat = new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.5, metalness: 0.5 });
+
+    // 柄
+    const handleGeo = new THREE.BoxGeometry(0.03, 0.45, 0.03);
+    handleGeo.translate(0, 0.1, 0);
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.castShadow = true;
+    handle.receiveShadow = true;
+    pickaxe.add(handle);
+
+    // 頭部 (T字型の刃)
+    const headGeo = new THREE.BoxGeometry(0.24, 0.04, 0.04);
+    headGeo.translate(0, 0.3, 0);
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    pickaxe.add(head);
+
+    return pickaxe;
+  }
+
+  private buildAxe(headColor: number, gripColor: number = 0x78350f): THREE.Group {
+    const axe = new THREE.Group();
+    const handleMat = new THREE.MeshStandardMaterial({ color: gripColor, roughness: 0.9 });
+    const headMat = new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.5, metalness: 0.5 });
+
+    // 柄
+    const handleGeo = new THREE.BoxGeometry(0.03, 0.45, 0.03);
+    handleGeo.translate(0, 0.1, 0);
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.castShadow = true;
+    handle.receiveShadow = true;
+    axe.add(handle);
+
+    // 刃
+    const headGeo = new THREE.BoxGeometry(0.12, 0.12, 0.04);
+    headGeo.translate(0.05, 0.26, 0);
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    axe.add(head);
+
+    return axe;
+  }
+
+  private buildShovel(headColor: number, gripColor: number = 0x78350f): THREE.Group {
+    const shovel = new THREE.Group();
+    const handleMat = new THREE.MeshStandardMaterial({ color: gripColor, roughness: 0.9 });
+    const headMat = new THREE.MeshStandardMaterial({ color: headColor, roughness: 0.5, metalness: 0.5 });
+
+    // 柄
+    const handleGeo = new THREE.BoxGeometry(0.03, 0.45, 0.03);
+    handleGeo.translate(0, 0.1, 0);
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.castShadow = true;
+    handle.receiveShadow = true;
+    shovel.add(handle);
+
+    // 先端
+    const headGeo = new THREE.BoxGeometry(0.08, 0.12, 0.02);
+    headGeo.translate(0, 0.31, 0);
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    shovel.add(head);
+
+    return shovel;
   }
 }
 
