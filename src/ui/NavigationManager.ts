@@ -111,25 +111,33 @@ export class NavigationManager {
       if (diffDeg > 180) diffDeg -= 360;
       if (diffDeg < -180) diffDeg += 360;
 
-      // 中心(50%)からのズレを計算。360度=800px なので、画面の幅400pxの中でクリップするかどうか。
-      // 半分は200px (約90度分)
-      const maxVisibleAngle = 90;
-      let isVisible = true;
-      if (diffDeg < -maxVisibleAngle || diffDeg > maxVisibleAngle) {
-        isVisible = false;
+      // 常に表示するため、クランプする角度を設定
+      const maxVisibleAngle = 90; // コンパスの端（90度）
+      const clampAngle = 85;      // 端から少し内側にクランプ（表示が切れないように）
+      
+      const isOutOfView = diffDeg < -maxVisibleAngle || diffDeg > maxVisibleAngle;
+      const clampedDiff = Math.max(-clampAngle, Math.min(clampAngle, diffDeg));
+      const markerOffset = (clampedDiff / 360) * 800;
+
+      this.homeMarker.style.left = `calc(50% + ${markerOffset}px)`;
+
+      if (isOutOfView) {
+        // 視野外の場合は矢印を追加する
+        if (diffDeg < 0) {
+          this.homeMarker.textContent = '◀🏠';
+        } else {
+          this.homeMarker.textContent = '🏠▶';
+        }
+        // 視野外のときは不透明度を少し下げる
+        this.homeMarker.style.opacity = '0.7';
+      } else {
+        this.homeMarker.textContent = '🏠';
+        this.homeMarker.style.opacity = '1';
       }
 
-      if (isVisible) {
-        this.homeMarker.style.opacity = '1';
-        // 中央からのピクセルオフセット
-        const markerOffset = (diffDeg / 360) * 800;
-        this.homeMarker.style.left = `calc(50% + ${markerOffset}px)`;
-        this.homeDistance.textContent = `${Math.floor(dist)}m`;
-        this.homeDistance.style.display = 'block';
-      } else {
-        this.homeMarker.style.opacity = '0';
-        this.homeDistance.style.display = 'none';
-      }
+      // 距離表示は視野外でも表示し続ける
+      this.homeDistance.textContent = `${Math.floor(dist)}m`;
+      this.homeDistance.style.display = 'block';
     }
   }
 
@@ -201,10 +209,35 @@ export class NavigationManager {
       const percentX = (mapX / size) * 100;
       const percentY = (mapZ / size) * 100;
       
-      this.mapHomeIcon.style.left = `${Math.min(Math.max(percentX, 0), 100)}%`;
-      this.mapHomeIcon.style.top = `${Math.min(Math.max(percentY, 0), 100)}%`;
+      const isOutOfMap = percentX < 0 || percentX > 100 || percentY < 0 || percentY > 100;
       
-      // 画面外なら非表示にする等の処理も可能だが、端にピン留めするのもあり
+      // 枠線に重なりすぎないよう 2% 〜 98% にクランプ
+      this.mapHomeIcon.style.left = `${Math.min(Math.max(percentX, 2), 98)}%`;
+      this.mapHomeIcon.style.top = `${Math.min(Math.max(percentY, 2), 98)}%`;
+      
+      if (isOutOfMap) {
+        // プレイヤーから拠点への方向角を計算して矢印を決定
+        const dx = this.homePosition.x - px;
+        const dz = this.homePosition.z - pz;
+        const angle = Math.atan2(dz, dx); // ラジアン (-PI to PI)
+        let deg = angle * (180 / Math.PI); // 度 (-180 to 180)
+        if (deg < 0) deg += 360; // 0 to 360
+        
+        // 0度は右（東 ➡）、90度は下（南 ⬇）、180度は左（西 ⬅）、270度は上（北 ⬆）
+        let arrow = '🏠';
+        if (deg >= 337.5 || deg < 22.5) arrow = '➡';
+        else if (deg >= 22.5 && deg < 67.5) arrow = '↘';
+        else if (deg >= 67.5 && deg < 112.5) arrow = '⬇';
+        else if (deg >= 112.5 && deg < 157.5) arrow = '↙';
+        else if (deg >= 157.5 && deg < 202.5) arrow = '⬅';
+        else if (deg >= 202.5 && deg < 247.5) arrow = '↖';
+        else if (deg >= 247.5 && deg < 292.5) arrow = '⬆';
+        else if (deg >= 292.5 && deg < 337.5) arrow = '↗';
+        
+        this.mapHomeIcon.textContent = arrow;
+      } else {
+        this.mapHomeIcon.textContent = '🏠';
+      }
     }
   }
 }
