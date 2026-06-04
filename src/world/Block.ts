@@ -24,6 +24,9 @@ export enum BlockType {
   DIAMOND_SWORD = 22, // ダイヤの剣（武器）
   HAMMER = 23,        // ハンマー（武器）
   BEDROCK = 24,       // 岩盤
+  IRON_ORE = 25,      // 鉄鉱石
+  GOLD_ORE = 26,      // 金鉱石
+  DIAMOND_ORE = 27,   // ダイヤモンド鉱石
 }
 
 export interface BlockProperties {
@@ -223,5 +226,26 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: true,
     isTransparent: false,
     uvs: { front: 25, back: 25, left: 25, right: 25, top: 25, bottom: 25 },
+  },
+  [BlockType.IRON_ORE]: {
+    id: BlockType.IRON_ORE,
+    name: 'てつこうせき',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 26, back: 26, left: 26, right: 26, top: 26, bottom: 26 },
+  },
+  [BlockType.GOLD_ORE]: {
+    id: BlockType.GOLD_ORE,
+    name: 'きんこうせき',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 27, back: 27, left: 27, right: 27, top: 27, bottom: 27 },
+  },
+  [BlockType.DIAMOND_ORE]: {
+    id: BlockType.DIAMOND_ORE,
+    name: 'ダイヤこうせき',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 28, back: 28, left: 28, right: 28, top: 28, bottom: 28 },
   },
 };

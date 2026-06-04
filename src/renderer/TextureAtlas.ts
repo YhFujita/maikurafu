@@ -410,6 +410,43 @@ export function createProceduralTextureAtlas(): THREE.Texture {
     }
   }
 
+  // 鉱石のベース描画関数（石テクスチャベース）
+  const drawOre = (index: number, speckColor: string) => {
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const startX = col * tileSize;
+    const startY = row * tileSize;
+
+    // 石ベース
+    ctx.fillStyle = 'rgb(120, 120, 120)';
+    ctx.fillRect(startX, startY, tileSize, tileSize);
+    ctx.fillStyle = 'rgb(100, 100, 100)';
+    ctx.fillRect(startX, startY, tileSize, tileSize / 2);
+    ctx.fillStyle = 'rgb(140, 140, 140)';
+    ctx.fillRect(startX, startY + tileSize / 2, tileSize, tileSize / 2);
+    ctx.fillStyle = 'rgb(90, 90, 90)';
+    for (let i = 0; i < 5; i++) {
+      ctx.fillRect(startX + i * 2, startY + i * 2, 2, 2);
+    }
+    
+    // 鉱石の斑点
+    ctx.fillStyle = speckColor;
+    // ランダムではなく固定位置でそれっぽく
+    const spots = [[2,2], [10,3], [5,7], [12,9], [4,13], [10,14], [7,10]];
+    spots.forEach(([sx, sy]) => {
+      ctx.fillRect(startX + sx, startY + sy, 2, 2);
+    });
+  };
+
+  // 26: 鉄鉱石
+  drawOre(26, 'rgb(240, 200, 180)');
+  
+  // 27: 金鉱石
+  drawOre(27, 'rgb(255, 215, 0)');
+  
+  // 28: ダイヤ鉱石
+  drawOre(28, 'rgb(0, 255, 255)');
+
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
 
