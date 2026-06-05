@@ -637,6 +637,14 @@ function animate(time: number) {
             crackMesh.position.set(bx + 0.5, by + 0.5, bz + 0.5);
             crackMesh.visible = true;
             updateCrackTexture(0);
+
+            // イージーモードなら即座に破壊を実行
+            if (config.easyMode) {
+              executeBlockDestroy(targetBlockType, bx, by, bz);
+              isBreakingBlock = false;
+              crackMesh.visible = false;
+              breakingProgress = 0.0;
+            }
           } else {
             // 破壊継続中
             const blockProps = BLOCKS[targetBlockType];

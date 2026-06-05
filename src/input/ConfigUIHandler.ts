@@ -22,6 +22,7 @@ export class ConfigUIHandler {
   
   private invertClicksChk: HTMLInputElement;
   private enableShadowsChk: HTMLInputElement;
+  private easyModeChk: HTMLInputElement;
   private saveBtn: HTMLButtonElement;
   private defaultBtn: HTMLButtonElement;
   private closeBtn: HTMLButtonElement;
@@ -52,6 +53,7 @@ export class ConfigUIHandler {
 
     this.invertClicksChk = document.getElementById('invert-clicks-chk') as HTMLInputElement;
     this.enableShadowsChk = document.getElementById('enable-shadows-chk') as HTMLInputElement;
+    this.easyModeChk = document.getElementById('easy-mode-chk') as HTMLInputElement;
     this.saveBtn = document.getElementById('config-save-btn') as HTMLButtonElement;
     this.defaultBtn = document.getElementById('config-default-btn') as HTMLButtonElement;
     this.closeBtn = document.getElementById('config-close-btn') as HTMLButtonElement;
@@ -127,6 +129,7 @@ export class ConfigUIHandler {
     // チェックボックス
     this.invertClicksChk.checked = this.tempConfig.invertClicks;
     this.enableShadowsChk.checked = this.tempConfig.enableShadows;
+    this.easyModeChk.checked = this.tempConfig.easyMode;
   }
 
   // キー名のフォーマット (例: "KeyW" -> "W", "Space" -> "Space")
@@ -195,6 +198,7 @@ export class ConfigUIHandler {
   private saveConfig(): void {
     this.tempConfig.invertClicks = this.invertClicksChk.checked;
     this.tempConfig.enableShadows = this.enableShadowsChk.checked;
+    this.tempConfig.easyMode = this.easyModeChk.checked;
     configStore.save(this.tempConfig);
     this.closeModal();
 
@@ -222,6 +226,7 @@ export class ConfigUIHandler {
       keyRegisterHome: 'KeyH',
       invertClicks: false,
       enableShadows: true,
+      easyMode: true,
     };
     this.tempConfig = { ...defaults };
     this.updateUI();

@@ -13,6 +13,7 @@ export interface GameConfig {
   keyRegisterHome: string; // 拠点登録 (デフォルト: KeyH)
   invertClicks: boolean; // 左右クリック反転 (デフォルト: false)
   enableShadows: boolean; // 影のON/OFF (デフォルト: true)
+  easyMode: boolean; // イージーモード (デフォルト: true)
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -30,6 +31,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   keyRegisterHome: 'KeyH',
   invertClicks: false,
   enableShadows: true,
+  easyMode: true,
 };
 
 const STORAGE_KEY = 'maikurafu_config';
