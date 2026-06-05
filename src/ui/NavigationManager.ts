@@ -49,18 +49,18 @@ export class NavigationManager {
     if (!this.compassBar) return;
     
     const directions = [
-      { label: 'N', deg: 0 },
+      { label: 'N (きた)', deg: 0 },
       { label: 'NE', deg: 45, minor: true },
-      { label: 'E', deg: 90 },
+      { label: 'E (ひがし)', deg: 90 },
       { label: 'SE', deg: 135, minor: true },
-      { label: 'S', deg: 180 },
+      { label: 'S (みなみ)', deg: 180 },
       { label: 'SW', deg: 225, minor: true },
-      { label: 'W', deg: 270 },
+      { label: 'W (にし)', deg: 270 },
       { label: 'NW', deg: 315, minor: true },
       // ループ描画用
-      { label: 'N', deg: 360 },
+      { label: 'N (きた)', deg: 360 },
       { label: 'NE', deg: 405, minor: true },
-      { label: 'E', deg: 450 },
+      { label: 'E (ひがし)', deg: 450 },
     ];
 
     directions.forEach(dir => {
