@@ -50,16 +50,16 @@ export class NavigationManager {
     
     const directions = [
       { label: 'N (きた)', deg: 0 },
-      { label: 'NE', deg: 45, minor: true },
+      { label: 'NE (ほくとう)', deg: 45, minor: true },
       { label: 'E (ひがし)', deg: 90 },
-      { label: 'SE', deg: 135, minor: true },
+      { label: 'SE (なんとう)', deg: 135, minor: true },
       { label: 'S (みなみ)', deg: 180 },
-      { label: 'SW', deg: 225, minor: true },
+      { label: 'SW (なんせい)', deg: 225, minor: true },
       { label: 'W (にし)', deg: 270 },
-      { label: 'NW', deg: 315, minor: true },
+      { label: 'NW (ほくせい)', deg: 315, minor: true },
       // ループ描画用
       { label: 'N (きた)', deg: 360 },
-      { label: 'NE', deg: 405, minor: true },
+      { label: 'NE (ほくとう)', deg: 405, minor: true },
       { label: 'E (ひがし)', deg: 450 },
     ];
 
