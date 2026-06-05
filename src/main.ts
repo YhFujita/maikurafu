@@ -23,6 +23,8 @@ const renderer = new Renderer('canvas-container');
 let isBreakingBlock = false;
 let breakingProgress = 0.0;
 let breakingTargetPos = new THREE.Vector3(-999, -999, -999);
+let easyModeBreakTimer = 0.0;
+let prevShouldBreak = false;
 
 // ひび割れ用の動的テクスチャとキャンバス
 const crackCanvas = document.createElement('canvas');
@@ -441,6 +443,10 @@ function animate(time: number) {
   const deltaTime = Math.min((time - lastTime) / 1000, 0.1);
   lastTime = time;
 
+  if (easyModeBreakTimer > 0) {
+    easyModeBreakTimer -= deltaTime;
+  }
+
   // プレイヤーの周辺ブロックの物理ボディを同期
   physics.updateBlockBodies(player.position, world);
 
@@ -604,7 +610,14 @@ function animate(time: number) {
   // if (input.consumeJustPressed(config.keyBreakBlock)) { ... }
 
   // --- 連続破壊（長押し）ロジック ---
-  const shouldBreak = config.invertClicks ? input.isRightClickDown : input.isLeftClickDown;
+  const currentShouldBreak = config.invertClicks ? input.isRightClickDown : input.isLeftClickDown;
+  let shouldBreak = currentShouldBreak;
+  
+  if (config.easyMode) {
+    // イージーモードの時は、今回新しく押された瞬間にのみ破壊判定を行い、かつクールダウン中（連打防止）でないことを確認する
+    shouldBreak = currentShouldBreak && !prevShouldBreak && (easyModeBreakTimer <= 0);
+  }
+  prevShouldBreak = currentShouldBreak;
   
   if (shouldBreak && input.isLocked) {
     player.swing(); // 長押し中はスイングを繰り返しトリガー
@@ -644,6 +657,7 @@ function animate(time: number) {
               isBreakingBlock = false;
               crackMesh.visible = false;
               breakingProgress = 0.0;
+              easyModeBreakTimer = 0.25; // 0.25秒の連打防止クールダウンを設定
             }
           } else {
             // 破壊継続中
