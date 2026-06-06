@@ -135,8 +135,8 @@ export class Player {
       this.weapons1PV[type].visible = false;
       this.camera.add(this.weapons1PV[type]);
 
-      this.weapons3PV[type].position.set(0, -0.6, 0.1);
-      this.weapons3PV[type].rotation.x = Math.PI / 2;
+      this.weapons3PV[type].position.set(0, -0.6, -0.1);
+      this.weapons3PV[type].rotation.x = -Math.PI / 2;
       this.weapons3PV[type].visible = false;
       this.rightArm.add(this.weapons3PV[type]);
     }
@@ -206,7 +206,10 @@ export class Player {
     });
 
     // 防具用ジオメトリの定義
-    const helmetGeo = new THREE.BoxGeometry(0.44, 0.44, 0.44);
+    // ヘルメットを顔が隠れないように分割（頭頂、後頭部、左右側面）
+    const helmetTopGeo = new THREE.BoxGeometry(0.44, 0.04, 0.44);
+    const helmetBackGeo = new THREE.BoxGeometry(0.44, 0.4, 0.04);
+    const helmetSideGeo = new THREE.BoxGeometry(0.04, 0.4, 0.44);
     const chestBodyGeo = new THREE.BoxGeometry(0.44, 0.62, 0.24);
     
     // 肩・股関節を軸に動かすため、ジオメトリの原点をオフセット
@@ -262,34 +265,53 @@ export class Player {
     // 左目
     const eyeWhiteGeo = new THREE.BoxGeometry(0.08, 0.04, 0.01);
     const leftEyeWhite = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
-    leftEyeWhite.position.set(0.08, 0.02, -0.201);
+    leftEyeWhite.position.set(0.08, 0.01, -0.201); // 目の位置を少し下げる
     this.head.add(leftEyeWhite);
 
     const pupilGeo = new THREE.BoxGeometry(0.04, 0.04, 0.012);
     const leftEyePupil = new THREE.Mesh(pupilGeo, eyePupilMat);
-    leftEyePupil.position.set(0.1, 0.02, -0.202);
+    leftEyePupil.position.set(0.06, 0.01, -0.202); // 瞳を内側（中央）に寄せる
     this.head.add(leftEyePupil);
 
     // 右目
     const rightEyeWhite = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
-    rightEyeWhite.position.set(-0.08, 0.02, -0.201);
+    rightEyeWhite.position.set(-0.08, 0.01, -0.201); // 目の位置を少し下げる
     this.head.add(rightEyeWhite);
 
     const rightEyePupil = new THREE.Mesh(pupilGeo, eyePupilMat);
-    rightEyePupil.position.set(-0.1, 0.02, -0.202);
+    rightEyePupil.position.set(-0.06, 0.01, -0.202); // 瞳を内側（中央）に寄せる
     this.head.add(rightEyePupil);
 
     // 口
     const mouthGeo = new THREE.BoxGeometry(0.12, 0.04, 0.01);
     const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-    mouth.position.set(0, -0.08, -0.201);
+    mouth.position.set(0, -0.09, -0.201); // 口の位置も合わせて調整
     this.head.add(mouth);
 
-    // 兜 (ヘルメット) を頭に追加
-    const helmet = new THREE.Mesh(helmetGeo, this.armorMat);
-    helmet.castShadow = true;
-    helmet.receiveShadow = true;
-    this.head.add(helmet);
+    // 兜 (ヘルメット) を頭に追加（分割パーツで顔の前面を避けて配置）
+    const helmetTop = new THREE.Mesh(helmetTopGeo, this.armorMat);
+    helmetTop.position.set(0, 0.22, 0);
+    helmetTop.castShadow = true;
+    helmetTop.receiveShadow = true;
+    this.head.add(helmetTop);
+
+    const helmetBack = new THREE.Mesh(helmetBackGeo, this.armorMat);
+    helmetBack.position.set(0, 0.02, 0.22);
+    helmetBack.castShadow = true;
+    helmetBack.receiveShadow = true;
+    this.head.add(helmetBack);
+
+    const helmetLeft = new THREE.Mesh(helmetSideGeo, this.armorMat);
+    helmetLeft.position.set(0.22, 0.02, 0);
+    helmetLeft.castShadow = true;
+    helmetLeft.receiveShadow = true;
+    this.head.add(helmetLeft);
+
+    const helmetRight = new THREE.Mesh(helmetSideGeo, this.armorMat);
+    helmetRight.position.set(-0.22, 0.02, 0);
+    helmetRight.castShadow = true;
+    helmetRight.receiveShadow = true;
+    this.head.add(helmetRight);
 
     this.avatar.add(this.head);
 
@@ -931,10 +953,13 @@ export class Player {
         }
       } else {
         // 三人称：アバターの右腕を前方に大きくスイング
-        this.rightArm.rotation.x = -Math.PI / 3 - swingAngle * 1.5;
-        this.rightArm.rotation.y = -swingAngle * 0.5;
+        this.rightArm.rotation.x = -Math.PI / 3 + swingAngle * 1.5;
+        this.rightArm.rotation.y = swingAngle * 0.5;
       }
     } else {
+      // スイングしていない時は右腕のY回転を元に戻す
+      this.rightArm.rotation.y += (0 - this.rightArm.rotation.y) * 10 * deltaTime;
+
       // 待機時の位置補正 (一人称用)
       if (this.cameraMode === '1PV') {
         for (const typeStr of Object.keys(this.weapons1PV)) {
