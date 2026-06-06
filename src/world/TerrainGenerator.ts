@@ -240,7 +240,9 @@ export class TerrainGenerator {
                   
                   if (globalY < -20 && oreVal < 0.08) {
                     type = BlockType.DIAMOND_ORE;
-                  } else if (globalY < -10 && oreVal < 0.2) {
+                  } else if (globalY < -15 && oreVal < 0.15) {
+                    type = BlockType.LAPIS_ORE;
+                  } else if (globalY < -10 && oreVal < 0.25) {
                     type = BlockType.GOLD_ORE;
                   } else if (globalY < 0 && oreVal < 0.5) {
                     type = BlockType.IRON_ORE;
@@ -255,6 +257,13 @@ export class TerrainGenerator {
                 // 表面
                 type = isDesert ? BlockType.SAND : BlockType.GROUND;
               }
+            }
+          } else if (globalY === surfaceY + 1 && !isDesert && globalY > seaLevel) {
+            // 地表の1つ上かつ水中でない場合にお花を低確率で生成
+            const flowerHash = Math.sin((gx * 53.3) + (gz * 13.7)) * 1000;
+            const flowerRand = flowerHash - Math.floor(flowerHash);
+            if (flowerRand < 0.04) { // 4%の確率でお花
+              type = flowerRand < 0.02 ? BlockType.FLOWER_DANDELION : BlockType.FLOWER_ROSE;
             }
           } else if (globalY <= seaLevel) {
             // 水没部分
@@ -304,35 +313,40 @@ export class TerrainGenerator {
     if (rand < prob) {
       const baseY = localY + 1; // 地表の1つ上から
 
+      // 木の種類（オークか白樺か）を決定 (randを基準に判定)
+      const isBirch = (rand * 10) % 1.0 < 0.35;
+      const woodType = isBirch ? BlockType.BIRCH_WOOD : BlockType.WOOD;
+      const leafType = isBirch ? BlockType.BIRCH_LEAVES : BlockType.LEAVES;
+
       // 幹を配置 (高さ3ブロック)
-      chunk.setBlock(x, baseY, z, BlockType.WOOD);
-      chunk.setBlock(x, baseY + 1, z, BlockType.WOOD);
-      chunk.setBlock(x, baseY + 2, z, BlockType.WOOD);
+      chunk.setBlock(x, baseY, z, woodType);
+      chunk.setBlock(x, baseY + 1, z, woodType);
+      chunk.setBlock(x, baseY + 2, z, woodType);
 
       // 葉を配置
       const leafBase = baseY + 2;
       // レイヤー1 (十字)
-      chunk.setBlock(x + 1, leafBase, z, BlockType.LEAVES);
-      chunk.setBlock(x - 1, leafBase, z, BlockType.LEAVES);
-      chunk.setBlock(x, leafBase, z + 1, BlockType.LEAVES);
-      chunk.setBlock(x, leafBase, z - 1, BlockType.LEAVES);
+      chunk.setBlock(x + 1, leafBase, z, leafType);
+      chunk.setBlock(x - 1, leafBase, z, leafType);
+      chunk.setBlock(x, leafBase, z + 1, leafType);
+      chunk.setBlock(x, leafBase, z - 1, leafType);
 
       // レイヤー2 (3x3)
       for (let dx = -1; dx <= 1; dx++) {
         for (let dz = -1; dz <= 1; dz++) {
           if (dx !== 0 || dz !== 0) {
-            chunk.setBlock(x + dx, leafBase + 1, z + dz, BlockType.LEAVES);
+            chunk.setBlock(x + dx, leafBase + 1, z + dz, leafType);
           }
         }
       }
-      chunk.setBlock(x, leafBase + 1, z, BlockType.LEAVES);
+      chunk.setBlock(x, leafBase + 1, z, leafType);
 
       // レイヤー3 (頂部十字)
-      chunk.setBlock(x, leafBase + 2, z, BlockType.LEAVES);
-      chunk.setBlock(x + 1, leafBase + 2, z, BlockType.LEAVES);
-      chunk.setBlock(x - 1, leafBase + 2, z, BlockType.LEAVES);
-      chunk.setBlock(x, leafBase + 2, z + 1, BlockType.LEAVES);
-      chunk.setBlock(x, leafBase + 2, z - 1, BlockType.LEAVES);
+      chunk.setBlock(x, leafBase + 2, z, leafType);
+      chunk.setBlock(x + 1, leafBase + 2, z, leafType);
+      chunk.setBlock(x - 1, leafBase + 2, z, leafType);
+      chunk.setBlock(x, leafBase + 2, z + 1, leafType);
+      chunk.setBlock(x, leafBase + 2, z - 1, leafType);
     }
   }
 }

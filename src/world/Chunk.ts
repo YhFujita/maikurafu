@@ -206,6 +206,296 @@ export class Chunk {
       }
     };
 
+    const addCrossPlate = (
+      globalX: number, globalY: number, globalZ: number,
+      uvIndex: number
+    ) => {
+      const col = uvIndex % atlasCols;
+      const row = Math.floor(uvIndex / atlasCols);
+      const uMin = col * uvStepU;
+      const vMin = 1.0 - (row + 1) * uvStepV;
+      const uMax = uMin + uvStepU;
+      const vMax = vMin + uvStepV;
+
+      // 松明の光源から明るさを計算する
+      const cx = globalX + 0.5;
+      const cy = globalY + 0.5;
+      const cz = globalZ + 0.5;
+      let maxLight = 0.0;
+      for (let i = 0; i < torches.length; i++) {
+        const torch = torches[i];
+        const dx = cx - torch.x;
+        const dy = cy - torch.y;
+        const dz = cz - torch.z;
+        const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        const light = Math.max(0, 1.0 - dist / 8.0);
+        if (light > maxLight) maxLight = light;
+      }
+      const finalLight = Math.min(1.0, 0.52 + maxLight * 0.48);
+      const shadow = 0.9; 
+      const r = shadow * finalLight;
+      const g = r * (0.93 - (1.0 - maxLight) * 0.08);
+      const b = r * (0.85 - (1.0 - maxLight) * 0.15);
+
+      // 板1 (左手前下 から 右奥上)
+      const p1 = [
+        [globalX + 0.15, globalY,        globalZ + 0.15],
+        [globalX + 0.85, globalY,        globalZ + 0.85],
+        [globalX + 0.85, globalY + 1.0,  globalZ + 0.85],
+        [globalX + 0.15, globalY + 1.0,  globalZ + 0.15]
+      ];
+
+      // 板2 (右手前下 から 左奥上)
+      const p2 = [
+        [globalX + 0.85, globalY,        globalZ + 0.15],
+        [globalX + 0.15, globalY,        globalZ + 0.85],
+        [globalX + 0.15, globalY + 1.0,  globalZ + 0.85],
+        [globalX + 0.85, globalY + 1.0,  globalZ + 0.15]
+      ];
+
+      const addPlate = (corners: number[][], nx: number, nz: number) => {
+        // 表
+        for (const corner of corners) {
+          positions.push(corner[0], corner[1], corner[2]);
+          normals.push(nx, 0, nz);
+          colors.push(r, g, b);
+        }
+        uvs.push(uMin, vMin, uMax, vMin, uMax, vMax, uMin, vMax);
+        indices.push(vertexCount, vertexCount + 1, vertexCount + 2, vertexCount, vertexCount + 2, vertexCount + 3);
+        vertexCount += 4;
+
+        // 裏 (カリング防止のために頂点インデックス順を逆にする)
+        for (const corner of corners) {
+          positions.push(corner[0], corner[1], corner[2]);
+          normals.push(-nx, 0, -nz);
+          colors.push(r, g, b);
+        }
+        uvs.push(uMax, vMin, uMin, vMin, uMin, vMax, uMax, vMax);
+        indices.push(vertexCount, vertexCount + 2, vertexCount + 1, vertexCount, vertexCount + 3, vertexCount + 2);
+        vertexCount += 4;
+      };
+
+      addPlate(p1, -0.707, 0.707);
+      addPlate(p2, 0.707, 0.707);
+    };
+
+    const addLadderPlate = (
+      globalX: number, globalY: number, globalZ: number,
+      cx: number, cy: number, cz: number,
+      uvIndex: number
+    ) => {
+      const checkSolid = (dx: number, dz: number) => {
+        const nx = cx + dx;
+        const ny = cy;
+        const nz = cz + dz;
+        let neighborBlock: BlockType;
+        if (this.isOutOfBounds(nx, ny, nz)) {
+          neighborBlock = world.getBlock(globalX + dx, globalY, globalZ + dz);
+        } else {
+          neighborBlock = this.getBlock(nx, ny, nz);
+        }
+        return BLOCKS[neighborBlock].isSolid;
+      };
+
+      let wallDir: 'E' | 'W' | 'N' | 'S' = 'N';
+      if (checkSolid(1, 0)) wallDir = 'E';
+      else if (checkSolid(-1, 0)) wallDir = 'W';
+      else if (checkSolid(0, 1)) wallDir = 'S';
+      else if (checkSolid(0, -1)) wallDir = 'N';
+
+      let corners: number[][];
+      let nx = 0, nz = 0;
+      const offset = 0.05;
+
+      if (wallDir === 'E') {
+        corners = [
+          [globalX + 1.0 - offset, globalY,       globalZ],
+          [globalX + 1.0 - offset, globalY,       globalZ + 1.0],
+          [globalX + 1.0 - offset, globalY + 1.0, globalZ + 1.0],
+          [globalX + 1.0 - offset, globalY + 1.0, globalZ]
+        ];
+        nx = -1;
+      } else if (wallDir === 'W') {
+        corners = [
+          [globalX + offset, globalY,       globalZ + 1.0],
+          [globalX + offset, globalY,       globalZ],
+          [globalX + offset, globalY + 1.0, globalZ],
+          [globalX + offset, globalY + 1.0, globalZ + 1.0]
+        ];
+        nx = 1;
+      } else if (wallDir === 'S') {
+        corners = [
+          [globalX + 1.0, globalY,       globalZ + 1.0 - offset],
+          [globalX,       globalY,       globalZ + 1.0 - offset],
+          [globalX,       globalY + 1.0, globalZ + 1.0 - offset],
+          [globalX + 1.0, globalY + 1.0, globalZ + 1.0 - offset]
+        ];
+        nz = -1;
+      } else {
+        corners = [
+          [globalX,       globalY,       globalZ + offset],
+          [globalX + 1.0, globalY,       globalZ + offset],
+          [globalX + 1.0, globalY + 1.0, globalZ + offset],
+          [globalX,       globalY + 1.0, globalZ + offset]
+        ];
+        nz = 1;
+      }
+
+      const col = uvIndex % atlasCols;
+      const row = Math.floor(uvIndex / atlasCols);
+      const uMin = col * uvStepU;
+      const vMin = 1.0 - (row + 1) * uvStepV;
+      const uMax = uMin + uvStepU;
+      const vMax = vMin + uvStepV;
+
+      let maxLight = 0.0;
+      for (let i = 0; i < torches.length; i++) {
+        const torch = torches[i];
+        const dx = globalX + 0.5 - torch.x;
+        const dy = globalY + 0.5 - torch.y;
+        const dz = globalZ + 0.5 - torch.z;
+        const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        const light = Math.max(0, 1.0 - dist / 8.0);
+        if (light > maxLight) maxLight = light;
+      }
+      const finalLight = Math.min(1.0, 0.52 + maxLight * 0.48);
+      const shadow = 0.8;
+      const r = shadow * finalLight;
+      const g = r * (0.93 - (1.0 - maxLight) * 0.08);
+      const b = r * (0.85 - (1.0 - maxLight) * 0.15);
+
+      for (const corner of corners) {
+        positions.push(corner[0], corner[1], corner[2]);
+        normals.push(nx, 0, nz);
+        colors.push(r, g, b);
+      }
+      uvs.push(uMin, vMin, uMax, vMin, uMax, vMax, uMin, vMax);
+      indices.push(vertexCount, vertexCount + 1, vertexCount + 2, vertexCount, vertexCount + 2, vertexCount + 3);
+      vertexCount += 4;
+
+      for (const corner of corners) {
+        positions.push(corner[0], corner[1], corner[2]);
+        normals.push(-nx, 0, -nz);
+        colors.push(r, g, b);
+      }
+      uvs.push(uMax, vMin, uMin, vMin, uMin, vMax, uMax, vMax);
+      indices.push(vertexCount, vertexCount + 2, vertexCount + 1, vertexCount, vertexCount + 3, vertexCount + 2);
+      vertexCount += 4;
+    };
+
+    const addChainPlate = (
+      globalX: number, globalY: number, globalZ: number,
+      uvIndex: number
+    ) => {
+      const col = uvIndex % atlasCols;
+      const row = Math.floor(uvIndex / atlasCols);
+      const uMin = col * uvStepU;
+      const vMin = 1.0 - (row + 1) * uvStepV;
+      const uMax = uMin + uvStepU;
+      const vMax = vMin + uvStepV;
+
+      const cx = globalX + 0.5;
+      const cy = globalY + 0.5;
+      const cz = globalZ + 0.5;
+      let maxLight = 0.0;
+      for (let i = 0; i < torches.length; i++) {
+        const torch = torches[i];
+        const dx = cx - torch.x;
+        const dy = cy - torch.y;
+        const dz = cz - torch.z;
+        const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        const light = Math.max(0, 1.0 - dist / 8.0);
+        if (light > maxLight) maxLight = light;
+      }
+      const finalLight = Math.min(1.0, 0.52 + maxLight * 0.48);
+      const shadow = 0.85;
+      const r = shadow * finalLight;
+      const g = r * (0.93 - (1.0 - maxLight) * 0.08);
+      const b = r * (0.85 - (1.0 - maxLight) * 0.15);
+
+      const p1 = [
+        [globalX + 0.35, globalY,        globalZ + 0.35],
+        [globalX + 0.65, globalY,        globalZ + 0.65],
+        [globalX + 0.65, globalY + 1.0,  globalZ + 0.65],
+        [globalX + 0.35, globalY + 1.0,  globalZ + 0.35]
+      ];
+
+      const p2 = [
+        [globalX + 0.65, globalY,        globalZ + 0.35],
+        [globalX + 0.35, globalY,        globalZ + 0.65],
+        [globalX + 0.35, globalY + 1.0,  globalZ + 0.65],
+        [globalX + 0.65, globalY + 1.0,  globalZ + 0.35]
+      ];
+
+      const addPlate = (corners: number[][], nx: number, nz: number) => {
+        for (const corner of corners) {
+          positions.push(corner[0], corner[1], corner[2]);
+          normals.push(nx, 0, nz);
+          colors.push(r, g, b);
+        }
+        uvs.push(uMin, vMin, uMax, vMin, uMax, vMax, uMin, vMax);
+        indices.push(vertexCount, vertexCount + 1, vertexCount + 2, vertexCount, vertexCount + 2, vertexCount + 3);
+        vertexCount += 4;
+
+        for (const corner of corners) {
+          positions.push(corner[0], corner[1], corner[2]);
+          normals.push(-nx, 0, -nz);
+          colors.push(r, g, b);
+        }
+        uvs.push(uMax, vMin, uMin, vMin, uMin, vMax, uMax, vMax);
+        indices.push(vertexCount, vertexCount + 2, vertexCount + 1, vertexCount, vertexCount + 3, vertexCount + 2);
+        vertexCount += 4;
+      };
+
+      addPlate(p1, -0.707, 0.707);
+      addPlate(p2, 0.707, 0.707);
+    };
+
+    const addRailPlate = (
+      globalX: number, globalY: number, globalZ: number,
+      uvIndex: number
+    ) => {
+      const col = uvIndex % atlasCols;
+      const row = Math.floor(uvIndex / atlasCols);
+      const uMin = col * uvStepU;
+      const vMin = 1.0 - (row + 1) * uvStepV;
+      const uMax = uMin + uvStepU;
+      const vMax = vMin + uvStepV;
+
+      const offset = 0.01;
+      const corners = [
+        [globalX,       globalY + offset, globalZ],
+        [globalX + 1.0, globalY + offset, globalZ],
+        [globalX + 1.0, globalY + offset, globalZ + 1.0],
+        [globalX,       globalY + offset, globalZ + 1.0]
+      ];
+
+      let maxLight = 0.0;
+      for (let i = 0; i < torches.length; i++) {
+        const torch = torches[i];
+        const dx = globalX + 0.5 - torch.x;
+        const dy = globalY + 0.5 - torch.y;
+        const dz = globalZ + 0.5 - torch.z;
+        const dist = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        const light = Math.max(0, 1.0 - dist / 8.0);
+        if (light > maxLight) maxLight = light;
+      }
+      const finalLight = Math.min(1.0, 0.52 + maxLight * 0.48);
+      const shadow = 0.85;
+      const r = shadow * finalLight;
+      const g = r * (0.93 - (1.0 - maxLight) * 0.08);
+      const b = r * (0.85 - (1.0 - maxLight) * 0.15);
+
+      for (const corner of corners) {
+        positions.push(corner[0], corner[1], corner[2]);
+        normals.push(0, 1, 0);
+        colors.push(r, g, b);
+      }
+      uvs.push(uMin, vMax, uMax, vMax, uMax, vMin, uMin, vMin);
+      indices.push(vertexCount, vertexCount + 1, vertexCount + 2, vertexCount, vertexCount + 2, vertexCount + 3);
+      vertexCount += 4;
+    };
+
     for (let cx = 0; cx < this.size; cx++) {
       for (let cy = 0; cy < this.size; cy++) {
         for (let cz = 0; cz < this.size; cz++) {
@@ -353,6 +643,30 @@ export class Chunk {
             }
             // 蕋
             addBox(cx0, globalY+0.875, cz0, cx1, globalY+0.9375, cz1, 21);
+            continue;
+          }
+
+          // お花：対角線上に交差するプレート
+          if (blockType === BlockType.FLOWER_DANDELION || blockType === BlockType.FLOWER_ROSE) {
+            addCrossPlate(globalX, globalY, globalZ, blockProp.uvs.front);
+            continue;
+          }
+
+          // はしご
+          if (blockType === BlockType.LADDER) {
+            addLadderPlate(globalX, globalY, globalZ, cx, cy, cz, blockProp.uvs.front);
+            continue;
+          }
+
+          // チェーン
+          if (blockType === BlockType.CHAIN) {
+            addChainPlate(globalX, globalY, globalZ, blockProp.uvs.front);
+            continue;
+          }
+
+          // レール
+          if (blockType === BlockType.RAIL) {
+            addRailPlate(globalX, globalY, globalZ, blockProp.uvs.front);
             continue;
           }
 

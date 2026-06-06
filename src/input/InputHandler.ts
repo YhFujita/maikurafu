@@ -108,7 +108,9 @@ export class InputHandler {
       const isManualOpen = manualModal && manualModal.style.display === 'flex';
       const mapModal = document.getElementById('world-map-modal');
       const isMapOpen = mapModal && mapModal.style.display === 'flex';
-      if (!isInventoryOpen && !isCraftingOpen && !isManualOpen && !isMapOpen) {
+      const furnaceModal = document.getElementById('furnace-modal');
+      const isFurnaceOpen = furnaceModal && furnaceModal.style.display === 'flex';
+      if (!isInventoryOpen && !isCraftingOpen && !isManualOpen && !isMapOpen && !isFurnaceOpen) {
         // 直近でモーダルを閉じた場合は、初期画面を表示しない（Escキー等の連続押下・貫通制御）
         const timeSinceClose = performance.now() - this.lastModalCloseTime;
         if (timeSinceClose > 300) {

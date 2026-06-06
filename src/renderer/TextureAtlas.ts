@@ -4,7 +4,7 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 16; // 16 * 16 = 256 (power of 2)
+  const atlasRows = 18; // 18 * 4 = 72 blocks capacity
   canvas.width  = tileSize * atlasCols;
   canvas.height = tileSize * atlasRows;
   const ctx = canvas.getContext('2d')!;
@@ -598,6 +598,281 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   drawArmorItem(48, 'rgb(160, 82, 45)'); // LEATHER_ARMOR_SET
   drawArmorItem(49, ironColor);           // IRON_ARMOR_SET
   drawArmorItem(50, diamondColor);        // DIAMOND_ARMOR_SET
+
+  // ===== row12・row13・row14・row15: 新規追加ブロックテクスチャ =====
+
+  // 51: 白樺の原木（側面） (col: 3, row: 12)
+  drawNoiseRect(3, 12, 235, 235, 230, 10);
+  const bwoodX = 3 * tileSize;
+  const bwoodY = 12 * tileSize;
+  // 黒・濃いグレーの白樺特有の樹皮の模様
+  ctx.fillStyle = 'rgb(60, 60, 65)';
+  for (let y = 1; y < tileSize; y += 4) {
+    const w = 3 + Math.floor(Math.random() * 5);
+    const x = Math.floor(Math.random() * (tileSize - w));
+    ctx.fillRect(bwoodX + x, bwoodY + y, w, 2);
+  }
+
+  // 52: 白樺の原木（年輪・断面） (col: 0, row: 13)
+  drawNoiseRect(0, 13, 225, 205, 170, 10);
+  const bringX = 0 * tileSize;
+  const bringY = 13 * tileSize;
+  ctx.fillStyle = 'rgb(180, 150, 110)';
+  // 同心円の年輪
+  for (let x = 0; x < tileSize; x++) {
+    for (let y = 0; y < tileSize; y++) {
+      const dx = x - 7.5;
+      const dy = y - 7.5;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (Math.abs(dist - 3) < 0.6 || Math.abs(dist - 6) < 0.6) {
+        ctx.fillRect(bringX + x, bringY + y, 1, 1);
+      }
+    }
+  }
+
+  // 53: 白樺の葉 (col: 1, row: 13)
+  drawNoiseRect(1, 13, 60, 160, 50, 25);
+  const bleavesX = 1 * tileSize;
+  const bleavesY = 13 * tileSize;
+  for (let i = 0; i < 30; i++) {
+    const lx = Math.floor(Math.random() * tileSize);
+    const ly = Math.floor(Math.random() * tileSize);
+    ctx.fillStyle = `rgb(${30 + Math.random() * 20}, ${95 + Math.random() * 20}, ${20 + Math.random() * 10})`;
+    ctx.fillRect(bleavesX + lx, bleavesY + ly, 1, 1);
+  }
+
+  // 54: 白樺の木材 (col: 2, row: 13)
+  drawNoiseRect(2, 13, 240, 220, 170, 10);
+  const bplankX = 2 * tileSize;
+  const bplankY = 13 * tileSize;
+  ctx.fillStyle = 'rgb(190, 170, 120)';
+  ctx.fillRect(bplankX, bplankY + 4, tileSize, 1);
+  ctx.fillRect(bplankX, bplankY + 8, tileSize, 1);
+  ctx.fillRect(bplankX, bplankY + 12, tileSize, 1);
+
+  // 55: タンポポ (col: 3, row: 13)
+  const dandelionX = 3 * tileSize;
+  const dandelionY = 13 * tileSize;
+  ctx.clearRect(dandelionX, dandelionY, tileSize, tileSize);
+  // 茎
+  ctx.fillStyle = 'rgb(34, 139, 34)';
+  ctx.fillRect(dandelionX + 7, dandelionY + 6, 2, 10);
+  // 花（黄色）
+  ctx.fillStyle = 'rgb(255, 215, 0)';
+  ctx.fillRect(dandelionX + 6, dandelionY + 3, 4, 3);
+  ctx.fillRect(dandelionX + 5, dandelionY + 4, 6, 1);
+  ctx.fillStyle = 'rgb(255, 235, 50)';
+  ctx.fillRect(dandelionX + 7, dandelionY + 4, 2, 1);
+
+  // 56: バラ (col: 0, row: 14)
+  const roseX = 0 * tileSize;
+  const roseY = 14 * tileSize;
+  ctx.clearRect(roseX, roseY, tileSize, tileSize);
+  // 茎
+  ctx.fillStyle = 'rgb(34, 139, 34)';
+  ctx.fillRect(roseX + 7, roseY + 6, 2, 10);
+  ctx.fillRect(roseX + 5, roseY + 8, 2, 1); // 葉
+  ctx.fillRect(roseX + 9, roseY + 11, 2, 1);
+  // 花（赤）
+  ctx.fillStyle = 'rgb(220, 20, 60)';
+  ctx.fillRect(roseX + 6, roseY + 2, 4, 4);
+  ctx.fillStyle = 'rgb(180, 10, 40)'; // 影
+  ctx.fillRect(roseX + 7, roseY + 3, 2, 2);
+
+  // 57: ラピスラズリ鉱石 (col: 1, row: 14)
+  drawNoiseRect(1, 14, 120, 120, 120, 20);
+  const lapisOreX = 1 * tileSize;
+  const lapisOreY = 14 * tileSize;
+  ctx.fillStyle = 'rgb(20, 60, 180)';
+  const lapisSpots = [
+    [2, 3], [3, 2], [3, 3],
+    [8, 8], [9, 8], [9, 9],
+    [11, 4], [12, 4],
+    [4, 11], [5, 12]
+  ];
+  lapisSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(lapisOreX + sx, lapisOreY + sy, 1, 1);
+  });
+
+  // 58: ラピスラズリ宝石（アイテム） (col: 2, row: 14)
+  const lapisGemX = 2 * tileSize;
+  const lapisGemY = 14 * tileSize;
+  ctx.clearRect(lapisGemX, lapisGemY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(20, 60, 180)';
+  ctx.fillRect(lapisGemX + 5, lapisGemY + 4, 6, 8);
+  ctx.clearRect(lapisGemX + 5, lapisGemY + 4, 1, 1);
+  ctx.clearRect(lapisGemX + 10, lapisGemY + 4, 1, 1);
+  ctx.clearRect(lapisGemX + 5, lapisGemY + 11, 1, 1);
+  ctx.clearRect(lapisGemX + 10, lapisGemY + 11, 1, 1);
+  ctx.fillStyle = 'rgb(0, 100, 255)'; // ハイライト
+  ctx.fillRect(lapisGemX + 6, lapisGemY + 5, 2, 4);
+
+  // 59: ラピスラズリブロック (col: 3, row: 14)
+  drawNoiseRect(3, 14, 20, 60, 180, 20);
+  const lapisBlockX = 3 * tileSize;
+  const lapisBlockY = 14 * tileSize;
+  // 金色の斑点（パイライト）を少し入れる
+  ctx.fillStyle = 'rgb(220, 180, 40)';
+  ctx.fillRect(lapisBlockX + 3, lapisBlockY + 4, 1, 1);
+  ctx.fillRect(lapisBlockX + 11, lapisBlockY + 10, 1, 1);
+  // タイル状の枠線
+  ctx.strokeStyle = 'rgb(10, 35, 110)';
+  ctx.strokeRect(lapisBlockX, lapisBlockY, tileSize, tileSize);
+
+  // 60: シーランタン (col: 0, row: 15)
+  drawNoiseRect(0, 15, 200, 240, 240, 10);
+  const seaLanternX = 0 * tileSize;
+  const seaLanternY = 15 * tileSize;
+  // 暗い水色の枠線
+  ctx.strokeStyle = 'rgb(130, 180, 180)';
+  ctx.strokeRect(seaLanternX + 1, seaLanternY + 1, tileSize - 2, tileSize - 2);
+  // ほんのり光るハイライト
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.fillRect(seaLanternX + 5, seaLanternY + 5, 6, 6);
+
+  // 61: マグマブロック (col: 1, row: 15)
+  drawNoiseRect(1, 15, 90, 30, 10, 15);
+  const magmaX = 1 * tileSize;
+  const magmaY = 15 * tileSize;
+  // オレンジ・赤の発光するヒビ
+  ctx.fillStyle = 'rgb(255, 90, 0)';
+  ctx.fillRect(magmaX + 2, magmaY + 2, 2, 1);
+  ctx.fillRect(magmaX + 3, magmaY + 3, 4, 1);
+  ctx.fillRect(magmaX + 6, magmaY + 4, 1, 6);
+  ctx.fillRect(magmaX + 10, magmaY + 7, 3, 2);
+  ctx.fillStyle = 'rgb(255, 200, 0)'; // 黄色い中心部
+  ctx.fillRect(magmaX + 4, magmaY + 3, 2, 1);
+  ctx.fillRect(magmaX + 6, magmaY + 6, 1, 2);
+
+  // ===== row15・row16・row17: はしご・チェーン・バケツ類・スポンジ =====
+
+  // 62: はしご (col: 2, row: 15)
+  const ladderX = 2 * tileSize;
+  const ladderY = 15 * tileSize;
+  ctx.clearRect(ladderX, ladderY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(139, 69, 19)'; // 茶色の縦木
+  ctx.fillRect(ladderX + 2, ladderY, 2, tileSize);
+  ctx.fillRect(ladderX + 12, ladderY, 2, tileSize);
+  // 横棒（ステップ）
+  for (let y = 2; y < tileSize; y += 3) {
+    ctx.fillRect(ladderX + 4, ladderY + y, 8, 1);
+    // 横棒の影
+    ctx.fillStyle = 'rgb(90, 45, 10)';
+    ctx.fillRect(ladderX + 4, ladderY + y + 1, 8, 1);
+    ctx.fillStyle = 'rgb(139, 69, 19)';
+  }
+
+  // 63: チェーン (col: 3, row: 15)
+  const chainX = 3 * tileSize;
+  const chainY = 15 * tileSize;
+  ctx.clearRect(chainX, chainY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(120, 120, 120)'; // 金属グレー
+  ctx.fillRect(chainX + 7, chainY, 2, tileSize);
+  // チェーンリンクの輪っか（膨らみと影）
+  ctx.fillStyle = 'rgb(160, 160, 160)'; // 金属ハイライト
+  for (let y = 1; y < tileSize; y += 4) {
+    ctx.fillRect(chainX + 6, chainY + y, 4, 2);
+    ctx.fillStyle = 'rgb(80, 80, 80)'; // 影
+    ctx.fillRect(chainX + 7, chainY + y + 1, 2, 1);
+    ctx.fillStyle = 'rgb(160, 160, 160)';
+  }
+
+  // バケツのベースを描画する関数
+  const drawBucketBase = (bx: number, by: number) => {
+    ctx.fillStyle = 'rgb(140, 140, 140)';
+    // バケツのふちと輪郭
+    ctx.fillRect(bx + 3, by + 3, 10, 1); // 上縁
+    ctx.fillRect(bx + 3, by + 4, 2, 4);   // 左壁
+    ctx.fillRect(bx + 11, by + 4, 2, 4);  // 右壁
+    ctx.fillRect(bx + 5, by + 8, 6, 2);   // 底
+    ctx.fillStyle = 'rgb(100, 100, 100)'; // 影
+    ctx.fillRect(bx + 4, by + 5, 1, 3);
+    ctx.fillRect(bx + 11, by + 5, 1, 3);
+    ctx.fillRect(bx + 5, by + 9, 6, 1);
+  };
+
+  // 64: 空のバケツ (col: 0, row: 16)
+  const bucketX = 0 * tileSize;
+  const bucketY = 16 * tileSize;
+  ctx.clearRect(bucketX, bucketY, tileSize, tileSize);
+  drawBucketBase(bucketX, bucketY);
+
+  // 65: 水入りバケツ (col: 1, row: 16)
+  const wbucketX = 1 * tileSize;
+  const wbucketY = 16 * tileSize;
+  ctx.clearRect(wbucketX, wbucketY, tileSize, tileSize);
+  // 中身の水
+  ctx.fillStyle = 'rgb(30, 100, 240)';
+  ctx.fillRect(wbucketX + 5, wbucketY + 4, 6, 4);
+  drawBucketBase(wbucketX, wbucketY);
+
+  // 66: マグマ入りバケツ (col: 2, row: 16)
+  const mbucketX = 2 * tileSize;
+  const mbucketY = 16 * tileSize;
+  ctx.clearRect(mbucketX, mbucketY, tileSize, tileSize);
+  // 中身のマグマ
+  ctx.fillStyle = 'rgb(255, 100, 0)';
+  ctx.fillRect(mbucketX + 5, mbucketY + 4, 6, 4);
+  ctx.fillStyle = 'rgb(255, 200, 0)';
+  ctx.fillRect(mbucketX + 7, mbucketY + 5, 2, 2);
+  drawBucketBase(mbucketX, mbucketY);
+
+  // 67: スポンジ (col: 3, row: 16)
+  drawNoiseRect(3, 16, 220, 200, 80, 20);
+  const spongeX = 3 * tileSize;
+  const spongeY = 16 * tileSize;
+  // 暗い黄色の穴ドット
+  ctx.fillStyle = 'rgb(150, 130, 40)';
+  const spongeSpots = [
+    [2, 3], [4, 7], [9, 2], [11, 6], [12, 11], [5, 12], [8, 9], [3, 14]
+  ];
+  spongeSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(spongeX + sx, spongeY + sy, 1, 1);
+  });
+
+  // 68: 濡れたスポンジ (col: 0, row: 17)
+  drawNoiseRect(0, 17, 140, 160, 60, 20); // 少し緑がかった暗い黄色
+  const wspongeX = 0 * tileSize;
+  const wspongeY = 17 * tileSize;
+  // 暗い黄色の穴ドット
+  ctx.fillStyle = 'rgb(100, 110, 30)';
+  spongeSpots.forEach(([sx, sy]) => {
+    ctx.fillRect(wspongeX + sx, wspongeY + sy, 1, 1);
+  });
+  // 青い水滴ドット
+  ctx.fillStyle = 'rgb(30, 120, 230)';
+  ctx.fillRect(wspongeX + 5, wspongeY + 5, 1, 1);
+  ctx.fillRect(wspongeX + 11, wspongeY + 3, 1, 1);
+  ctx.fillRect(wspongeX + 3, wspongeY + 11, 1, 1);
+  ctx.fillRect(wspongeX + 9, wspongeY + 13, 1, 1);
+
+  // 69: レール (col: 1, row: 17)
+  const railX = 1 * tileSize;
+  const railY = 17 * tileSize;
+  ctx.clearRect(railX, railY, tileSize, tileSize);
+  // 木製の枕木 (茶色)
+  ctx.fillStyle = 'rgb(120, 70, 30)';
+  ctx.fillRect(railX + 1, railY + 2, 14, 2);
+  ctx.fillRect(railX + 1, railY + 7, 14, 2);
+  ctx.fillRect(railX + 1, railY + 12, 14, 2);
+  // 鉄のレール (グレー)
+  ctx.fillStyle = 'rgb(180, 180, 180)';
+  ctx.fillRect(railX + 3, railY, 2, tileSize);
+  ctx.fillRect(railX + 11, railY, 2, tileSize);
+  // 鉄のレールのシャドウ
+  ctx.fillStyle = 'rgb(110, 110, 110)';
+  ctx.fillRect(railX + 5, railY, 1, tileSize);
+  ctx.fillRect(railX + 13, railY, 1, tileSize);
+
+  // 70: トロッコ (col: 2, row: 17)
+  drawNoiseRect(2, 17, 160, 160, 165, 20);
+  const cartX = 2 * tileSize;
+  const cartY = 17 * tileSize;
+  ctx.fillStyle = 'rgb(100, 100, 105)';
+  ctx.fillRect(cartX, cartY, tileSize, 2);
+  ctx.fillRect(cartX, cartY + tileSize - 2, tileSize, 2);
+  ctx.fillRect(cartX, cartY, 2, tileSize);
+  ctx.fillRect(cartX + tileSize - 2, cartY, 2, tileSize);
 
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);

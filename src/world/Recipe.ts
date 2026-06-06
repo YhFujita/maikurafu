@@ -19,6 +19,11 @@ export const RECIPES: Recipe[] = [
     output: { type: BlockType.PLANK, count: 4 },
   },
   {
+    id: 'birch_plank',
+    inputs: [{ type: BlockType.BIRCH_WOOD, count: 1 }],
+    output: { type: BlockType.BIRCH_PLANK, count: 4 },
+  },
+  {
     id: 'stick',
     inputs: [{ type: BlockType.PLANK, count: 2 }],
     output: { type: BlockType.STICK, count: 4 },
@@ -81,6 +86,16 @@ export const RECIPES: Recipe[] = [
     id: 'smelt_gold',
     inputs: [{ type: BlockType.GOLD_ORE, count: 1 }, { type: BlockType.COAL, count: 1 }],
     output: { type: BlockType.GOLD_INGOT, count: 1 },
+  },
+  {
+    id: 'smelt_lapis',
+    inputs: [{ type: BlockType.LAPIS_ORE, count: 1 }, { type: BlockType.COAL, count: 1 }],
+    output: { type: BlockType.LAPIS_LAZULI, count: 1 },
+  },
+  {
+    id: 'smelt_wet_sponge',
+    inputs: [{ type: BlockType.WET_SPONGE, count: 1 }, { type: BlockType.COAL, count: 1 }],
+    output: { type: BlockType.SPONGE, count: 1 },
   },
 
   // ツルハシ
@@ -176,5 +191,20 @@ export const RECIPES: Recipe[] = [
     id: 'diamond_armor_set',
     inputs: [{ type: BlockType.DIAMOND, count: 24 }],
     output: { type: BlockType.DIAMOND_ARMOR_SET, count: 1 },
+  },
+  {
+    id: 'lapis_block',
+    inputs: [{ type: BlockType.LAPIS_LAZULI, count: 9 }],
+    output: { type: BlockType.LAPIS_BLOCK, count: 1 },
+  },
+  {
+    id: 'stairs_birch',
+    inputs: [{ type: BlockType.BIRCH_PLANK, count: 6 }],
+    output: { type: BlockType.STAIRS, count: 4 },
+  },
+  {
+    id: 'fence_birch',
+    inputs: [{ type: BlockType.BIRCH_PLANK, count: 2 }, { type: BlockType.STICK, count: 4 }],
+    output: { type: BlockType.FENCE, count: 3 },
   },
 ];

@@ -58,6 +58,7 @@ export class Player {
   // ライフ自動回復用タイマー
   public lastDamageTime: number = 0;
   private lastRegenTime: number = 0;
+  private magmaDamageTimer: number = 0;
 
   // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
   private voxelWorld!: World;
@@ -570,6 +571,26 @@ export class Player {
     this.handleMovement(input, deltaTime);
     this.animateAvatar(deltaTime);
     this.syncCamera();
+    // マグマブロック判定とダメージ処理
+    if (voxelWorld) {
+      const blockX = Math.floor(this.position.x);
+      const blockY = Math.floor(this.position.y - CONFIG.PLAYER_HEIGHT / 2 - 0.1); // 接地しているブロック
+      const blockZ = Math.floor(this.position.z);
+      const belowBlock = voxelWorld.getBlock(blockX, blockY, blockZ);
+      
+      const isSneaking = !!(input.keys['ControlLeft'] || input.keys['KeyX']);
+      
+      if (belowBlock === BlockType.MAGMA_BLOCK && !isSneaking) {
+        this.magmaDamageTimer += deltaTime;
+        if (this.magmaDamageTimer >= 1.0) {
+          this.takeDamage(1); // 1ダメージ (ハート半分)
+          this.magmaDamageTimer = 0.0;
+        }
+      } else {
+        this.magmaDamageTimer = 0.0;
+      }
+    }
+
     this.updateHUD();
   }
 
@@ -829,6 +850,52 @@ export class Player {
 
     const targetVelX = direction.x * currentSpeed;
     const targetVelZ = direction.z * currentSpeed;
+
+    // はしご・チェーン接触判定と昇降物理
+    let isOnLadder = false;
+    const voxelWorld = this.voxelWorld;
+    if (voxelWorld) {
+      const px = Math.floor(this.position.x);
+      const py = Math.floor(this.position.y);
+      const pz = Math.floor(this.position.z);
+      
+      const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+      const feetY = Math.floor(this.position.y - halfHeight + 0.1);
+      const headY = Math.floor(this.position.y + halfHeight - 0.2);
+      
+      const feetBlock = voxelWorld.getBlock(px, feetY, pz);
+      const waistBlock = voxelWorld.getBlock(px, py, pz);
+      const headBlock = voxelWorld.getBlock(px, headY, pz);
+      
+      if (feetBlock === BlockType.LADDER || feetBlock === BlockType.CHAIN ||
+          waistBlock === BlockType.LADDER || waistBlock === BlockType.CHAIN ||
+          headBlock === BlockType.LADDER || headBlock === BlockType.CHAIN) {
+        isOnLadder = true;
+      }
+    }
+
+    if (isOnLadder) {
+      const isSprinting = this.isSprintingToggle;
+      const climbSpeed = isSprinting ? 4.0 : 2.5;
+
+      const isSneaking = !!(input.keys['ControlLeft'] || input.keys['KeyX']);
+      const isGoingUp = input.isActionActive('forward') || input.isActionActive('jump');
+      const isGoingDown = input.isActionActive('backward');
+
+      this.body.velocity.x = targetVelX * 0.5;
+      this.body.velocity.z = targetVelZ * 0.5;
+
+      if (isGoingUp) {
+        this.body.velocity.y = climbSpeed;
+      } else if (isGoingDown) {
+        this.body.velocity.y = -climbSpeed;
+      } else if (isSneaking) {
+        this.body.velocity.y = 0;
+      } else {
+        this.body.velocity.y = -0.6; // ゆっくり滑り落ちる
+      }
+      return; // はしご昇降時は通常の地上/空中移動ロジックをバイパス
+    }
 
     if (this.isGrounded) {
       // 地上では速度を直接設定する（物理エンジンの衝突応答による減速を打ち消す）

@@ -12,7 +12,7 @@ import { SoundManager } from './system/SoundManager.ts';
 import { RECIPES } from './world/Recipe.ts';
 import { TimeManager } from './system/TimeManager.ts';
 import { DroppedItem } from './item/DroppedItem.ts';
-import { Mob } from './mob/Mob.ts';
+import { Mob, MobType } from './mob/Mob.ts';
 import { SaveManager } from './system/SaveManager.ts';
 import { NavigationManager } from './ui/NavigationManager.ts';
 import { NPCManager } from './mob/NPCManager.ts';
@@ -161,6 +161,25 @@ const inventory: Record<BlockType, number> = {
   [BlockType.LEATHER_ARMOR_SET]: 0,
   [BlockType.IRON_ARMOR_SET]: 0,
   [BlockType.DIAMOND_ARMOR_SET]: 0,
+  [BlockType.BIRCH_WOOD]: 64,
+  [BlockType.BIRCH_LEAVES]: 64,
+  [BlockType.BIRCH_PLANK]: 64,
+  [BlockType.FLOWER_DANDELION]: 64,
+  [BlockType.FLOWER_ROSE]: 64,
+  [BlockType.LAPIS_ORE]: 0,
+  [BlockType.LAPIS_LAZULI]: 0,
+  [BlockType.LAPIS_BLOCK]: 64,
+  [BlockType.SEA_LANTERN]: 64,
+  [BlockType.MAGMA_BLOCK]: 64,
+  [BlockType.LADDER]: 64,
+  [BlockType.CHAIN]: 64,
+  [BlockType.BUCKET]: 64,
+  [BlockType.WATER_BUCKET]: 0,
+  [BlockType.MAGMA_BUCKET]: 0,
+  [BlockType.SPONGE]: 64,
+  [BlockType.WET_SPONGE]: 0,
+  [BlockType.RAIL]: 64,
+  [BlockType.MINECART]: 64,
 };
 
 // 設定UIの初期化
@@ -217,6 +236,36 @@ const hotbarPages = [
   ]
 ];
 
+// かまど（精錬）状態管理変数
+let furnaceInputBlock: BlockType | null = null;
+let furnaceInputCount = 0;
+let furnaceFuelBlock: BlockType | null = null;
+let furnaceFuelCount = 0;
+let furnaceOutputBlock: BlockType | null = null;
+let furnaceOutputCount = 0;
+let isSmelting = false;
+let smeltProgress = 0.0;
+const smeltDuration = 3.0; // 精錬完了にかかる時間（秒）
+
+const SMELT_RECIPES: Record<number, number> = {
+  [BlockType.IRON_ORE]: BlockType.IRON_INGOT,
+  [BlockType.GOLD_ORE]: BlockType.GOLD_INGOT,
+  [BlockType.COBBLESTONE]: BlockType.STONE,
+  [BlockType.SAND]: BlockType.GLASS,
+  [BlockType.LAPIS_ORE]: BlockType.LAPIS_LAZULI,
+  [BlockType.DIAMOND_ORE]: BlockType.DIAMOND,
+  [BlockType.WET_SPONGE]: BlockType.SPONGE,
+};
+
+const FUEL_ITEMS = [
+  BlockType.COAL,
+  BlockType.WOOD,
+  BlockType.PLANK,
+  BlockType.BIRCH_WOOD,
+  BlockType.BIRCH_PLANK,
+];
+
+let ridingCart: Mob | null = null;
 let activePage = 0;
 let slotBlocks = hotbarPages[activePage];
 
@@ -246,6 +295,25 @@ function getSlotIconClass(type: BlockType): string {
     case BlockType.SWORD:       return 'slot-sword';
     case BlockType.DIAMOND_SWORD: return 'slot-diamond-sword';
     case BlockType.HAMMER:      return 'slot-hammer';
+    case BlockType.BIRCH_WOOD:  return 'slot-birch-wood';
+    case BlockType.BIRCH_LEAVES: return 'slot-birch-leaves';
+    case BlockType.BIRCH_PLANK: return 'slot-birch-plank';
+    case BlockType.FLOWER_DANDELION: return 'slot-dandelion';
+    case BlockType.FLOWER_ROSE: return 'slot-rose';
+    case BlockType.LAPIS_ORE:   return 'slot-lapis-ore';
+    case BlockType.LAPIS_LAZULI: return 'slot-lapis-lazuli';
+    case BlockType.LAPIS_BLOCK:  return 'slot-lapis-block';
+    case BlockType.SEA_LANTERN:  return 'slot-sea-lantern';
+    case BlockType.MAGMA_BLOCK:  return 'slot-magma';
+    case BlockType.LADDER:       return 'slot-ladder';
+    case BlockType.CHAIN:        return 'slot-chain';
+    case BlockType.BUCKET:       return 'slot-bucket';
+    case BlockType.WATER_BUCKET: return 'slot-water-bucket';
+    case BlockType.MAGMA_BUCKET: return 'slot-magma-bucket';
+    case BlockType.SPONGE:       return 'slot-sponge';
+    case BlockType.WET_SPONGE:   return 'slot-wet-sponge';
+    case BlockType.RAIL:         return 'slot-rail';
+    case BlockType.MINECART:     return 'slot-minecart';
     default: return '';
   }
 }
@@ -520,6 +588,48 @@ function animate(time: number) {
   // 物理世界のステップ実行
   physics.step(deltaTime);
 
+  // トロッコ搭乗中の操縦・位置同期処理
+  if (ridingCart) {
+    if (input.consumeJustPressed('Space') || input.consumeJustPressed('Escape')) {
+      ridingCart = null;
+      player.body.position.y += 1.0;
+    } else {
+      player.body.position.x = ridingCart.body.position.x;
+      player.body.position.y = ridingCart.body.position.y + 0.35;
+      player.body.position.z = ridingCart.body.position.z;
+      player.body.velocity.set(0, 0, 0);
+
+      const moveVector = new THREE.Vector3();
+      if (input.isActionActive('forward')) moveVector.z -= 1;
+      if (input.isActionActive('backward')) moveVector.z += 1;
+      if (input.isActionActive('left')) moveVector.x -= 1;
+      if (input.isActionActive('right')) moveVector.x += 1;
+      moveVector.normalize();
+
+      const yaw = player.getYaw();
+      moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+      const tx = Math.floor(ridingCart.body.position.x);
+      const ty = Math.floor(ridingCart.body.position.y - 0.2);
+      const tz = Math.floor(ridingCart.body.position.z);
+      const currentBlock = world.getBlock(tx, ty, tz);
+      const isOnRail = currentBlock === BlockType.RAIL;
+
+      const speed = isOnRail ? 10.0 : 1.5;
+
+      if (moveVector.lengthSq() > 0) {
+        ridingCart.body.velocity.x = moveVector.x * speed;
+        ridingCart.body.velocity.z = moveVector.z * speed;
+        const targetAngle = Math.atan2(moveVector.x, moveVector.z);
+        ridingCart.mesh.rotation.y = targetAngle;
+      } else {
+        const damping = isOnRail ? 0.98 : 0.8;
+        ridingCart.body.velocity.x *= damping;
+        ridingCart.body.velocity.z *= damping;
+      }
+    }
+  }
+
   // プレイヤーと入力の更新
   player.update(input, deltaTime, world, activeBlockType);
 
@@ -531,6 +641,9 @@ function animate(time: number) {
 
   // 昼夜サイクルの更新
   timeManager.update(deltaTime, player.position);
+
+  // かまど精錬プロセスの更新
+  updateFurnace(deltaTime);
 
   // Tabキー押下時のホットバーページ切り替え
   if (input.consumeJustPressed('Tab')) {
@@ -611,46 +724,68 @@ function animate(time: number) {
     }
   }
 
-  // Mobの自動スポーン（夜間のみ）
-  if (timeManager.isNight()) {
-    mobSpawnTimer += deltaTime;
-    if (mobSpawnTimer > 2.0) {
-      mobSpawnTimer = 0;
-      if (mobs.length < CONFIG.MAX_MOBS) {
-        const radius = CONFIG.MOB_SPAWN_RADIUS;
-        const angle = Math.random() * Math.PI * 2;
-        const spawnDist = 12.0 + Math.random() * (radius - 12.0);
-        const sx = Math.floor(player.position.x + Math.cos(angle) * spawnDist);
-        const sz = Math.floor(player.position.z + Math.sin(angle) * spawnDist);
+  // Mobの自動スポーン
+  mobSpawnTimer += deltaTime;
+  if (mobSpawnTimer > 2.0) {
+    mobSpawnTimer = 0;
+    if (mobs.length < CONFIG.MAX_MOBS) {
+      const radius = CONFIG.MOB_SPAWN_RADIUS;
+      const angle = Math.random() * Math.PI * 2;
+      const spawnDist = 12.0 + Math.random() * (radius - 12.0);
+      const sx = Math.floor(player.position.x + Math.cos(angle) * spawnDist);
+      const sz = Math.floor(player.position.z + Math.sin(angle) * spawnDist);
 
-        // スポーン地表Y座標の探索
-        let sy = 0;
-        let foundGround = false;
-        for (let y = 15; y >= -10; y--) {
-          if (world.getBlock(sx, y, sz) !== BlockType.AIR) {
-            sy = y + 1;
-            foundGround = true;
-            break;
-          }
-        }
-
-        if (foundGround) {
-          const mob = new Mob(new THREE.Vector3(sx, sy, sz), renderer.scene, physics.world);
-          mobs.push(mob);
+      // スポーン地表Y座標の探索
+      let sy = 0;
+      let foundGround = false;
+      for (let y = 15; y >= -10; y--) {
+        if (world.getBlock(sx, y, sz) !== BlockType.AIR) {
+          sy = y + 1;
+          foundGround = true;
+          break;
         }
       }
+
+      if (foundGround) {
+        let type: MobType = MobType.ZOMBIE;
+        if (timeManager.isNight()) {
+          // 夜間は敵対70%、友好30%
+          const rand = Math.random();
+          if (rand < 0.7) {
+            const enemyRand = Math.random();
+            if (enemyRand < 0.4) type = MobType.ZOMBIE;
+            else if (enemyRand < 0.7) type = MobType.CREEPER;
+            else if (enemyRand < 0.9) type = MobType.SLIME;
+            else type = MobType.ZOMBIE_VILLAGER;
+          } else {
+            const friendlyTypes = [MobType.CHICKEN, MobType.PIG, MobType.SHEEP, MobType.COW, MobType.VILLAGER];
+            type = friendlyTypes[Math.floor(Math.random() * friendlyTypes.length)];
+          }
+        } else {
+          // 昼間は友好モブのみ
+          const friendlyTypes = [MobType.CHICKEN, MobType.PIG, MobType.SHEEP, MobType.COW, MobType.VILLAGER];
+          type = friendlyTypes[Math.floor(Math.random() * friendlyTypes.length)];
+        }
+
+        const mob = new Mob(new THREE.Vector3(sx, sy, sz), renderer.scene, physics.world, type);
+        mobs.push(mob);
+      }
     }
-  } else {
-    // 昼間はMobを自動消滅（日光で消滅）
+  }
+
+  // 昼間は敵対モブを自動消滅（日光で消滅）
+  if (!timeManager.isNight()) {
     for (let i = mobs.length - 1; i >= 0; i--) {
-      mobs[i].destroy();
-      mobs.splice(i, 1);
+      if (!mobs[i].isFriendly()) {
+        mobs[i].destroy();
+        mobs.splice(i, 1);
+      }
     }
   }
 
   // Mobの更新
   for (let i = mobs.length - 1; i >= 0; i--) {
-    const isDespawned = mobs[i].update(deltaTime, player);
+    const isDespawned = mobs[i].update(deltaTime, player, world);
     if (isDespawned) {
       mobs.splice(i, 1);
     }
@@ -901,8 +1036,24 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
                          (activeBlockType === BlockType.SWORD) ? 4 : 2;
           const isDead = hitMob.takeDamage(damage, kbDir);
           if (isDead) {
-            // ゾンビ死亡時に確率で石炭や石などをドロップ
-            const dropType = Math.random() < 0.4 ? BlockType.COAL_ORE : BlockType.STONE;
+            let dropType = BlockType.STONE;
+            if (hitMob.type === MobType.ZOMBIE) {
+              dropType = Math.random() < 0.4 ? BlockType.COAL_ORE : BlockType.STONE;
+            } else if (hitMob.type === MobType.CHICKEN) {
+              dropType = BlockType.APPLE;
+            } else if (hitMob.type === MobType.PIG) {
+              dropType = BlockType.APPLE;
+            } else if (hitMob.type === MobType.SHEEP) {
+              dropType = BlockType.BIRCH_LEAVES;
+            } else if (hitMob.type === MobType.COW) {
+              dropType = BlockType.LEATHER_ARMOR_SET;
+            } else if (hitMob.type === MobType.SLIME) {
+              dropType = BlockType.GROUND;
+            } else if (hitMob.type === MobType.CREEPER) {
+              dropType = BlockType.COAL_ORE;
+            } else if (hitMob.type === MobType.VILLAGER || hitMob.type === MobType.ZOMBIE_VILLAGER) {
+              dropType = BlockType.APPLE;
+            }
             spawnDroppedItem(dropType, new THREE.Vector3(hitMob.body.position.x, hitMob.body.position.y, hitMob.body.position.z), player.position);
             const idx = mobs.indexOf(hitMob);
             if (idx > -1) mobs.splice(idx, 1);
@@ -912,6 +1063,79 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
       }
       
     } else if (shouldPlace) {
+      // 設置前に、近接するMobへの右クリックインタラクションをチェック
+      const mobMeshes: THREE.Object3D[] = [];
+      mobs.forEach(m => {
+        m.mesh.traverse(child => {
+          if (child instanceof THREE.Mesh) mobMeshes.push(child);
+        });
+      });
+
+      const mobIntersects = raycaster.intersectObjects(mobMeshes);
+      if (mobIntersects.length > 0 && mobIntersects[0].distance < maxInteractDistance) {
+        const hitMesh = mobIntersects[0].object;
+        let hitMob: Mob | null = null;
+        for (const mob of mobs) {
+          let found = false;
+          mob.mesh.traverse(child => {
+            if (child === hitMesh) found = true;
+          });
+          if (found) {
+            hitMob = mob;
+            break;
+          }
+        }
+
+        if (hitMob) {
+          // 牛をバケツで右クリック
+          if (hitMob.type === MobType.COW && activeBlockType === BlockType.BUCKET) {
+            inventory[BlockType.BUCKET]--;
+            inventory[BlockType.WATER_BUCKET] = (inventory[BlockType.WATER_BUCKET] || 0) + 1;
+            if (slotBlocks[activeSlotIndex] === BlockType.BUCKET) {
+              slotBlocks[activeSlotIndex] = BlockType.WATER_BUCKET;
+              activeBlockType = BlockType.WATER_BUCKET;
+            }
+            SoundManager.playPlace(BlockType.WATER);
+            syncHotbarUI();
+            return;
+          }
+          // トロッコに乗車/下車する
+          if (hitMob.type === MobType.MINECART) {
+            if (ridingCart === hitMob) {
+              ridingCart = null;
+              player.body.position.y += 1.0;
+            } else {
+              ridingCart = hitMob;
+            }
+            return;
+          }
+          // 村人ゾンビをリンゴで治療
+          if (hitMob.type === MobType.ZOMBIE_VILLAGER && activeBlockType === BlockType.APPLE) {
+            if (!hitMob.isCuring) {
+              hitMob.isCuring = true;
+              hitMob.cureTimer = 0;
+              inventory[BlockType.APPLE]--;
+              syncHotbarUI();
+              SoundManager.playPlace(BlockType.TORCH);
+            }
+            return;
+          }
+          // 村人からプレゼント
+          if (hitMob.type === MobType.VILLAGER) {
+            if (Math.random() < 0.3) {
+              const presentType = Math.random() < 0.5 ? BlockType.APPLE : BlockType.FLOWER_ROSE;
+              spawnDroppedItem(presentType, new THREE.Vector3(hitMob.body.position.x, hitMob.body.position.y, hitMob.body.position.z), player.position);
+              SoundManager.playPlace(BlockType.GLASS);
+            }
+            return;
+          }
+          
+          if (hitMob.isFriendly()) {
+            return;
+          }
+        }
+      }
+
       // 武器は設置できない
       if (activeBlockType === BlockType.SWORD || activeBlockType === BlockType.DIAMOND_SWORD || activeBlockType === BlockType.HAMMER) return;
 
@@ -941,6 +1165,39 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
         }
         SoundManager.playPlace(BlockType.DOOR_CLOSED);
         return;
+      }
+
+      // 右クリックした対象がかまどの場合、UIを開く
+      if (clickedBlockType === BlockType.FURNACE) {
+        openFurnace();
+        return;
+      }
+
+      // 空のバケツで水やマグマブロックを汲む
+      if (activeBlockType === BlockType.BUCKET) {
+        if (clickedBlockType === BlockType.WATER) {
+          world.setBlock(ctx_x, cty_y, ctz_z, BlockType.AIR);
+          inventory[BlockType.BUCKET]--;
+          inventory[BlockType.WATER_BUCKET] = (inventory[BlockType.WATER_BUCKET] || 0) + 1;
+          if (slotBlocks[activeSlotIndex] === BlockType.BUCKET) {
+            slotBlocks[activeSlotIndex] = BlockType.WATER_BUCKET;
+            activeBlockType = BlockType.WATER_BUCKET;
+          }
+          SoundManager.playPlace(BlockType.WATER);
+          syncHotbarUI();
+          return;
+        } else if (clickedBlockType === BlockType.MAGMA_BLOCK) {
+          world.setBlock(ctx_x, cty_y, ctz_z, BlockType.AIR);
+          inventory[BlockType.BUCKET]--;
+          inventory[BlockType.MAGMA_BUCKET] = (inventory[BlockType.MAGMA_BUCKET] || 0) + 1;
+          if (slotBlocks[activeSlotIndex] === BlockType.BUCKET) {
+            slotBlocks[activeSlotIndex] = BlockType.MAGMA_BUCKET;
+            activeBlockType = BlockType.MAGMA_BUCKET;
+          }
+          SoundManager.playPlace(BlockType.MAGMA_BLOCK);
+          syncHotbarUI();
+          return;
+        }
       }
 
       // インベントリの残個数チェック
@@ -1020,6 +1277,57 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
           SoundManager.playPlace(activeBlockType);
           inventory[BlockType.BED_HEAD]--;
           syncHotbarUI();
+        } else if (activeBlockType === BlockType.WATER_BUCKET) {
+          // 水バケツの設置
+          world.setBlock(bx, by, bz, BlockType.WATER);
+          SoundManager.playPlace(BlockType.WATER);
+          inventory[BlockType.WATER_BUCKET]--;
+          inventory[BlockType.BUCKET] = (inventory[BlockType.BUCKET] || 0) + 1;
+          if (slotBlocks[activeSlotIndex] === BlockType.WATER_BUCKET) {
+            slotBlocks[activeSlotIndex] = BlockType.BUCKET;
+            activeBlockType = BlockType.BUCKET;
+          }
+          syncHotbarUI();
+        } else if (activeBlockType === BlockType.MAGMA_BUCKET) {
+          // マグマバケツの設置
+          world.setBlock(bx, by, bz, BlockType.MAGMA_BLOCK);
+          SoundManager.playPlace(BlockType.MAGMA_BLOCK);
+          inventory[BlockType.MAGMA_BUCKET]--;
+          inventory[BlockType.BUCKET] = (inventory[BlockType.BUCKET] || 0) + 1;
+          if (slotBlocks[activeSlotIndex] === BlockType.MAGMA_BUCKET) {
+            slotBlocks[activeSlotIndex] = BlockType.BUCKET;
+            activeBlockType = BlockType.BUCKET;
+          }
+          syncHotbarUI();
+        } else if (activeBlockType === BlockType.SPONGE) {
+          // スポンジの設置と吸水処理
+          let absorbedAny = false;
+          const radius = 2; // 周囲2マス (5x5x5)
+          for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+              for (let dz = -radius; dz <= radius; dz++) {
+                const tx = bx + dx;
+                const ty = by + dy;
+                const tz = bz + dz;
+                if (dx === 0 && dy === 0 && dz === 0) continue;
+                if (world.getBlock(tx, ty, tz) === BlockType.WATER) {
+                  world.setBlock(tx, ty, tz, BlockType.AIR);
+                  absorbedAny = true;
+                }
+              }
+            }
+          }
+          const finalSpongeType = absorbedAny ? BlockType.WET_SPONGE : BlockType.SPONGE;
+          world.setBlock(bx, by, bz, finalSpongeType);
+          SoundManager.playPlace(activeBlockType);
+          inventory[BlockType.SPONGE]--;
+          syncHotbarUI();
+        } else if (activeBlockType === BlockType.MINECART) {
+          // トロッコの設置
+          const cart = new Mob(new THREE.Vector3(bx, by, bz), renderer.scene, physics.world, MobType.MINECART);
+          mobs.push(cart);
+          inventory[BlockType.MINECART]--;
+          syncHotbarUI();
         } else {
           // 通常ブロックの設置
           world.setBlock(bx, by, bz, activeBlockType);
@@ -1058,6 +1366,13 @@ window.addEventListener('keydown', (e) => {
     const isInventoryOpen = inventoryModal && inventoryModal.style.display === 'flex';
     if (isInventoryOpen) {
       closeInventory();
+      closedAny = true;
+    }
+
+    const furnaceModal = document.getElementById('furnace-modal');
+    const isFurnaceOpen = furnaceModal && furnaceModal.style.display === 'flex';
+    if (!closedAny && isFurnaceOpen) {
+      closeFurnace();
       closedAny = true;
     }
 
@@ -1438,6 +1753,25 @@ const allBlocks = [
   BlockType.LEATHER_ARMOR_SET,
   BlockType.IRON_ARMOR_SET,
   BlockType.DIAMOND_ARMOR_SET,
+  BlockType.BIRCH_WOOD,
+  BlockType.BIRCH_LEAVES,
+  BlockType.BIRCH_PLANK,
+  BlockType.FLOWER_DANDELION,
+  BlockType.FLOWER_ROSE,
+  BlockType.LAPIS_ORE,
+  BlockType.LAPIS_LAZULI,
+  BlockType.LAPIS_BLOCK,
+  BlockType.SEA_LANTERN,
+  BlockType.MAGMA_BLOCK,
+  BlockType.LADDER,
+  BlockType.CHAIN,
+  BlockType.BUCKET,
+  BlockType.WATER_BUCKET,
+  BlockType.MAGMA_BUCKET,
+  BlockType.SPONGE,
+  BlockType.WET_SPONGE,
+  BlockType.RAIL,
+  BlockType.MINECART,
 ];
 
 function syncArmorUI() {
@@ -1471,6 +1805,282 @@ function closeInventory() {
 
 if (inventoryCloseBtn) {
   inventoryCloseBtn.addEventListener('click', closeInventory);
+}
+
+// かまどUI要素の取得
+const furnaceModal = document.getElementById('furnace-modal');
+const furnaceInputSlot = document.getElementById('furnace-input-slot');
+const furnaceInputEmpty = document.getElementById('furnace-input-empty');
+const furnaceInputIcon = document.getElementById('furnace-input-icon');
+const furnaceInputCountEl = document.getElementById('furnace-input-count');
+const furnaceInputName = document.getElementById('furnace-input-name');
+
+const furnaceFuelSlot = document.getElementById('furnace-fuel-slot');
+const furnaceFuelEmpty = document.getElementById('furnace-fuel-empty');
+const furnaceFuelIcon = document.getElementById('furnace-fuel-icon');
+const furnaceFuelCountEl = document.getElementById('furnace-fuel-count');
+const furnaceFuelName = document.getElementById('furnace-fuel-name');
+
+const furnaceOutputSlot = document.getElementById('furnace-output-slot');
+const furnaceOutputIcon = document.getElementById('furnace-output-icon');
+const furnaceOutputCountEl = document.getElementById('furnace-output-count');
+const furnaceOutputName = document.getElementById('furnace-output-name');
+
+const furnaceSmeltBtn = document.getElementById('furnace-smelt-btn');
+const furnaceCloseBtn = document.getElementById('furnace-close-btn');
+
+function openFurnace() {
+  if (!furnaceModal) return;
+  document.exitPointerLock();
+  furnaceModal.style.display = 'flex';
+  renderFurnaceUI();
+}
+
+function closeFurnace() {
+  if (!furnaceModal) return;
+  furnaceModal.style.display = 'none';
+  input.lastModalCloseTime = performance.now();
+  input.requestLock();
+}
+
+function renderFurnaceUI() {
+  // 材料
+  if (furnaceInputBlock !== null && furnaceInputCount > 0) {
+    if (furnaceInputEmpty) furnaceInputEmpty.style.display = 'none';
+    if (furnaceInputIcon) {
+      furnaceInputIcon.style.display = 'block';
+      furnaceInputIcon.className = `slot-icon ${getSlotIconClass(furnaceInputBlock)}`;
+    }
+    if (furnaceInputCountEl) {
+      furnaceInputCountEl.style.display = 'block';
+      furnaceInputCountEl.textContent = furnaceInputCount.toString();
+    }
+    if (furnaceInputName) {
+      furnaceInputName.textContent = BLOCKS[furnaceInputBlock]?.name || '不明';
+    }
+  } else {
+    if (furnaceInputEmpty) furnaceInputEmpty.style.display = 'block';
+    if (furnaceInputIcon) furnaceInputIcon.style.display = 'none';
+    if (furnaceInputCountEl) furnaceInputCountEl.style.display = 'none';
+    if (furnaceInputName) furnaceInputName.textContent = 'なし';
+  }
+
+  // 燃料
+  if (furnaceFuelBlock !== null && furnaceFuelCount > 0) {
+    if (furnaceFuelEmpty) furnaceFuelEmpty.style.display = 'none';
+    if (furnaceFuelIcon) {
+      furnaceFuelIcon.style.display = 'block';
+      furnaceFuelIcon.className = `slot-icon ${getSlotIconClass(furnaceFuelBlock)}`;
+    }
+    if (furnaceFuelCountEl) {
+      furnaceFuelCountEl.style.display = 'block';
+      furnaceFuelCountEl.textContent = furnaceFuelCount.toString();
+    }
+    if (furnaceFuelName) {
+      furnaceFuelName.textContent = BLOCKS[furnaceFuelBlock]?.name || '不明';
+    }
+  } else {
+    if (furnaceFuelEmpty) furnaceFuelEmpty.style.display = 'block';
+    if (furnaceFuelIcon) furnaceFuelIcon.style.display = 'none';
+    if (furnaceFuelCountEl) furnaceFuelCountEl.style.display = 'none';
+    if (furnaceFuelName) furnaceFuelName.textContent = 'なし';
+  }
+
+  // 成果物
+  if (furnaceOutputBlock !== null && furnaceOutputCount > 0) {
+    if (furnaceOutputIcon) {
+      furnaceOutputIcon.style.display = 'block';
+      furnaceOutputIcon.className = `slot-icon ${getSlotIconClass(furnaceOutputBlock)}`;
+    }
+    if (furnaceOutputCountEl) {
+      furnaceOutputCountEl.style.display = 'block';
+      furnaceOutputCountEl.textContent = furnaceOutputCount.toString();
+    }
+    if (furnaceOutputName) {
+      furnaceOutputName.textContent = BLOCKS[furnaceOutputBlock]?.name || '不明';
+    }
+  } else {
+    if (furnaceOutputIcon) furnaceOutputIcon.style.display = 'none';
+    if (furnaceOutputCountEl) furnaceOutputCountEl.style.display = 'none';
+    if (furnaceOutputName) furnaceOutputName.textContent = 'なし';
+  }
+
+  // 進行度と炎
+  const burnIndicator = document.getElementById('furnace-burn-indicator');
+  const progressBar = document.getElementById('furnace-progress-bar');
+  if (isSmelting) {
+    if (burnIndicator) {
+      burnIndicator.style.color = '#f97316';
+      burnIndicator.style.filter = 'none';
+    }
+    if (progressBar) {
+      const percentage = Math.min((smeltProgress / smeltDuration) * 100, 100);
+      progressBar.style.width = `${percentage}%`;
+    }
+  } else {
+    if (burnIndicator) {
+      burnIndicator.style.color = 'rgba(255,255,255,0.1)';
+      burnIndicator.style.filter = 'grayscale(100%)';
+    }
+    if (progressBar) progressBar.style.width = '0%';
+  }
+}
+
+function checkStartSmelting() {
+  if (isSmelting) return;
+  if (furnaceInputBlock === null || furnaceInputCount <= 0) return;
+  if (furnaceFuelBlock === null || furnaceFuelCount <= 0) return;
+
+  const recipeOutput = SMELT_RECIPES[furnaceInputBlock];
+  if (recipeOutput === undefined) return;
+
+  if (furnaceOutputBlock !== null && (furnaceOutputBlock !== recipeOutput || furnaceOutputCount >= 64)) {
+    return;
+  }
+
+  isSmelting = true;
+  smeltProgress = 0;
+  renderFurnaceUI();
+}
+
+function stopSmelting() {
+  isSmelting = false;
+  smeltProgress = 0;
+  renderFurnaceUI();
+}
+
+function updateFurnace(deltaTime: number) {
+  if (!isSmelting) return;
+
+  if (furnaceInputBlock === null || furnaceInputCount <= 0 ||
+      furnaceFuelBlock === null || furnaceFuelCount <= 0) {
+    stopSmelting();
+    return;
+  }
+
+  const recipeOutput = SMELT_RECIPES[furnaceInputBlock];
+  if (recipeOutput === undefined) {
+    stopSmelting();
+    return;
+  }
+
+  if (furnaceOutputBlock !== null && (furnaceOutputBlock !== recipeOutput || furnaceOutputCount >= 64)) {
+    stopSmelting();
+    return;
+  }
+
+  smeltProgress += deltaTime;
+  
+  if (furnaceModal && furnaceModal.style.display === 'flex') {
+    const progressBar = document.getElementById('furnace-progress-bar');
+    if (progressBar) {
+      const percentage = Math.min((smeltProgress / smeltDuration) * 100, 100);
+      progressBar.style.width = `${percentage}%`;
+    }
+  }
+
+  if (smeltProgress >= smeltDuration) {
+    furnaceInputCount--;
+    if (furnaceInputCount <= 0) {
+      furnaceInputBlock = null;
+    }
+
+    furnaceFuelCount--;
+    if (furnaceFuelCount <= 0) {
+      furnaceFuelBlock = null;
+    }
+
+    if (furnaceOutputBlock === null) {
+      furnaceOutputBlock = recipeOutput;
+      furnaceOutputCount = 1;
+    } else {
+      furnaceOutputCount++;
+    }
+
+    SoundManager.playPlace(BlockType.GLASS);
+    smeltProgress = 0;
+    isSmelting = false;
+
+    if (furnaceModal && furnaceModal.style.display === 'flex') {
+      renderFurnaceUI();
+    }
+    
+    checkStartSmelting();
+  }
+}
+
+// かまどスロットクリックイベント
+if (furnaceInputSlot) {
+  furnaceInputSlot.addEventListener('click', () => {
+    if (activeBlockType !== null && SMELT_RECIPES[activeBlockType] !== undefined) {
+      if (furnaceInputBlock === null || furnaceInputBlock === activeBlockType) {
+        const transferCount = Math.min(inventory[activeBlockType] || 0, 64 - furnaceInputCount);
+        if (transferCount > 0) {
+          furnaceInputBlock = activeBlockType;
+          furnaceInputCount += transferCount;
+          inventory[activeBlockType] -= transferCount;
+          syncHotbarUI();
+          renderFurnaceUI();
+          checkStartSmelting();
+        }
+      }
+    } else if (furnaceInputBlock !== null) {
+      inventory[furnaceInputBlock] = (inventory[furnaceInputBlock] || 0) + furnaceInputCount;
+      furnaceInputBlock = null;
+      furnaceInputCount = 0;
+      stopSmelting();
+      syncHotbarUI();
+      renderFurnaceUI();
+    }
+  });
+}
+
+if (furnaceFuelSlot) {
+  furnaceFuelSlot.addEventListener('click', () => {
+    if (activeBlockType !== null && FUEL_ITEMS.includes(activeBlockType)) {
+      if (furnaceFuelBlock === null || furnaceFuelBlock === activeBlockType) {
+        const transferCount = Math.min(inventory[activeBlockType] || 0, 64 - furnaceFuelCount);
+        if (transferCount > 0) {
+          furnaceFuelBlock = activeBlockType;
+          furnaceFuelCount += transferCount;
+          inventory[activeBlockType] -= transferCount;
+          syncHotbarUI();
+          renderFurnaceUI();
+          checkStartSmelting();
+        }
+      }
+    } else if (furnaceFuelBlock !== null) {
+      inventory[furnaceFuelBlock] = (inventory[furnaceFuelBlock] || 0) + furnaceFuelCount;
+      furnaceFuelBlock = null;
+      furnaceFuelCount = 0;
+      stopSmelting();
+      syncHotbarUI();
+      renderFurnaceUI();
+    }
+  });
+}
+
+if (furnaceOutputSlot) {
+  furnaceOutputSlot.addEventListener('click', () => {
+    if (furnaceOutputBlock !== null && furnaceOutputCount > 0) {
+      inventory[furnaceOutputBlock] = (inventory[furnaceOutputBlock] || 0) + furnaceOutputCount;
+      furnaceOutputBlock = null;
+      furnaceOutputCount = 0;
+      syncHotbarUI();
+      renderFurnaceUI();
+      checkStartSmelting();
+    }
+  });
+}
+
+if (furnaceSmeltBtn) {
+  furnaceSmeltBtn.addEventListener('click', () => {
+    checkStartSmelting();
+  });
+}
+
+if (furnaceCloseBtn) {
+  furnaceCloseBtn.addEventListener('click', closeFurnace);
 }
 
 const craftingModal = document.getElementById('crafting-modal');

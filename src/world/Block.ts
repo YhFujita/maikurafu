@@ -49,6 +49,25 @@ export enum BlockType {
   LEATHER_ARMOR_SET = 47, // 革の防具セット
   IRON_ARMOR_SET = 48,    // 鉄の防具セット
   DIAMOND_ARMOR_SET = 49, // ダイヤの防具セット
+  BIRCH_WOOD = 50,        // 白樺の原木
+  BIRCH_LEAVES = 51,      // 白樺の葉
+  BIRCH_PLANK = 52,       // 白樺の木材
+  FLOWER_DANDELION = 53,  // タンポポ
+  FLOWER_ROSE = 54,       // バラ
+  LAPIS_ORE = 55,         // ラピスラズリ鉱石
+  LAPIS_LAZULI = 56,      // ラピスラズリ宝石
+  LAPIS_BLOCK = 57,       // ラピスラズリブロック
+  SEA_LANTERN = 58,       // シーランタン
+  MAGMA_BLOCK = 59,       // マグマブロック
+  LADDER = 60,            // はしご
+  CHAIN = 61,             // チェーン
+  BUCKET = 62,            // 空のバケツ
+  WATER_BUCKET = 63,      // 水バケツ
+  MAGMA_BUCKET = 64,      // マグマバケツ
+  SPONGE = 65,            // スポンジ
+  WET_SPONGE = 66,        // 濡れたスポンジ
+  RAIL = 67,              // レール
+  MINECART = 68,          // トロッコ
 }
 
 export interface BlockProperties {
@@ -541,5 +560,163 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 50, back: 50, left: 50, right: 50, top: 50, bottom: 50 },
+  },
+  [BlockType.BIRCH_WOOD]: {
+    id: BlockType.BIRCH_WOOD,
+    name: 'しらかばのまるた',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 51, back: 51, left: 51, right: 51, top: 52, bottom: 52 },
+    hardness: 2.0,
+    requiredToolCategory: 'axe',
+  },
+  [BlockType.BIRCH_LEAVES]: {
+    id: BlockType.BIRCH_LEAVES,
+    name: 'しらかばのはっぱ',
+    isSolid: true,
+    isTransparent: true,
+    uvs: { front: 53, back: 53, left: 53, right: 53, top: 53, bottom: 53 },
+    hardness: 0.2,
+  },
+  [BlockType.BIRCH_PLANK]: {
+    id: BlockType.BIRCH_PLANK,
+    name: 'しらかばのいた',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 54, back: 54, left: 54, right: 54, top: 54, bottom: 54 },
+    hardness: 2.0,
+    requiredToolCategory: 'axe',
+  },
+  [BlockType.FLOWER_DANDELION]: {
+    id: BlockType.FLOWER_DANDELION,
+    name: 'タンポポ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 55, back: 55, left: 55, right: 55, top: 55, bottom: 55 },
+    hardness: 0.0,
+  },
+  [BlockType.FLOWER_ROSE]: {
+    id: BlockType.FLOWER_ROSE,
+    name: 'バラ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 56, back: 56, left: 56, right: 56, top: 56, bottom: 56 },
+    hardness: 0.0,
+  },
+  [BlockType.LAPIS_ORE]: {
+    id: BlockType.LAPIS_ORE,
+    name: 'ラピスラズリこうせき',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 57, back: 57, left: 57, right: 57, top: 57, bottom: 57 },
+    drops: BlockType.LAPIS_LAZULI,
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 1, // 石ツルハシ以上が必要
+  },
+  [BlockType.LAPIS_LAZULI]: {
+    id: BlockType.LAPIS_LAZULI,
+    name: 'ラピスラズリ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 58, back: 58, left: 58, right: 58, top: 58, bottom: 58 },
+  },
+  [BlockType.LAPIS_BLOCK]: {
+    id: BlockType.LAPIS_BLOCK,
+    name: 'ラピスラズリブロック',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 59, back: 59, left: 59, right: 59, top: 59, bottom: 59 },
+    hardness: 3.0,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 1,
+  },
+  [BlockType.SEA_LANTERN]: {
+    id: BlockType.SEA_LANTERN,
+    name: 'シーランタン',
+    isSolid: true,
+    isTransparent: false,
+    lightLevel: 15, // 最大の明るさ
+    uvs: { front: 60, back: 60, left: 60, right: 60, top: 60, bottom: 60 },
+    hardness: 0.3,
+  },
+  [BlockType.MAGMA_BLOCK]: {
+    id: BlockType.MAGMA_BLOCK,
+    name: 'マグマブロック',
+    isSolid: true,
+    isTransparent: false,
+    lightLevel: 3, // ほんのり光る
+    uvs: { front: 61, back: 61, left: 61, right: 61, top: 61, bottom: 61 },
+    hardness: 0.5,
+    requiredToolCategory: 'pickaxe',
+    minToolTier: 0,
+  },
+  [BlockType.LADDER]: {
+    id: BlockType.LADDER,
+    name: 'はしご',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 62, back: 62, left: 62, right: 62, top: 62, bottom: 62 },
+    hardness: 0.4,
+  },
+  [BlockType.CHAIN]: {
+    id: BlockType.CHAIN,
+    name: 'チェーン',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 63, back: 63, left: 63, right: 63, top: 63, bottom: 63 },
+    hardness: 0.5,
+  },
+  [BlockType.BUCKET]: {
+    id: BlockType.BUCKET,
+    name: 'バケツ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 64, back: 64, left: 64, right: 64, top: 64, bottom: 64 },
+  },
+  [BlockType.WATER_BUCKET]: {
+    id: BlockType.WATER_BUCKET,
+    name: '水入りバケツ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 65, back: 65, left: 65, right: 65, top: 65, bottom: 65 },
+  },
+  [BlockType.MAGMA_BUCKET]: {
+    id: BlockType.MAGMA_BUCKET,
+    name: 'マグマ入りバケツ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 66, back: 66, left: 66, right: 66, top: 66, bottom: 66 },
+  },
+  [BlockType.SPONGE]: {
+    id: BlockType.SPONGE,
+    name: 'スポンジ',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 67, back: 67, left: 67, right: 67, top: 67, bottom: 67 },
+    hardness: 0.6,
+  },
+  [BlockType.WET_SPONGE]: {
+    id: BlockType.WET_SPONGE,
+    name: '濡れたスポンジ',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 68, back: 68, left: 68, right: 68, top: 68, bottom: 68 },
+    hardness: 0.6,
+  },
+  [BlockType.RAIL]: {
+    id: BlockType.RAIL,
+    name: 'レール',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 69, back: 69, left: 69, right: 69, top: 69, bottom: 69 },
+    hardness: 0.2,
+  },
+  [BlockType.MINECART]: {
+    id: BlockType.MINECART,
+    name: 'トロッコ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 70, back: 70, left: 70, right: 70, top: 70, bottom: 70 },
   },
 };
