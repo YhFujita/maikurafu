@@ -1700,5 +1700,25 @@ if (cloudLoadBtn) {
   });
 }
 
+const cloudSyncBtn = document.getElementById('cloud-sync-btn');
+if (cloudSyncBtn) {
+  cloudSyncBtn.addEventListener('click', async () => {
+    if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
+    if (accountIdInput && accountIdInput.value.trim() !== '') {
+      const id = accountIdInput.value.trim();
+      saveManager.setAccountId(id);
+    }
+    
+    const prevText = cloudSyncBtn.textContent;
+    cloudSyncBtn.textContent = '同期中...';
+    cloudSyncBtn.setAttribute('disabled', 'true');
+    
+    await saveManager.syncWorldData();
+    
+    cloudSyncBtn.textContent = prevText;
+    cloudSyncBtn.removeAttribute('disabled');
+  });
+}
+
 
 

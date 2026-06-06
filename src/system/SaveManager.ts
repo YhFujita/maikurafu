@@ -124,6 +124,18 @@ export class SaveManager {
       this.isSaving = false;
 
       if (result.success) {
+        if (result.worldData) {
+          const updatedChunks = this.world.mergeModifiedBlocksData(result.worldData);
+          if (updatedChunks.size > 0) {
+            for (const chunkKey of updatedChunks) {
+              const parts = chunkKey.split(',');
+              const cx = parseInt(parts[0], 10);
+              const cy = parseInt(parts[1], 10);
+              const cz = parseInt(parts[2], 10);
+              this.world.updateChunkMesh(cx, cy, cz);
+            }
+          }
+        }
         this.showToast('セーブしました');
         return true;
       } else {
@@ -133,6 +145,44 @@ export class SaveManager {
       console.error('Failed to save data:', error);
       this.showToast('セーブに失敗しました', true);
       this.isSaving = false;
+      return false;
+    }
+  }
+
+  public async syncWorldData(): Promise<boolean> {
+    if (!CONFIG.GAS_WEB_APP_URL) {
+      console.warn('GAS_WEB_APP_URL is not configured.');
+      return false;
+    }
+
+    try {
+      this.showToast('ワールドデータを同期中...');
+      const accId = this.accountId || 'anonymous';
+      const response = await fetch(`${CONFIG.GAS_WEB_APP_URL}?accountId=${encodeURIComponent(accId)}&worldId=${encodeURIComponent(this.worldId)}`);
+      const data = await response.json();
+
+      if (data.worldData) {
+        const updatedChunks = this.world.mergeModifiedBlocksData(data.worldData);
+        if (updatedChunks.size > 0) {
+          for (const chunkKey of updatedChunks) {
+            const parts = chunkKey.split(',');
+            const cx = parseInt(parts[0], 10);
+            const cy = parseInt(parts[1], 10);
+            const cz = parseInt(parts[2], 10);
+            this.world.updateChunkMesh(cx, cy, cz);
+          }
+          this.showToast('同期が完了しました（建築物が更新されました）');
+        } else {
+          this.showToast('すでに最新の状態です');
+        }
+        return true;
+      } else {
+        this.showToast('同期データがありません');
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to sync world data:', error);
+      this.showToast('同期に失敗しました', true);
       return false;
     }
   }

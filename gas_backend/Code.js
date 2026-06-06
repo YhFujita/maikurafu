@@ -21,6 +21,58 @@ function reconstructData(sheet, rowIndex) {
   }
 }
 
+// 既存のワールドデータと新規のデータをマージする
+function mergeWorldData(existing, incoming) {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+
+  const merged = {
+    blocks: existing.blocks || {},
+    doorOrientations: existing.doorOrientations || {},
+    chunkVersions: existing.chunkVersions || {}
+  };
+
+  // 既存データが古い形式（blocksキーなし）の場合の救済
+  if (!existing.blocks) {
+    merged.blocks = {};
+    for (const chunkKey of Object.keys(existing)) {
+      if (chunkKey !== 'doorOrientations' && chunkKey !== 'chunkVersions') {
+        merged.blocks[chunkKey] = existing[chunkKey];
+      }
+    }
+  }
+
+  // 1. blocks のマージ
+  const incomingBlocks = incoming.blocks || incoming;
+  for (const chunkKey of Object.keys(incomingBlocks)) {
+    if (chunkKey === 'doorOrientations' || chunkKey === 'chunkVersions' || chunkKey === 'blocks') continue;
+
+    if (!merged.blocks[chunkKey]) {
+      merged.blocks[chunkKey] = {};
+    }
+    const mods = incomingBlocks[chunkKey];
+    for (const localIndex of Object.keys(mods)) {
+      merged.blocks[chunkKey][localIndex] = mods[localIndex];
+    }
+  }
+
+  // 2. doorOrientations のマージ
+  if (incoming.doorOrientations) {
+    for (const key of Object.keys(incoming.doorOrientations)) {
+      merged.doorOrientations[key] = incoming.doorOrientations[key];
+    }
+  }
+
+  // 3. chunkVersions のマージ
+  if (incoming.chunkVersions) {
+    for (const key of Object.keys(incoming.chunkVersions)) {
+      merged.chunkVersions[key] = incoming.chunkVersions[key];
+    }
+  }
+
+  return merged;
+}
+
 // データを文字列化し、49,000文字ごとに分割して複数セルに保存する
 function saveChunkedData(sheet, rowIndex, data) {
   const jsonString = JSON.stringify(data);
@@ -117,6 +169,7 @@ function doPost(e) {
     if (!accountId) throw new Error('accountId is required');
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let latestWorldData = null;
 
     // 1. WorldDataの保存
     if (worldData) {
@@ -144,8 +197,13 @@ function doPost(e) {
         worldSheet.getRange(rowIndex, 1).setValue(worldId);
       }
 
+      // 既存のデータを取得してマージする
+      const existingWorldData = reconstructData(worldSheet, rowIndex);
+      const mergedWorldData = mergeWorldData(existingWorldData, worldData);
+      latestWorldData = mergedWorldData;
+
       worldSheet.getRange(rowIndex, 2).setValue(new Date());
-      saveChunkedData(worldSheet, rowIndex, worldData);
+      saveChunkedData(worldSheet, rowIndex, mergedWorldData);
     }
 
     // 2. PlayerDataの保存 (accountId + worldId で一意にする)
@@ -179,7 +237,22 @@ function doPost(e) {
       saveChunkedData(playerSheet, rowIndex, playerData);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    // もし最新のワールドデータが取得されていない場合、必要に応じてデータベースからロード
+    if (!latestWorldData) {
+      let worldSheet = ss.getSheetByName('WorldData');
+      if (worldSheet && worldSheet.getLastRow() >= 2) {
+        const lastRow = worldSheet.getLastRow();
+        const ids = worldSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < ids.length; i++) {
+          if (ids[i][0] === worldId) {
+            latestWorldData = reconstructData(worldSheet, i + 2);
+            break;
+          }
+        }
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ success: true, worldData: latestWorldData })).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() })).setMimeType(ContentService.MimeType.JSON);
   }

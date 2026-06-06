@@ -141,7 +141,7 @@ export class World {
     this.doorOrientations.delete(`${x},${y},${z}`);
   }
 
-  private updateChunkMesh(cx: number, cy: number, cz: number): void {
+  public updateChunkMesh(cx: number, cy: number, cz: number): void {
     const chunk = this.getChunk(cx, cy, cz);
     if (!chunk) return;
 
@@ -316,6 +316,83 @@ export class World {
         this.chunkVersions.set(key, version as number);
       }
     }
+  }
+
+  // 新しいワールドデータを取り込んで、ローカルの変更とマージし、変更があったチャンクキーのセットを返す
+  public mergeModifiedBlocksData(data: Record<string, any>): Set<string> {
+    const updatedChunks = new Set<string>();
+    if (!data) return updatedChunks;
+
+    // 旧フォーマット（blocksキーなし）との後方互換性維持
+    const blocksData: Record<string, Record<string, number>> = data.blocks ?? data;
+    for (const chunkKey of Object.keys(blocksData)) {
+      if (chunkKey === 'doorOrientations' || chunkKey === 'chunkVersions' || chunkKey === 'blocks') continue;
+
+      let chunkMods = this.modifiedBlocks.get(chunkKey);
+      if (!chunkMods) {
+        chunkMods = new Map();
+        this.modifiedBlocks.set(chunkKey, chunkMods);
+        updatedChunks.add(chunkKey);
+      }
+
+      const mods = blocksData[chunkKey];
+      for (const localIndexStr of Object.keys(mods)) {
+        const localIndex = parseInt(localIndexStr, 10);
+        const type = mods[localIndexStr] as BlockType;
+
+        const currentType = chunkMods.get(localIndex);
+        if (currentType !== type) {
+          chunkMods.set(localIndex, type);
+          updatedChunks.add(chunkKey);
+
+          // メモリ上にロード済みのチャンクオブジェクトが存在する場合、そのブロックデータも更新する
+          const parts = chunkKey.split(',');
+          const cx = parseInt(parts[0], 10);
+          const cy = parseInt(parts[1], 10);
+          const cz = parseInt(parts[2], 10);
+          const chunk = this.getChunk(cx, cy, cz);
+          if (chunk) {
+            const size = CONFIG.CHUNK_SIZE;
+            const lx = localIndex % size;
+            const ly = Math.floor((localIndex % (size * size)) / size);
+            const lz = Math.floor(localIndex / (size * size));
+            chunk.setBlock(lx, ly, lz, type);
+          }
+        }
+      }
+    }
+
+    // 扉の向き情報のマージ
+    if (data.doorOrientations) {
+      for (const [key, orientation] of Object.entries(data.doorOrientations)) {
+        const current = this.doorOrientations.get(key);
+        if (current !== orientation) {
+          this.doorOrientations.set(key, orientation as 'NS' | 'EW');
+          // 扉の座標からチャンクキーを割り出して更新対象に入れる
+          const parts = key.split(',');
+          const x = parseInt(parts[0], 10);
+          const y = parseInt(parts[1], 10);
+          const z = parseInt(parts[2], 10);
+          const cx = Math.floor(x / CONFIG.CHUNK_SIZE);
+          const cy = Math.floor(y / CONFIG.CHUNK_SIZE);
+          const cz = Math.floor(z / CONFIG.CHUNK_SIZE);
+          updatedChunks.add(this.getChunkKey(cx, cy, cz));
+        }
+      }
+    }
+    
+    // バージョン情報のマージ
+    if (data.chunkVersions) {
+      for (const [key, version] of Object.entries(data.chunkVersions)) {
+        const current = this.chunkVersions.get(key);
+        if (current !== version) {
+          this.chunkVersions.set(key, version as number);
+          updatedChunks.add(key);
+        }
+      }
+    }
+
+    return updatedChunks;
   }
 
   // すべてのチャンクメッシュをクリアし、指定位置の周囲に世界を再生成・描画する
