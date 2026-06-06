@@ -1316,7 +1316,8 @@ if (startBtn && menuOverlay) {
         
         // Escキー等でポインターロックが解除された場合にオートセーブを実行
         autoSaveGame();
-        if (accountIdInput && accountIdInput.value.trim() !== '') {
+        const activeAccountId = saveManager.getAccountId();
+        if (activeAccountId) {
           saveManager.saveData().catch(e => console.error('Cloud save failed:', e));
         }
       }
@@ -1752,8 +1753,15 @@ const cloudLoadBtn = document.getElementById('cloud-load-btn');
 if (cloudSaveBtn) {
   cloudSaveBtn.addEventListener('click', async () => {
     // 押下時にアカウントIDとワールドIDをセット
-    if (accountIdInput && accountIdInput.value.trim() !== '') {
-      const id = accountIdInput.value.trim();
+    let id = accountIdInput ? accountIdInput.value.trim() : '';
+    if (id === '') {
+      id = saveManager.getAccountId() || '';
+      if (id !== '' && accountIdInput) {
+        accountIdInput.value = id;
+      }
+    }
+
+    if (id !== '') {
       saveManager.setAccountId(id);
       updateAccountIdList(id);
       if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
@@ -1776,8 +1784,15 @@ if (cloudSaveBtn) {
 
 if (cloudLoadBtn) {
   cloudLoadBtn.addEventListener('click', async () => {
-    if (accountIdInput && accountIdInput.value.trim() !== '') {
-      const id = accountIdInput.value.trim();
+    let id = accountIdInput ? accountIdInput.value.trim() : '';
+    if (id === '') {
+      id = saveManager.getAccountId() || '';
+      if (id !== '' && accountIdInput) {
+        accountIdInput.value = id;
+      }
+    }
+
+    if (id !== '') {
       saveManager.setAccountId(id);
       updateAccountIdList(id);
       if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
@@ -1800,8 +1815,16 @@ const cloudSyncBtn = document.getElementById('cloud-sync-btn');
 if (cloudSyncBtn) {
   cloudSyncBtn.addEventListener('click', async () => {
     if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
-    if (accountIdInput && accountIdInput.value.trim() !== '') {
-      const id = accountIdInput.value.trim();
+    
+    let id = accountIdInput ? accountIdInput.value.trim() : '';
+    if (id === '') {
+      id = saveManager.getAccountId() || '';
+      if (id !== '' && accountIdInput) {
+        accountIdInput.value = id;
+      }
+    }
+
+    if (id !== '') {
       saveManager.setAccountId(id);
     }
     
