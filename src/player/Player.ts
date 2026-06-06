@@ -478,6 +478,12 @@ export class Player {
     // 死亡時は更新処理を行わない
     if (this.isDead) return;
 
+    // スタック救出キーの処理
+    const config = configStore.getConfig();
+    if (input.consumeJustPressed(config.keyRescue)) {
+      this.rescue();
+    }
+
     // 自動回復ロジック（ダメージを受けてから5秒経過で、1秒ごとに1回復）
     const now = performance.now();
     if (this.hp < CONFIG.PLAYER_MAX_HP && (now - this.lastDamageTime) > 5000) {
@@ -738,6 +744,43 @@ export class Player {
 
     const overlay = document.getElementById('menu-overlay');
     if (overlay) overlay.style.display = 'flex';
+  }
+
+  // スタック救出処理 (初期位置へ安全に戻す)
+  public rescue(): void {
+    // 物理剛体の位置と速度を同期
+    this.body.position.set(this.spawnPosition.x, this.spawnPosition.y + CONFIG.PLAYER_HEIGHT / 2, this.spawnPosition.z);
+    this.body.velocity.set(0, 0, 0);
+    this.lastVelocityY = 0;
+
+    // プレイヤーのグラフィック表現位置の同期
+    this.position.set(this.spawnPosition.x, this.spawnPosition.y + CONFIG.PLAYER_HEIGHT / 2, this.spawnPosition.z);
+
+    // カメラとアバター描画の即時更新
+    this.syncCamera();
+    this.updateHUD();
+
+    // ワールドチャンクの再読み込み
+    if (this.voxelWorld) {
+      this.voxelWorld.clearAndRebuild(this.position.x, this.position.z);
+      this.voxelWorld.generateWorldAround(this.position.x, this.position.z);
+    }
+
+    // 青いトースト通知を表示してプレイヤーに知らせる
+    const toast = document.getElementById('save-toast');
+    if (toast) {
+      toast.textContent = '初期位置に戻りました（スタック救出）';
+      toast.style.backgroundColor = 'rgba(59, 130, 246, 0.9)'; // 青色
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+      }, 3000);
+    }
+
+    console.log('Player was rescued and returned to spawn position.');
   }
 
   // キー入力による移動 (物理ボディへの速度設定)

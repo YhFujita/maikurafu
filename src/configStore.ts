@@ -15,6 +15,7 @@ export interface GameConfig {
   enableShadows: boolean; // 影のON/OFF (デフォルト: true)
   easyMode: boolean; // イージーモード (デフォルト: true)
   characterType: string; // キャラクタータイプ (デフォルト: boy1)
+  keyRescue: string; // スタック救出 (デフォルト: KeyP)
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -34,6 +35,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   enableShadows: true,
   easyMode: true,
   characterType: 'boy1',
+  keyRescue: 'KeyP',
 };
 
 const STORAGE_KEY = 'maikurafu_config';

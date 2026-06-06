@@ -166,6 +166,12 @@ const inventory: Record<BlockType, number> = {
 const configUI = new ConfigUIHandler();
 configUI.updateInstructionsUI(); // 現在の設定をメイン画面に適用
 
+// 設定画面などからのスタック救出リクエストを受信
+window.addEventListener('request-rescue', () => {
+  player.rescue();
+  input.requestLock();
+});
+
 // リスポーンボタンの登録
 const respawnBtn = document.getElementById('respawn-btn');
 if (respawnBtn) {

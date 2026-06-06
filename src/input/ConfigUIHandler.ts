@@ -18,6 +18,7 @@ export class ConfigUIHandler {
     crafting: HTMLButtonElement;
     manual: HTMLButtonElement;
     home: HTMLButtonElement;
+    rescue: HTMLButtonElement;
   };
   
   private invertClicksChk: HTMLInputElement;
@@ -49,6 +50,7 @@ export class ConfigUIHandler {
       crafting: document.getElementById('key-crafting-btn') as HTMLButtonElement,
       manual: document.getElementById('key-manual-btn') as HTMLButtonElement,
       home: document.getElementById('key-home-btn') as HTMLButtonElement,
+      rescue: document.getElementById('key-rescue-btn') as HTMLButtonElement,
     };
 
     this.invertClicksChk = document.getElementById('invert-clicks-chk') as HTMLInputElement;
@@ -82,6 +84,16 @@ export class ConfigUIHandler {
     this.keyButtons.crafting.addEventListener('click', () => this.startBinding('keyOpenCrafting', this.keyButtons.crafting));
     this.keyButtons.manual.addEventListener('click', () => this.startBinding('keyOpenManual', this.keyButtons.manual));
     this.keyButtons.home.addEventListener('click', () => this.startBinding('keyRegisterHome', this.keyButtons.home));
+    this.keyButtons.rescue.addEventListener('click', () => this.startBinding('keyRescue', this.keyButtons.rescue));
+
+    // 「今すぐスタック救出を実行する」ボタン
+    const rescueNowBtn = document.getElementById('rescue-now-btn');
+    if (rescueNowBtn) {
+      rescueNowBtn.addEventListener('click', () => {
+        this.closeModal();
+        window.dispatchEvent(new CustomEvent('request-rescue'));
+      });
+    }
 
     // 保存ボタン
     this.saveBtn.addEventListener('click', () => {
@@ -125,6 +137,7 @@ export class ConfigUIHandler {
     this.keyButtons.crafting.textContent = this.formatKeyName(this.tempConfig.keyOpenCrafting);
     this.keyButtons.manual.textContent = this.formatKeyName(this.tempConfig.keyOpenManual);
     this.keyButtons.home.textContent = this.formatKeyName(this.tempConfig.keyRegisterHome);
+    this.keyButtons.rescue.textContent = this.formatKeyName(this.tempConfig.keyRescue);
 
     // チェックボックス
     this.invertClicksChk.checked = this.tempConfig.invertClicks;
@@ -228,6 +241,7 @@ export class ConfigUIHandler {
       enableShadows: true,
       easyMode: true,
       characterType: 'boy1',
+      keyRescue: 'KeyP',
     };
     this.tempConfig = { ...defaults };
     this.updateUI();
@@ -279,6 +293,10 @@ export class ConfigUIHandler {
     const keyHomeBadge = this.overlay.querySelector('#key-home-badge');
     if (keyHomeBadge) {
       keyHomeBadge.textContent = this.formatKeyName(config.keyRegisterHome);
+    }
+    const keyRescueBadge = this.overlay.querySelector('#key-rescue-badge');
+    if (keyRescueBadge) {
+      keyRescueBadge.textContent = this.formatKeyName(config.keyRescue);
     }
   }
 }

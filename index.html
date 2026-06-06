@@ -736,6 +736,17 @@
       color: #e5e7eb;
     }
 
+    #rescue-now-btn:hover {
+      background: rgba(239, 68, 68, 0.35) !important;
+      border-color: rgba(239, 68, 68, 0.8) !important;
+      color: #fff !important;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+      transform: translateY(-1px);
+    }
+    #rescue-now-btn:active {
+      transform: translateY(1px);
+    }
+
     /* ホットバー UI */
     #hotbar {
       position: absolute;
@@ -1517,6 +1528,10 @@
           <span class="key-badge" id="key-map-badge">M</span>
         </div>
         <div class="instruction-row">
+          <span>スタック救出</span>
+          <span class="key-badge" id="key-rescue-badge">P</span>
+        </div>
+        <div class="instruction-row">
           <span>視点移動</span>
           <span>マウス移動</span>
         </div>
@@ -1612,6 +1627,10 @@
           <span>拠点を登録 (Home):</span>
           <button id="key-home-btn" class="key-config-btn">H</button>
         </div>
+        <div class="config-row">
+          <span>スタック救出 (Rescue):</span>
+          <button id="key-rescue-btn" class="key-config-btn">P</button>
+        </div>
       </div>
 
       <div class="config-section">
@@ -1639,6 +1658,12 @@
         </div>
       </div>
 
+
+      <div class="config-section" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 15px;">
+        <button id="rescue-now-btn" style="width: 100%; padding: 12px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); color: #f87171; font-weight: bold; cursor: pointer; transition: all 0.2s; font-family: inherit;">
+          🚨 今すぐスタック救出を実行する（初期位置に戻る）
+        </button>
+      </div>
 
       <div class="config-actions">
         <button id="config-save-btn">ほぞんして とじる</button>
