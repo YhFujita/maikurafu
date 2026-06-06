@@ -15,6 +15,7 @@ import { DroppedItem } from './item/DroppedItem.ts';
 import { Mob } from './mob/Mob.ts';
 import { SaveManager } from './system/SaveManager.ts';
 import { NavigationManager } from './ui/NavigationManager.ts';
+import { NPCManager } from './mob/NPCManager.ts';
 
 // レンダラーの初期化
 const renderer = new Renderer('canvas-container');
@@ -307,36 +308,45 @@ player.setWorld(world);
 
 // クラウドセーブマネージャーの初期化
 const saveManager = new SaveManager(player, world);
+// NPCマネージャーの初期化
+const npcManager = new NPCManager(renderer.scene, physics.world, world);
 
 saveManager.onSaveCustomData = () => {
+  const homePos = navigation.getHome();
   return {
     inventory: {
       blocks: inventory,
       hotbarPages: hotbarPages,
       activePage: activePage,
       activeSlotIndex: activeSlotIndex
-    }
+    },
+    homePosition: homePos ? { x: homePos.x, y: homePos.y, z: homePos.z } : null
   };
 };
 
 saveManager.onLoadCustomData = (data: any) => {
-  if (data && data.inventory) {
-    const inv = data.inventory;
-    if (inv.blocks) {
-      Object.assign(inventory, inv.blocks);
+  if (data) {
+    if (data.inventory) {
+      const inv = data.inventory;
+      if (inv.blocks) {
+        Object.assign(inventory, inv.blocks);
+      }
+      if (inv.hotbarPages) {
+        hotbarPages[0] = [...inv.hotbarPages[0]];
+        hotbarPages[1] = [...inv.hotbarPages[1]];
+      }
+      if (typeof inv.activePage === 'number') {
+        activePage = inv.activePage;
+        slotBlocks = hotbarPages[activePage];
+      }
+      if (typeof inv.activeSlotIndex === 'number') {
+        activeSlotIndex = inv.activeSlotIndex;
+      }
+      syncHotbarUI();
     }
-    if (inv.hotbarPages) {
-      hotbarPages[0] = [...inv.hotbarPages[0]];
-      hotbarPages[1] = [...inv.hotbarPages[1]];
+    if (data.homePosition) {
+      navigation.setHome(new THREE.Vector3(data.homePosition.x, data.homePosition.y, data.homePosition.z));
     }
-    if (typeof inv.activePage === 'number') {
-      activePage = inv.activePage;
-      slotBlocks = hotbarPages[activePage];
-    }
-    if (typeof inv.activeSlotIndex === 'number') {
-      activeSlotIndex = inv.activeSlotIndex;
-    }
-    syncHotbarUI();
   }
 };
 
@@ -461,6 +471,9 @@ function animate(time: number) {
 
   // プレイヤーと入力の更新
   player.update(input, deltaTime, world, activeBlockType);
+
+  // NPCの更新
+  npcManager.update(deltaTime, player);
   
   // コンパスの更新
   navigation.updateCompass({ position: player.position, camera: renderer.camera });
@@ -1194,9 +1207,14 @@ if (startBtn && menuOverlay) {
       startBtn.removeAttribute('disabled');
       
       saveManager.startAutoSave(3); // 3分ごとのクラウドオートセーブを開始
+
+      // 他プレイヤーのアカウントNPC情報をロード
+      const worldId = worldIdInput ? worldIdInput.value.trim() || 'shared_world_1' : 'shared_world_1';
+      npcManager.fetchOtherPlayers(id, worldId);
     } else {
       saveManager.setAccountId('');
       saveManager.stopAutoSave(); // オフラインプレイ時はオートセーブ停止
+      npcManager.clearAll();
     }
 
     input.requestLock();
@@ -1618,6 +1636,9 @@ function loadAutoSave(): boolean {
       }
       syncHotbarUI();
     }
+    if (data.homePosition) {
+      navigation.setHome(new THREE.Vector3(data.homePosition.x, data.homePosition.y, data.homePosition.z));
+    }
     // クラウドロード時はワールド差分をクラウドから読むため、
     // ここではLocalのワールド復元は行わないか、補助的に行う
     if (data.world) {
@@ -1633,6 +1654,7 @@ function loadAutoSave(): boolean {
 
 // LocalStorage へのオートセーブ実行 (ローカル用バックアップ)
 function autoSaveGame() {
+  const homePos = navigation.getHome();
   const saveData = {
     version: '1.0.0',
     timestamp: Date.now(),
@@ -1643,6 +1665,7 @@ function autoSaveGame() {
       activePage: activePage,
       activeSlotIndex: activeSlotIndex
     },
+    homePosition: homePos ? { x: homePos.x, y: homePos.y, z: homePos.z } : null,
     world: world.getModifiedBlocksData()
   };
   localStorage.setItem('maikurafu_autosave', JSON.stringify(saveData));

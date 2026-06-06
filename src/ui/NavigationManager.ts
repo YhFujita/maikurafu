@@ -82,6 +82,10 @@ export class NavigationManager {
     if (this.mapHomeIcon) this.mapHomeIcon.style.display = 'block';
   }
 
+  public getHome(): THREE.Vector3 | null {
+    return this.homePosition;
+  }
+
   public updateCompass(player: { position: THREE.Vector3, camera: THREE.Camera }) {
     if (!this.compassBar) return;
 

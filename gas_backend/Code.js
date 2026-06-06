@@ -114,6 +114,41 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({ accounts: accounts })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (e.parameter.action === 'listOtherPlayers') {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const playerSheet = ss.getSheetByName('PlayerData');
+    let players = [];
+    const currentAccountId = e.parameter.accountId;
+    if (playerSheet && playerSheet.getLastRow() >= 2) {
+      const rows = playerSheet.getRange(2, 1, playerSheet.getLastRow() - 1, playerSheet.getLastColumn()).getValues();
+      const suffix = '_' + worldId;
+      for (let i = 0; i < rows.length; i++) {
+        const fullId = rows[i][0];
+        if (fullId && fullId.endsWith(suffix)) {
+          const accId = fullId.substring(0, fullId.length - suffix.length);
+          if (accId && accId !== currentAccountId) {
+            const chunks = rows[i].slice(2);
+            let jsonString = '';
+            for (let j = 0; j < chunks.length; j++) {
+              if (chunks[j]) jsonString += chunks[j];
+            }
+            try {
+              const playerData = JSON.parse(jsonString);
+              players.push({
+                accountId: accId,
+                characterType: playerData.characterType || 'boy1',
+                homePosition: playerData.customData ? playerData.customData.homePosition : null
+              });
+            } catch (err) {
+              // スキップ
+            }
+          }
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ players: players })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   const accountId = e.parameter.accountId;
 
   if (!accountId) {
