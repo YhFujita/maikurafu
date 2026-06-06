@@ -309,7 +309,7 @@ player.setWorld(world);
 // クラウドセーブマネージャーの初期化
 const saveManager = new SaveManager(player, world);
 // NPCマネージャーの初期化
-const npcManager = new NPCManager(renderer.scene, physics.world, world);
+const npcManager = new NPCManager(renderer.scene, world);
 
 saveManager.onSaveCustomData = () => {
   const homePos = navigation.getHome();

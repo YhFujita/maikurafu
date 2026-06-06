@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { CONFIG } from '../config.ts';
 import { Player } from '../player/Player.ts';
 import { World } from '../world/World.ts';
@@ -16,12 +15,10 @@ export class NPCManager {
   private activeNPCs: Map<string, NPC> = new Map(); // accountId -> NPC
 
   private scene: THREE.Scene;
-  private physicsWorld: CANNON.World;
   private voxelWorld: World;
 
-  constructor(scene: THREE.Scene, physicsWorld: CANNON.World, voxelWorld: World) {
+  constructor(scene: THREE.Scene, voxelWorld: World) {
     this.scene = scene;
-    this.physicsWorld = physicsWorld;
     this.voxelWorld = voxelWorld;
   }
 
@@ -62,7 +59,6 @@ export class NPCManager {
           meta.characterType,
           homePos,
           this.scene,
-          this.physicsWorld,
           this.voxelWorld
         );
         this.activeNPCs.set(meta.accountId, npc);
@@ -78,7 +74,7 @@ export class NPCManager {
       }
     }
 
-    // 生成されている全NPCの更新
+    // 生成されている全NPC of update
     for (const npc of this.activeNPCs.values()) {
       npc.update(deltaTime, player);
     }

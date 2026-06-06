@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { CONFIG } from '../config.ts';
 import { Player } from '../player/Player.ts';
 import { World } from '../world/World.ts';
@@ -9,12 +8,11 @@ export class NPC {
   public accountId: string;
   public characterType: string;
   public homePosition: THREE.Vector3;
+  public position: THREE.Vector3;
   
   public mesh: THREE.Group;
-  public body: CANNON.Body;
   
   private scene: THREE.Scene;
-  private physicsWorld: CANNON.World;
   private voxelWorld: World;
 
   // アバターパーツ
@@ -28,8 +26,8 @@ export class NPC {
 
   // AI & 移動状態
   private speed: number = 2.0; // プレイヤーより歩くのを遅くする
-  private jumpForce: number = 6.0;
   
+  private velocityY: number = 0;
   private walkTimer: number = 0;
   private isWaiting: boolean = false;
   private targetDirection: THREE.Vector3 = new THREE.Vector3();
@@ -40,34 +38,15 @@ export class NPC {
     characterType: string,
     homePos: THREE.Vector3,
     scene: THREE.Scene,
-    physicsWorld: CANNON.World,
     voxelWorld: World
   ) {
     this.accountId = accountId;
     this.characterType = characterType || 'boy1';
     this.homePosition = homePos.clone();
+    this.position = homePos.clone(); // 初期座標
     
     this.scene = scene;
-    this.physicsWorld = physicsWorld;
     this.voxelWorld = voxelWorld;
-
-    // 物理ボディ (プレイヤーと同サイズ: 高さ1.8m、半径0.4mの球体を3つ並べたカプセル形状)
-    const radius = CONFIG.PLAYER_RADIUS;
-    const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
-
-    this.body = new CANNON.Body({
-      mass: 60,
-      position: new CANNON.Vec3(homePos.x, homePos.y + halfHeight, homePos.z),
-      fixedRotation: true,
-      linearDamping: 0.1,
-    });
-
-    const sphereShape = new CANNON.Sphere(radius);
-    this.body.addShape(sphereShape, new CANNON.Vec3(0, -0.5, 0));
-    this.body.addShape(sphereShape, new CANNON.Vec3(0, 0, 0));
-    this.body.addShape(sphereShape, new CANNON.Vec3(0, 0.5, 0));
-
-    this.physicsWorld.addBody(this.body);
 
     // 3Dアバターグループの作成
     this.mesh = new THREE.Group();
@@ -275,27 +254,80 @@ export class NPC {
 
   public update(deltaTime: number, player: Player): void {
     const pPos = player.position;
-    const npcPos = new THREE.Vector3(this.body.position.x, this.body.position.y, this.body.position.z);
-    const distToPlayer = npcPos.distanceTo(pPos);
+    const distToPlayer = this.position.distanceTo(pPos);
 
-    // 1. 接地判定 (簡易的にY速度でチェック)
-    const isGrounded = Math.abs(this.body.velocity.y) < 0.1;
+    // 1. 重力と接地の計算 (キネマティック物理)
+    const gravity = 20.0;
+    this.velocityY -= gravity * deltaTime;
+    if (this.velocityY < -20) this.velocityY = -20; // 落下速度限界
 
-    // 2. プレイヤー接近時の挨拶AI
+    // 次の予測座標（水平方向）
+    const nextPos = this.position.clone();
+    
+    // 挨拶していないかつ待機していない場合のみ移動する
     this.isGreeting = distToPlayer < 4.0;
+    
+    if (!this.isGreeting && !this.isWaiting) {
+      nextPos.x += this.targetDirection.x * this.speed * deltaTime;
+      nextPos.z += this.targetDirection.z * this.speed * deltaTime;
+    }
+    
+    // Y方向の予測座標
+    nextPos.y += this.velocityY * deltaTime;
 
+    // 接地判定 (足元のブロックをチェック)
+    const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
+    const feetY = nextPos.y - halfHeight;
+    const gx = Math.floor(nextPos.x);
+    const gz = Math.floor(nextPos.z);
+    
+    // 足元のブロックグリッド
+    const checkGridY = Math.floor(feetY);
+    const belowBlock = this.voxelWorld.getBlock(gx, checkGridY, gz);
+    const isSolidBelow = belowBlock !== BlockType.AIR && belowBlock !== BlockType.WATER;
+
+    if (isSolidBelow) {
+      // 接地！Y座標をブロックの上にクランプ
+      nextPos.y = checkGridY + 1.0 + halfHeight;
+      this.velocityY = 0;
+    }
+
+    // 2. 目の前のブロック（壁）に対する衝突解決とステップアシスト
+    const bodyGridY = Math.floor(nextPos.y);
+    const faceBlock = this.voxelWorld.getBlock(gx, bodyGridY, gz);
+    const isSolidFace = faceBlock !== BlockType.AIR && faceBlock !== BlockType.WATER;
+
+    if (isSolidFace) {
+      // 目の前にブロックがある場合、上の2マスが空いていれば自動で乗り越える（ステップアシスト）
+      const headSpace = this.voxelWorld.getBlock(gx, bodyGridY + 1, gz);
+      const headSpace2 = this.voxelWorld.getBlock(gx, bodyGridY + 2, gz);
+      
+      if (headSpace === BlockType.AIR && headSpace2 === BlockType.AIR) {
+        // 段差を上る (ベッドの場合は高さを調整)
+        const stepHeight = (faceBlock === BlockType.BED_HEAD || faceBlock === BlockType.BED_FOOT) ? 0.5625 : 1.0;
+        nextPos.y = bodyGridY + stepHeight + halfHeight;
+        this.velocityY = 0;
+      } else {
+        // 乗り越えられないので、水平移動をキャンセル（元の座標に戻す）
+        nextPos.x = this.position.x;
+        nextPos.z = this.position.z;
+      }
+    }
+
+    // 最新の座標をクラスメンバに適用
+    this.position.copy(nextPos);
+    this.mesh.position.copy(this.position);
+
+    // 3. アニメーションと向きの更新
     if (this.isGreeting) {
-      this.body.velocity.x = 0;
-      this.body.velocity.z = 0;
-
       // プレイヤーの方向を向く
-      const dirX = pPos.x - npcPos.x;
-      const dirZ = pPos.z - npcPos.z;
+      const dirX = pPos.x - this.position.x;
+      const dirZ = pPos.z - this.position.z;
       const targetAngle = Math.atan2(dirX, dirZ);
       this.mesh.rotation.y = targetAngle;
 
       // 首（頭）もプレイヤーの高さに合わせて少しピッチさせる
-      const targetPitch = Math.max(-0.4, Math.min(0.4, (pPos.y - npcPos.y) / distToPlayer));
+      const targetPitch = Math.max(-0.4, Math.min(0.4, (pPos.y - this.position.y) / distToPlayer));
       this.head.rotation.x += (targetPitch - this.head.rotation.x) * 5 * deltaTime;
 
       // 挨拶時は右腕を少し上げて手を振る
@@ -310,34 +342,18 @@ export class NPC {
       this.leftLeg.rotation.x += (0 - this.leftLeg.rotation.x) * lerpFactor;
       this.rightLeg.rotation.x += (0 - this.rightLeg.rotation.x) * lerpFactor;
     } else {
-      // 3. 通常のランダムウォークAI
       this.head.rotation.x += (0 - this.head.rotation.x) * 5 * deltaTime; // 頭の角度をリセット
-      
-      // 腕のZ回転を戻す
-      this.rightArm.rotation.z += (0 - this.rightArm.rotation.z) * 5 * deltaTime;
-      
+      this.rightArm.rotation.z += (0 - this.rightArm.rotation.z) * 5 * deltaTime; // 腕のZ回転を戻す
+
       this.walkTimer -= deltaTime;
       if (this.walkTimer <= 0) {
         this.chooseNextAction();
       }
 
       if (!this.isWaiting) {
-        // 目標方向に進む
-        this.body.velocity.x = this.targetDirection.x * this.speed;
-        this.body.velocity.z = this.targetDirection.z * this.speed;
-
         // 進行方向を向く
         const targetAngle = Math.atan2(this.targetDirection.x, this.targetDirection.z);
         this.mesh.rotation.y = targetAngle;
-
-        // 障害物の自動ジャンプ判定
-        const currentSpeedSq = this.body.velocity.x * this.body.velocity.x + this.body.velocity.z * this.body.velocity.z;
-        const targetSpeedSq = this.speed * this.speed;
-        const isBlocked = currentSpeedSq < targetSpeedSq * 0.3; // 壁に引っかかっている
-
-        if (isBlocked && isGrounded) {
-          this.body.velocity.y = this.jumpForce;
-        }
 
         // 歩行アニメーション
         const time = performance.now() * 0.008;
@@ -348,9 +364,6 @@ export class NPC {
         this.rightLeg.rotation.x = angle;
       } else {
         // 静止状態
-        this.body.velocity.x *= 0.8;
-        this.body.velocity.z *= 0.8;
-
         const lerpFactor = 10 * deltaTime;
         this.leftArm.rotation.x += (0 - this.leftArm.rotation.x) * lerpFactor;
         this.rightArm.rotation.x += (0 - this.rightArm.rotation.x) * lerpFactor;
@@ -358,10 +371,6 @@ export class NPC {
         this.rightLeg.rotation.x += (0 - this.rightLeg.rotation.x) * lerpFactor;
       }
     }
-
-    // メッシュ位置の同期
-    this.mesh.position.set(this.body.position.x, this.body.position.y, this.body.position.z);
-    this.handleStepClimb();
   }
 
   private chooseNextAction(): void {
@@ -371,13 +380,12 @@ export class NPC {
 
     if (!this.isWaiting) {
       // 拠点(homePosition)からの距離を測定
-      const npcPos = new THREE.Vector3(this.body.position.x, this.body.position.y, this.body.position.z);
-      const distFromHome = npcPos.distanceTo(this.homePosition);
+      const distFromHome = this.position.distanceTo(this.homePosition);
       const maxHomeRadius = 12.0; // ホームから離れてよい最大半径
 
       if (distFromHome > maxHomeRadius) {
         // ホームから離れすぎている場合はホームの方向へ歩かせる
-        this.targetDirection.copy(this.homePosition).sub(npcPos);
+        this.targetDirection.copy(this.homePosition).sub(this.position);
         this.targetDirection.y = 0;
         this.targetDirection.normalize();
       } else {
@@ -388,56 +396,9 @@ export class NPC {
     }
   }
 
-  // 自動段差上り (ステップアシスト) 処理
-  private handleStepClimb(): void {
-    const velocityX = this.body.velocity.x;
-    const velocityZ = this.body.velocity.z;
-    const speedSq = velocityX * velocityX + velocityZ * velocityZ;
-    if (speedSq < 0.01) return;
-
-    const halfHeight = CONFIG.PLAYER_HEIGHT / 2;
-    const feetY = this.body.position.y - halfHeight;
-
-    const speed = Math.sqrt(speedSq);
-    const dirX = velocityX / speed;
-    const dirZ = velocityZ / speed;
-
-    const checkDist = CONFIG.PLAYER_RADIUS + 0.15;
-    const checkX = this.body.position.x + dirX * checkDist;
-    const checkZ = this.body.position.z + dirZ * checkDist;
-
-    const gx = Math.floor(checkX);
-    const gz = Math.floor(checkZ);
-    const currentGridY = Math.floor(feetY + 0.15);
-
-    const stepBlock = this.voxelWorld.getBlock(gx, currentGridY, gz);
-    const headSpaceBlock = this.voxelWorld.getBlock(gx, currentGridY + 1, gz);
-    const headSpaceBlock2 = this.voxelWorld.getBlock(gx, currentGridY + 2, gz);
-
-    if (stepBlock !== 0 && headSpaceBlock === 0 && headSpaceBlock2 === 0) {
-      const stepHeight = (stepBlock === BlockType.BED_HEAD || stepBlock === BlockType.BED_FOOT) ? 0.5625 : 1.0;
-      const stepTopY = currentGridY + stepHeight;
-      const heightDiff = stepTopY - feetY;
-
-      if (heightDiff > 0.05 && heightDiff <= 1.05) {
-        if (stepBlock === BlockType.STAIRS) {
-          this.body.velocity.y = 4.0;
-        } else {
-          this.body.position.y = stepTopY + halfHeight + 0.05;
-          if (this.body.velocity.y < 0) {
-            this.body.velocity.y = 0;
-          }
-        }
-      }
-    }
-  }
-
   public destroy(): void {
     if (this.mesh) {
       this.scene.remove(this.mesh);
-    }
-    if (this.body.world) {
-      this.physicsWorld.removeBody(this.body);
     }
   }
 }
