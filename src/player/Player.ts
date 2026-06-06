@@ -1104,6 +1104,7 @@ export class Player {
     yaw: number;
     pitch: number;
     armorType: ArmorType;
+    characterType: string;
   } {
     return {
       x: this.body.position.x,
@@ -1113,6 +1114,7 @@ export class Player {
       yaw: this.yaw,
       pitch: this.pitch,
       armorType: this.armorType,
+      characterType: this.characterType,
     };
   }
 
@@ -1125,6 +1127,7 @@ export class Player {
     yaw: number;
     pitch: number;
     armorType?: ArmorType;
+    characterType?: string;
   }): void {
     if (!data) return;
 
@@ -1136,6 +1139,11 @@ export class Player {
       this.setArmor(data.armorType);
     } else {
       this.setArmor('none');
+    }
+
+    // キャラクタータイプのロード
+    if (data.characterType) {
+      this.changeCharacter(data.characterType);
     }
 
     // 死亡画面の表示状態を更新

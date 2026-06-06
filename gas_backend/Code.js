@@ -137,7 +137,9 @@ function doGet(e) {
               players.push({
                 accountId: accId,
                 characterType: playerData.characterType || 'boy1',
-                homePosition: playerData.customData ? playerData.customData.homePosition : null
+                homePosition: playerData.customData ? playerData.customData.homePosition : null,
+                position: (playerData.x !== undefined && playerData.y !== undefined && playerData.z !== undefined) ? 
+                          { x: playerData.x, y: playerData.y, z: playerData.z } : null
               });
             } catch (err) {
               // スキップ

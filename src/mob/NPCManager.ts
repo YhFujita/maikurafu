@@ -8,6 +8,7 @@ interface OtherPlayerMeta {
   accountId: string;
   characterType: string;
   homePosition: { x: number; y: number; z: number } | null;
+  position: { x: number; y: number; z: number } | null;
 }
 
 export class NPCManager {
@@ -43,10 +44,11 @@ export class NPCManager {
 
     // 各他プレイヤーを監視
     for (const meta of this.playersMeta) {
-      if (!meta.homePosition) continue;
+      const targetPos = meta.position || meta.homePosition;
+      if (!targetPos) continue;
 
-      const homePos = new THREE.Vector3(meta.homePosition.x, meta.homePosition.y, meta.homePosition.z);
-      const dist = pPos.distanceTo(homePos);
+      const spawnPos = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+      const dist = pPos.distanceTo(spawnPos);
       const spawnRadius = 35.0;
       const despawnRadius = 45.0;
 
@@ -57,12 +59,12 @@ export class NPCManager {
         const npc = new NPC(
           meta.accountId,
           meta.characterType,
-          homePos,
+          spawnPos,
           this.scene,
           this.voxelWorld
         );
         this.activeNPCs.set(meta.accountId, npc);
-        console.log(`NPC Spawned: ${meta.accountId} at home position.`);
+        console.log(`NPC Spawned: ${meta.accountId} at saved position.`);
       } else if (dist > despawnRadius && isActive) {
         // デスポーン
         const npc = this.activeNPCs.get(meta.accountId);
