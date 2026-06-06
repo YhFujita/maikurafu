@@ -1317,8 +1317,11 @@ if (startBtn && menuOverlay) {
         // Escキー等でポインターロックが解除された場合にオートセーブを実行
         autoSaveGame();
         const activeAccountId = saveManager.getAccountId();
+        console.log('[main.ts] pointerlockchange: Esc detected. activeAccountId:', activeAccountId);
         if (activeAccountId) {
           saveManager.saveData().catch(e => console.error('Cloud save failed:', e));
+        } else {
+          console.log('[main.ts] pointerlockchange: Cloud save skipped (no active account ID).');
         }
       }
     }

@@ -122,17 +122,23 @@ export class SaveManager {
   }
 
   public async saveData(): Promise<boolean> {
+    console.log('[SaveManager] saveData started. accountId:', this.accountId, 'worldId:', this.worldId);
     if (!this.accountId) {
-      console.error('Account ID is not set.');
+      console.error('[SaveManager] Account ID is not set.');
+      alert('[SaveManager] アカウントIDが設定されていません。');
       return false;
     }
 
     if (!CONFIG.GAS_WEB_APP_URL) {
-      console.warn('GAS_WEB_APP_URL is not configured.');
+      console.warn('[SaveManager] GAS_WEB_APP_URL is not configured.');
+      alert('[SaveManager] GASのURLが設定されていません。');
       return false;
     }
 
-    if (this.isSaving) return false;
+    if (this.isSaving) {
+      console.log('[SaveManager] Already saving, skip.');
+      return false;
+    }
     this.isSaving = true;
 
     try {
@@ -151,6 +157,7 @@ export class SaveManager {
         playerData: playerData
       };
 
+      console.log('[SaveManager] Sending payload to GAS...');
       const response = await fetch(CONFIG.GAS_WEB_APP_URL, {
         method: 'POST',
         headers: {
@@ -159,7 +166,9 @@ export class SaveManager {
         body: JSON.stringify(payload)
       });
 
+      console.log('[SaveManager] Response received, status:', response.status);
       const result = await response.json();
+      console.log('[SaveManager] Response JSON parsed:', result);
       this.isSaving = false;
 
       if (result.success) {
@@ -178,10 +187,11 @@ export class SaveManager {
         this.showToast('セーブしました');
         return true;
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'GAS側でエラーが発生しました');
       }
-    } catch (error) {
-      console.error('Failed to save data:', error);
+    } catch (error: any) {
+      console.error('[SaveManager] Failed to save data:', error);
+      alert(`[SaveManager] セーブに失敗しました:\n${error.message || error}`);
       this.showToast('セーブに失敗しました', true);
       this.isSaving = false;
       return false;
