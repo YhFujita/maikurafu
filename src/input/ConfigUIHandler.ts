@@ -211,7 +211,7 @@ export class ConfigUIHandler {
 
   private loadDefaultConfig(): void {
     // デフォルトの設定を一時変数にロード
-    const defaults = {
+    const defaults: GameConfig = {
       keyForward: 'KeyW',
       keyBackward: 'KeyS',
       keyLeft: 'KeyA',
@@ -227,6 +227,7 @@ export class ConfigUIHandler {
       invertClicks: false,
       enableShadows: true,
       easyMode: true,
+      characterType: 'boy1',
     };
     this.tempConfig = { ...defaults };
     this.updateUI();

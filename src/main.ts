@@ -1131,6 +1131,36 @@ window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
 });
 
+// キャラクター選択ボタンのインタラクション設定
+const charButtons = document.querySelectorAll('.char-select-btn');
+const initialCharType = configStore.getConfig().characterType || 'boy1';
+
+// 初期状態の反映
+charButtons.forEach(btn => {
+  const charType = btn.getAttribute('data-char');
+  if (charType === initialCharType) {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
+});
+
+// イベントリスナーの登録
+charButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const charType = btn.getAttribute('data-char');
+    if (charType) {
+      // 選択状態のUI更新
+      charButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // 設定を保存してプレイヤーのアバターを更新
+      configStore.save({ characterType: charType });
+      player.changeCharacter(charType);
+    }
+  });
+});
+
 // UIのインタラクション設定
 const startBtn = document.getElementById('start-btn');
 const menuOverlay = document.getElementById('menu-overlay');

@@ -14,6 +14,7 @@ export interface GameConfig {
   invertClicks: boolean; // 左右クリック反転 (デフォルト: false)
   enableShadows: boolean; // 影のON/OFF (デフォルト: true)
   easyMode: boolean; // イージーモード (デフォルト: true)
+  characterType: string; // キャラクタータイプ (デフォルト: boy1)
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -32,6 +33,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   invertClicks: false,
   enableShadows: true,
   easyMode: true,
+  characterType: 'boy1',
 };
 
 const STORAGE_KEY = 'maikurafu_config';

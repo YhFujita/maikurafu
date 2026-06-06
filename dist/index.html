@@ -237,6 +237,34 @@
       overflow-y: auto;
     }
 
+    /* キャラクター選択UI */
+    .char-select-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid transparent;
+      color: white;
+      border-radius: 12px;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .char-select-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .char-select-btn.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+
     /* カスタムスクロールバー */
     ::-webkit-scrollbar {
       width: 6px;
@@ -1374,7 +1402,7 @@
       margin-top: 20px;
     }
   </style>
-  <script type="module" crossorigin src="./assets/index-4JnCx8BT.js"></script>
+  <script type="module" crossorigin src="./assets/index-pEjYGtij.js"></script>
 </head>
 
 <body>
@@ -1420,6 +1448,34 @@
         <input type="text" id="world-id-input" value="shared_world_1" placeholder="例: shared_world_1"
           style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1rem; font-family: inherit;">
       </div>
+
+      <!-- キャラクター選択セクション -->
+      <div class="character-select-section" style="margin-bottom: 24px; text-align: left;">
+        <label style="font-size: 0.9rem; color: #9ca3af; margin-bottom: 8px; display: block;">キャラクターをえらぶ:</label>
+        <div class="character-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+          <button class="char-select-btn active" data-char="boy1">
+            <span style="font-size: 1.5rem;">👦</span>
+            <span style="font-size: 0.85rem; font-weight: 600;">男の子 1</span>
+            <span style="font-size: 0.7rem; color: #9ca3af;">黒髪 / 青い服</span>
+          </button>
+          <button class="char-select-btn" data-char="boy2">
+            <span style="font-size: 1.5rem;">👱</span>
+            <span style="font-size: 0.85rem; font-weight: 600;">男の子 2</span>
+            <span style="font-size: 0.7rem; color: #9ca3af;">金髪 / 緑の服</span>
+          </button>
+          <button class="char-select-btn" data-char="girl1">
+            <span style="font-size: 1.5rem;">👧</span>
+            <span style="font-size: 0.85rem; font-weight: 600;">女の子 1</span>
+            <span style="font-size: 0.7rem; color: #9ca3af;">ピンク髪 / 黄色の服</span>
+          </button>
+          <button class="char-select-btn" data-char="girl2">
+            <span style="font-size: 1.5rem;">👩</span>
+            <span style="font-size: 0.85rem; font-weight: 600;">女の子 2</span>
+            <span style="font-size: 0.7rem; color: #9ca3af;">水色髪 / 紫の服</span>
+          </button>
+        </div>
+      </div>
+
       <button id="start-btn">ゲームスタート</button>
       <button id="config-btn">設定変更</button>
 

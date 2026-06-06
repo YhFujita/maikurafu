@@ -6,6 +6,7 @@ import { World } from '../world/World.ts';
 import { BlockType } from '../world/Block.ts';
 import { SoundManager } from '../system/SoundManager.ts';
 import { PhysicsWorld } from '../physics/PhysicsWorld.ts';
+import { configStore } from '../configStore.ts';
 
 export type CameraMode = '1PV' | '3PV_BACK' | '3PV_FRONT';
 export type ArmorType = 'none' | 'leather' | 'iron' | 'diamond';
@@ -16,6 +17,7 @@ export class Player {
   public body: CANNON.Body;
 
   // アバター関連
+  public characterType: string = 'boy1';
   public avatar: THREE.Group;
   private head!: THREE.Mesh;
   private bodyMesh!: THREE.Mesh;
@@ -93,6 +95,7 @@ export class Player {
     physics.world.addBody(this.body);
 
     // アバターの構築
+    this.characterType = configStore.getConfig().characterType || 'boy1';
     this.avatar = new THREE.Group();
     this.avatar.rotation.order = 'YXZ'; // ヨー(Y)で向きを合わせてからピッチ(X)で倒れるようにする
     this.buildAvatar();
@@ -144,12 +147,55 @@ export class Player {
 
   // マインクラフト風アバターの構築
   private buildAvatar(): void {
-    // マテリアルの定義（使い回しでGC削減）
-    const headMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.9 }); // 肌色
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0080ff, roughness: 0.9 }); // 青シャツ
-    const armMat = new THREE.MeshStandardMaterial({ color: 0xffdbac, roughness: 0.9 });  // 肌色
-    const legMat = new THREE.MeshStandardMaterial({ color: 0x2b2b80, roughness: 0.9 });  // 青ズボン
-    const hairMat = new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9 }); // 髪
+    // 既存の子オブジェクトがあればクリア（再構築用）
+    while (this.avatar.children.length > 0) {
+      this.avatar.remove(this.avatar.children[0]);
+    }
+
+    // characterType に応じて配色や形状を切り替える
+    let hairColor = 0x5a3d28; // 茶
+    let bodyColor = 0x0080ff; // 青シャツ
+    let legColor = 0x2b2b80;  // 青ズボン
+    let skinColor = 0xffdbac; // 肌色
+    let eyeColor = 0x333333;  // 瞳の色
+    let isGirl = false;
+
+    const type = this.characterType || 'boy1';
+    if (type === 'boy1') {
+      hairColor = 0x222222; // 黒髪
+      bodyColor = 0x3b82f6; // 青シャツ
+      legColor = 0x1d4ed8;  // 青ズボン
+      eyeColor = 0x1d4ed8;  // 青目
+    } else if (type === 'boy2') {
+      hairColor = 0xd97706; // 金髪
+      bodyColor = 0x10b981; // 緑シャツ
+      legColor = 0x1f2937;  // 黒ズボン
+      eyeColor = 0x047857;  // 緑目
+    } else if (type === 'girl1') {
+      hairColor = 0xdb2777; // ピンク髪
+      bodyColor = 0xfacc15; // 黄色シャツ
+      legColor = 0x4f46e5;  // 紫ズボン
+      eyeColor = 0xbe185d;  // ピンク目
+      isGirl = true;
+    } else if (type === 'girl2') {
+      hairColor = 0x06b6d4; // 水色髪
+      bodyColor = 0x8b5cf6; // 紫シャツ
+      legColor = 0x475569;  // グレーズボン
+      eyeColor = 0x6d28d9;  // 紫目
+      isGirl = true;
+    }
+
+    // マテリアルの定義
+    const headMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.9 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.9 });
+    const armMat = new THREE.MeshStandardMaterial({ color: skinColor, roughness: 0.9 });
+    const legMat = new THREE.MeshStandardMaterial({ color: legColor, roughness: 0.9 });
+    const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness: 0.9 });
+
+    // 白目、瞳、口のマテリアル
+    const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+    const eyePupilMat = new THREE.MeshStandardMaterial({ color: eyeColor, roughness: 0.9 });
+    const mouthMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.9 });
 
     // 防具マテリアルの初期化（初期状態は非表示）
     this.armorMat = new THREE.MeshStandardMaterial({
@@ -180,10 +226,64 @@ export class Player {
     this.head.castShadow = true;
     this.head.receiveShadow = true;
 
+    // 基本の髪（頭の上に被せる）
     const hairGeo = new THREE.BoxGeometry(0.42, 0.15, 0.42);
     const hair = new THREE.Mesh(hairGeo, hairMat);
     hair.position.y = 0.15;
     this.head.add(hair);
+
+    // 女の子用のロングヘア（後ろ髪と横髪）
+    if (isGirl) {
+      // 後ろ髪
+      const backHairGeo = new THREE.BoxGeometry(0.42, 0.32, 0.08);
+      const backHair = new THREE.Mesh(backHairGeo, hairMat);
+      backHair.position.set(0, -0.08, 0.17); // 後頭部に密着
+      backHair.castShadow = true;
+      backHair.receiveShadow = true;
+      this.head.add(backHair);
+
+      // 横髪（左右）
+      const sideHairGeo = new THREE.BoxGeometry(0.08, 0.25, 0.42);
+      
+      const leftSideHair = new THREE.Mesh(sideHairGeo, hairMat);
+      leftSideHair.position.set(0.17, -0.05, 0);
+      leftSideHair.castShadow = true;
+      leftSideHair.receiveShadow = true;
+      this.head.add(leftSideHair);
+
+      const rightSideHair = new THREE.Mesh(sideHairGeo, hairMat);
+      rightSideHair.position.set(-0.17, -0.05, 0);
+      rightSideHair.castShadow = true;
+      rightSideHair.receiveShadow = true;
+      this.head.add(rightSideHair);
+    }
+
+    // 目 (白目と瞳の組み合わせ。前方向は -Z)
+    // 左目
+    const eyeWhiteGeo = new THREE.BoxGeometry(0.08, 0.04, 0.01);
+    const leftEyeWhite = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+    leftEyeWhite.position.set(0.08, 0.02, -0.201);
+    this.head.add(leftEyeWhite);
+
+    const pupilGeo = new THREE.BoxGeometry(0.04, 0.04, 0.012);
+    const leftEyePupil = new THREE.Mesh(pupilGeo, eyePupilMat);
+    leftEyePupil.position.set(0.1, 0.02, -0.202);
+    this.head.add(leftEyePupil);
+
+    // 右目
+    const rightEyeWhite = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+    rightEyeWhite.position.set(-0.08, 0.02, -0.201);
+    this.head.add(rightEyeWhite);
+
+    const rightEyePupil = new THREE.Mesh(pupilGeo, eyePupilMat);
+    rightEyePupil.position.set(-0.1, 0.02, -0.202);
+    this.head.add(rightEyePupil);
+
+    // 口
+    const mouthGeo = new THREE.BoxGeometry(0.12, 0.04, 0.01);
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, -0.08, -0.201);
+    this.head.add(mouth);
 
     // 兜 (ヘルメット) を頭に追加
     const helmet = new THREE.Mesh(helmetGeo, this.armorMat);
@@ -257,7 +357,7 @@ export class Player {
     leftLegging.receiveShadow = true;
     leftLegMesh.add(leftLegging);
 
-    // ブーツの左足を追加
+    // ブーツ of left leg
     const leftBoot = new THREE.Mesh(bootGeo, this.armorMat);
     leftBoot.castShadow = true;
     leftBoot.receiveShadow = true;
@@ -279,7 +379,7 @@ export class Player {
     rightLegging.receiveShadow = true;
     rightLegMesh.add(rightLegging);
 
-    // ブーツの右足を追加
+    // ブーツ of right leg
     const rightBoot = new THREE.Mesh(bootGeo, this.armorMat);
     rightBoot.castShadow = true;
     rightBoot.receiveShadow = true;
@@ -288,6 +388,27 @@ export class Player {
     this.rightLeg.add(rightLegMesh);
     this.rightLeg.position.set(-0.1, -0.3, 0);
     this.avatar.add(this.rightLeg);
+
+    // 武器を3人称の右手に再度アタッチする
+    if (this.weapons3PV) {
+      for (const typeStr of Object.keys(this.weapons3PV)) {
+        const type = Number(typeStr);
+        const weapon = this.weapons3PV[type];
+        if (weapon) {
+          this.rightArm.add(weapon);
+        }
+      }
+    }
+  }
+
+  // キャラクターの変更
+  public changeCharacter(type: string): void {
+    if (this.characterType === type) return;
+    this.characterType = type;
+    this.buildAvatar();
+    
+    // 現在装備中の防具の再適用（防具マテリアルの更新）
+    this.setArmor(this.armorType);
   }
 
   private buildSword(bladeColor: number = 0xcccccc, gripColor: number = 0x78350f, guardColor: number = 0xeab308): THREE.Group {
