@@ -1249,7 +1249,6 @@ if (startBtn && menuOverlay) {
       const id = accountIdInput.value.trim();
       saveManager.setAccountId(id);
       console.log('[main.ts] startBtn: Login with input account ID:', id);
-      alert('[main.ts] ログイン成功 (入力): ' + id);
       updateAccountIdList(id); // 履歴に追加
       localStorage.setItem('maikurafu_last_account_id', id); // 最後に使用したアカウントIDを保存
       
@@ -1278,7 +1277,6 @@ if (startBtn && menuOverlay) {
         // LocalStorageに前回のアカウント情報があれば、それを使ってバックグラウンドでクラウド保存を有効化
         saveManager.setAccountId(lastAccountId);
         console.log('[main.ts] startBtn: Login with lastAccountId:', lastAccountId);
-        alert('[main.ts] ログイン成功 (LocalStorage自動引き継ぎ): ' + lastAccountId);
         saveManager.startAutoSave(3); // 3分ごとのクラウドオートセーブを開始
         
         // 初回のみ現在のローカルの最新状態をクラウドにアップロードしてアップデート
@@ -1290,7 +1288,6 @@ if (startBtn && menuOverlay) {
       } else {
         saveManager.setAccountId('');
         console.log('[main.ts] startBtn: Login as guest (offline mode).');
-        alert('[main.ts] オフラインモードでログインしました。');
         saveManager.stopAutoSave(); // オフラインプレイ時はオートセーブ停止
         npcManager.clearAll();
       }
@@ -1312,7 +1309,6 @@ if (startBtn && menuOverlay) {
   document.addEventListener('pointerlockchange', () => {
     const lockEl = document.pointerLockElement;
     console.log('[main.ts] pointerlockchange fired. pointerLockElement:', lockEl ? lockEl.tagName : 'null');
-    alert('[main.ts] pointerlockchange発生: pointerLockElement = ' + (lockEl ? lockEl.tagName : 'null'));
     if (document.pointerLockElement === document.body) {
       if (hotbar) hotbar.style.display = 'flex';
       if (hud) hud.style.display = 'block';
@@ -1764,7 +1760,6 @@ const cloudLoadBtn = document.getElementById('cloud-load-btn');
 
 if (cloudSaveBtn) {
   cloudSaveBtn.addEventListener('click', async () => {
-    alert('[main.ts] cloudSaveBtn clicked! input_val: "' + (accountIdInput ? accountIdInput.value : 'null') + '" getAccountId: "' + saveManager.getAccountId() + '"');
     // 押下時にアカウントIDとワールドIDをセット
     let id = accountIdInput ? accountIdInput.value.trim() : '';
     if (id === '') {
@@ -1797,7 +1792,6 @@ if (cloudSaveBtn) {
 
 if (cloudLoadBtn) {
   cloudLoadBtn.addEventListener('click', async () => {
-    alert('[main.ts] cloudLoadBtn clicked! input_val: "' + (accountIdInput ? accountIdInput.value : 'null') + '" getAccountId: "' + saveManager.getAccountId() + '"');
     let id = accountIdInput ? accountIdInput.value.trim() : '';
     if (id === '') {
       id = saveManager.getAccountId() || '';
@@ -1828,7 +1822,6 @@ if (cloudLoadBtn) {
 const cloudSyncBtn = document.getElementById('cloud-sync-btn');
 if (cloudSyncBtn) {
   cloudSyncBtn.addEventListener('click', async () => {
-    alert('[main.ts] cloudSyncBtn clicked! input_val: "' + (accountIdInput ? accountIdInput.value : 'null') + '" getAccountId: "' + saveManager.getAccountId() + '"');
     if (worldIdInput) saveManager.setWorldId(worldIdInput.value.trim());
     
     let id = accountIdInput ? accountIdInput.value.trim() : '';
