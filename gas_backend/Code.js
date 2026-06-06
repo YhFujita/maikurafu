@@ -160,11 +160,13 @@ function doGet(e) {
   // 1. WorldDataの取得
   const worldSheet = ss.getSheetByName('WorldData');
   let worldData = null;
+  let worldLastUpdated = null;
   if (worldSheet && worldSheet.getLastRow() >= 2) {
     const ids = worldSheet.getRange(2, 1, worldSheet.getLastRow() - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
       if (ids[i][0] === worldId) {
         worldData = reconstructData(worldSheet, i + 2);
+        worldLastUpdated = worldSheet.getRange(i + 2, 2).getValue();
         break;
       }
     }
@@ -175,21 +177,28 @@ function doGet(e) {
   const playerKey = accountId + '_' + worldId;
   const playerSheet = ss.getSheetByName('PlayerData');
   let playerData = null;
+  let playerLastUpdated = null;
   if (playerSheet && playerSheet.getLastRow() >= 2) {
     const ids = playerSheet.getRange(2, 1, playerSheet.getLastRow() - 1, 1).getValues();
     for (let i = 0; i < ids.length; i++) {
       if (ids[i][0] === playerKey) {
         playerData = reconstructData(playerSheet, i + 2);
+        playerLastUpdated = playerSheet.getRange(i + 2, 2).getValue();
         break;
       }
     }
   }
 
+  const worldTime = worldLastUpdated instanceof Date ? worldLastUpdated.getTime() : (worldLastUpdated ? new Date(worldLastUpdated).getTime() : null);
+  const playerTime = playerLastUpdated instanceof Date ? playerLastUpdated.getTime() : (playerLastUpdated ? new Date(playerLastUpdated).getTime() : null);
+
   return ContentService.createTextOutput(JSON.stringify({
     worldData: worldData,
     playerData: playerData,
     worldId: worldId,
-    accountId: accountId
+    accountId: accountId,
+    worldLastUpdated: worldTime,
+    playerLastUpdated: playerTime
   })).setMimeType(ContentService.MimeType.JSON);
 }
 

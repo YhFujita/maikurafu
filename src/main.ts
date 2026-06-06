@@ -323,7 +323,6 @@ saveManager.onSaveCustomData = () => {
     homePosition: homePos ? { x: homePos.x, y: homePos.y, z: homePos.z } : null
   };
 };
-
 saveManager.onLoadCustomData = (data: any) => {
   if (data) {
     if (data.inventory) {
@@ -348,6 +347,50 @@ saveManager.onLoadCustomData = (data: any) => {
       navigation.setHome(new THREE.Vector3(data.homePosition.x, data.homePosition.y, data.homePosition.z));
     }
   }
+};
+
+saveManager.onConflictDetected = (localTime: number, cloudTime: number): Promise<'local' | 'cloud' | 'cancel'> => {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('conflict-modal');
+    const localTimeEl = document.getElementById('conflict-local-time');
+    const cloudTimeEl = document.getElementById('conflict-cloud-time');
+    const useLocalBtn = document.getElementById('conflict-use-local-btn');
+    const useCloudBtn = document.getElementById('conflict-use-cloud-btn');
+    const cancelBtn = document.getElementById('conflict-cancel-btn');
+
+    if (!modal || !localTimeEl || !cloudTimeEl || !useLocalBtn || !useCloudBtn || !cancelBtn) {
+      resolve('cloud');
+      return;
+    }
+
+    const formatDate = (ms: number) => {
+      if (!ms) return 'データなし';
+      const d = new Date(ms);
+      return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
+    };
+
+    localTimeEl.textContent = formatDate(localTime);
+    cloudTimeEl.textContent = formatDate(cloudTime);
+
+    document.exitPointerLock();
+    modal.style.display = 'flex';
+
+    const cleanup = (choice: 'local' | 'cloud' | 'cancel') => {
+      modal.style.display = 'none';
+      useLocalBtn.removeEventListener('click', onLocal);
+      useCloudBtn.removeEventListener('click', onCloud);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(choice);
+    };
+
+    const onLocal = () => cleanup('local');
+    const onCloud = () => cleanup('cloud');
+    const onCancel = () => cleanup('cancel');
+
+    useLocalBtn.addEventListener('click', onLocal);
+    useCloudBtn.addEventListener('click', onCloud);
+    cancelBtn.addEventListener('click', onCancel);
+  });
 };
 
 // オートセーブデータがあれば自動ロード
@@ -416,6 +459,14 @@ function updateAccountIdList(newId?: string) {
 }
 // 初期化時にリストを構築
 updateAccountIdList();
+
+// 最後に使用したアカウントIDがあれば入力欄の初期値にする
+if (accountIdInput) {
+  const lastAccountId = localStorage.getItem('maikurafu_last_account_id');
+  if (lastAccountId) {
+    accountIdInput.value = lastAccountId;
+  }
+}
 
 // レイキャスターの設定（ブロックの設置・破壊用）
 const raycaster = new THREE.Raycaster();
@@ -1198,11 +1249,18 @@ if (startBtn && menuOverlay) {
       const id = accountIdInput.value.trim();
       saveManager.setAccountId(id);
       updateAccountIdList(id); // 履歴に追加
+      localStorage.setItem('maikurafu_last_account_id', id); // 最後に使用したアカウントIDを保存
       
       startBtn.textContent = 'データをロード中...';
       startBtn.setAttribute('disabled', 'true');
       
-      await saveManager.loadData();
+      const success = await saveManager.loadData();
+      if (!success) {
+        startBtn.textContent = 'ゲームスタート';
+        startBtn.removeAttribute('disabled');
+        return; // ロード失敗またはキャンセル時はスタートしない
+      }
+      
       startBtn.textContent = 'ゲームスタート';
       startBtn.removeAttribute('disabled');
       
@@ -1212,9 +1270,24 @@ if (startBtn && menuOverlay) {
       const worldId = worldIdInput ? worldIdInput.value.trim() || 'shared_world_1' : 'shared_world_1';
       npcManager.fetchOtherPlayers(id, worldId);
     } else {
-      saveManager.setAccountId('');
-      saveManager.stopAutoSave(); // オフラインプレイ時はオートセーブ停止
-      npcManager.clearAll();
+      // アカウントID入力欄が空の場合
+      const lastAccountId = localStorage.getItem('maikurafu_last_account_id');
+      if (lastAccountId && lastAccountId.trim() !== '') {
+        // LocalStorageに前回のアカウント情報があれば、それを使ってバックグラウンドでクラウド保存を有効化
+        saveManager.setAccountId(lastAccountId);
+        saveManager.startAutoSave(3); // 3分ごとのクラウドオートセーブを開始
+        
+        // 初回のみ現在のローカルの最新状態をクラウドにアップロードしてアップデート
+        saveManager.saveData().catch(e => console.error('Initial auto cloud save failed:', e));
+        
+        // 他プレイヤーのアカウントNPC情報をロード
+        const worldId = worldIdInput ? worldIdInput.value.trim() || 'shared_world_1' : 'shared_world_1';
+        npcManager.fetchOtherPlayers(lastAccountId, worldId);
+      } else {
+        saveManager.setAccountId('');
+        saveManager.stopAutoSave(); // オフラインプレイ時はオートセーブ停止
+        npcManager.clearAll();
+      }
     }
 
     input.requestLock();
