@@ -141,6 +141,22 @@ export class NavigationManager {
     }
   }
 
+  private getDirectionJapanese(dx: number, dz: number): { name: string; arrow: string } {
+    const angle = Math.atan2(dz, dx); // ラジアン (-PI to PI)
+    let deg = angle * (180 / Math.PI); // 度 (-180 to 180)
+    if (deg < 0) deg += 360; // 0 to 360
+    
+    // 0度は右（東 ➡）、90度は下（南 ⬇）、180度は左（西 ⬅）、270度は上（北 ⬆）
+    if (deg >= 337.5 || deg < 22.5) return { name: 'ひがし', arrow: '➡' };
+    if (deg >= 22.5 && deg < 67.5) return { name: 'なんとう', arrow: '↘' };
+    if (deg >= 67.5 && deg < 112.5) return { name: 'みなみ', arrow: '⬇' };
+    if (deg >= 112.5 && deg < 157.5) return { name: 'なんせい', arrow: '↙' };
+    if (deg >= 157.5 && deg < 202.5) return { name: 'にし', arrow: '⬅' };
+    if (deg >= 202.5 && deg < 247.5) return { name: 'ほくせい', arrow: '↖' };
+    if (deg >= 247.5 && deg < 292.5) return { name: 'きた', arrow: '⬆' };
+    return { name: 'ほくとう', arrow: '↗' }; // deg >= 292.5 && deg < 337.5
+  }
+
   public renderMap(world: World, playerPos: THREE.Vector3) {
     if (!this.mapCanvas) return;
 
@@ -219,25 +235,131 @@ export class NavigationManager {
         // プレイヤーから拠点への方向角を計算して矢印を決定
         const dx = this.homePosition.x - px;
         const dz = this.homePosition.z - pz;
-        const angle = Math.atan2(dz, dx); // ラジアン (-PI to PI)
-        let deg = angle * (180 / Math.PI); // 度 (-180 to 180)
-        if (deg < 0) deg += 360; // 0 to 360
-        
-        // 0度は右（東 ➡）、90度は下（南 ⬇）、180度は左（西 ⬅）、270度は上（北 ⬆）
-        let arrow = '🏠';
-        if (deg >= 337.5 || deg < 22.5) arrow = '➡';
-        else if (deg >= 22.5 && deg < 67.5) arrow = '↘';
-        else if (deg >= 67.5 && deg < 112.5) arrow = '⬇';
-        else if (deg >= 112.5 && deg < 157.5) arrow = '↙';
-        else if (deg >= 157.5 && deg < 202.5) arrow = '⬅';
-        else if (deg >= 202.5 && deg < 247.5) arrow = '↖';
-        else if (deg >= 247.5 && deg < 292.5) arrow = '⬆';
-        else if (deg >= 292.5 && deg < 337.5) arrow = '↗';
-        
-        this.mapHomeIcon.textContent = arrow;
+        const dirInfo = this.getDirectionJapanese(dx, dz);
+        this.mapHomeIcon.textContent = dirInfo.arrow;
       } else {
         this.mapHomeIcon.textContent = '🏠';
       }
+    }
+
+    // --- 建物（建築物）の自動検出とマップ表示 ---
+    const buildingPositions: THREE.Vector3[] = [];
+    const chunkSize = CONFIG.CHUNK_SIZE;
+    const modifiedData = world.getModifiedBlocksData();
+
+    if (modifiedData && modifiedData.blocks) {
+      for (const [chunkKey, mods] of Object.entries(modifiedData.blocks)) {
+        const [cx, cy, cz] = chunkKey.split(',').map(Number);
+        for (const [localIndexStr, type] of Object.entries(mods)) {
+          if (type !== BlockType.AIR) {
+            const localIndex = parseInt(localIndexStr, 10);
+            const lx = localIndex % chunkSize;
+            const ly = Math.floor((localIndex % (chunkSize * chunkSize)) / chunkSize);
+            const lz = Math.floor(localIndex / (chunkSize * chunkSize));
+            const gx = cx * chunkSize + lx;
+            const gy = cy * chunkSize + ly;
+            const gz = cz * chunkSize + lz;
+            buildingPositions.push(new THREE.Vector3(gx, gy, gz));
+          }
+        }
+      }
+    }
+
+    // プレイヤーが置いたブロックをクラスタリング（半径15ブロック以内の近傍、かつ最低5ブロック集まっている場所を「建物」とする）
+    const clusters: THREE.Vector3[] = [];
+    const minBlockCountForCluster = 5;
+    const visited = new Set<number>();
+
+    for (let i = 0; i < buildingPositions.length; i++) {
+      if (visited.has(i)) continue;
+      const group: THREE.Vector3[] = [buildingPositions[i]];
+      visited.add(i);
+
+      for (let j = i + 1; j < buildingPositions.length; j++) {
+        if (visited.has(j)) continue;
+        for (const member of group) {
+          if (member.distanceTo(buildingPositions[j]) < 15) {
+            group.push(buildingPositions[j]);
+            visited.add(j);
+            break;
+          }
+        }
+      }
+
+      if (group.length >= minBlockCountForCluster) {
+        const center = new THREE.Vector3();
+        for (const p of group) {
+          center.add(p);
+        }
+        center.divideScalar(group.length);
+        clusters.push(center);
+      }
+    }
+
+    // 古い建物アイコンをクリア
+    const oldBuildingIcons = document.querySelectorAll('.map-building-icon');
+    oldBuildingIcons.forEach(el => el.remove());
+
+    const container = document.getElementById('world-map-container');
+    if (container) {
+      clusters.forEach((pos) => {
+        const icon = document.createElement('div');
+        icon.className = 'map-icon map-building-icon';
+        icon.style.color = '#ffa500'; // オレンジ色で目立たせる
+        icon.style.textShadow = '0 0 5px black';
+        
+        const mapX = pos.x - px + this.mapRadius;
+        const mapZ = pos.z - pz + this.mapRadius;
+        const percentX = (mapX / size) * 100;
+        const percentY = (mapZ / size) * 100;
+        const isOutOfMap = percentX < 0 || percentX > 100 || percentY < 0 || percentY > 100;
+        
+        icon.style.left = `${Math.min(Math.max(percentX, 2), 98)}%`;
+        icon.style.top = `${Math.min(Math.max(percentY, 2), 98)}%`;
+        
+        if (isOutOfMap) {
+          const dx = pos.x - px;
+          const dz = pos.z - pz;
+          const dirInfo = this.getDirectionJapanese(dx, dz);
+          icon.textContent = dirInfo.arrow;
+        } else {
+          icon.textContent = '🧱';
+        }
+        
+        container.appendChild(icon);
+      });
+    }
+
+    // --- 案内テキストエリアの更新 ---
+    const infoEl = document.getElementById('world-map-info');
+    if (infoEl) {
+      const infoLines: string[] = [];
+      
+      // 登録拠点
+      if (this.homePosition) {
+        const dx = this.homePosition.x - px;
+        const dz = this.homePosition.z - pz;
+        const dist = Math.floor(new THREE.Vector3(dx, 0, dz).length());
+        const dirInfo = this.getDirectionJapanese(dx, dz);
+        infoLines.push(`🏠 登録した拠点: <b>${dirInfo.name}</b> (${dist}m) ${dirInfo.arrow}`);
+      } else {
+        infoLines.push(`🏠 登録した拠点: 未登録`);
+      }
+      
+      // 建物
+      if (clusters.length > 0) {
+        clusters.forEach((pos, idx) => {
+          const dx = pos.x - px;
+          const dz = pos.z - pz;
+          const dist = Math.floor(new THREE.Vector3(dx, 0, dz).length());
+          const dirInfo = this.getDirectionJapanese(dx, dz);
+          infoLines.push(`🧱 建てた建物 ${idx + 1}: <b>${dirInfo.name}</b> (${dist}m) ${dirInfo.arrow}`);
+        });
+      } else {
+        infoLines.push(`🧱 建てた建物: まだありません`);
+      }
+      
+      infoEl.innerHTML = infoLines.join('<br>');
     }
   }
 }
