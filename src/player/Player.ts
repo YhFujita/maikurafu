@@ -38,7 +38,7 @@ export class Player {
 
   // サバイバル関連
   public hp: number = CONFIG.PLAYER_MAX_HP;
-  private isDead: boolean = false;
+  public isDead: boolean = false;
   private spawnPosition: THREE.Vector3;
 
   // 回転状態 (ラジアン)
@@ -54,6 +54,7 @@ export class Player {
   public isSprintingToggle: boolean = false; // ダッシュのトグルフラグ
   private jumpForce: number = 7.5;
   private lastVelocityY: number = 0; // 落下ダメージ計算用
+  public spawnProtectionTimer: number = 0; // スポーン直後の落下ダメージ保護タイマー
   
   // ライフ自動回復用タイマー
   public lastDamageTime: number = 0;
@@ -74,6 +75,7 @@ export class Player {
     this.camera = camera;
     this.position = startPos.clone();
     this.spawnPosition = startPos.clone();
+    this.spawnProtectionTimer = 5.0; // 初期スポーン時は落下ダメージ無効
 
     // プレイヤーの物理剛体をカプセル形状 (3つの重ね合わせたSphere) として作成
     const radius = CONFIG.PLAYER_RADIUS;
@@ -501,6 +503,11 @@ export class Player {
     // 死亡時は更新処理を行わない
     if (this.isDead) return;
 
+    // スポーン保護タイマーの更新
+    if (this.spawnProtectionTimer > 0) {
+      this.spawnProtectionTimer -= deltaTime;
+    }
+
     // スタック救出キーの処理
     const config = configStore.getConfig();
     if (input.consumeJustPressed(config.keyRescue)) {
@@ -633,8 +640,8 @@ export class Player {
     // Y速度の判定を緩和（歩行中の微小バウンドによる接地切れを防止）
     const currentGrounded = onSolidBlock || Math.abs(this.body.velocity.y) < 0.2;
 
-    // 着地した瞬間に落下ダメージ判定（水の中では落下ダメージを無効化）
-    if (currentGrounded && !this.isGrounded && !this.isInWater) {
+    // 着地した瞬間に落下ダメージ判定（水の中やスポーン保護時間内は無効）
+    if (currentGrounded && !this.isGrounded && !this.isInWater && this.spawnProtectionTimer <= 0) {
       // 直前の落下速度が一定以上であればダメージ
       if (this.lastVelocityY < CONFIG.FALL_DAMAGE_MIN_SPEED) {
         const damage = Math.floor((CONFIG.FALL_DAMAGE_MIN_SPEED - this.lastVelocityY) * CONFIG.FALL_DAMAGE_FACTOR);
@@ -776,6 +783,7 @@ export class Player {
   public respawn(): void {
     this.hp = CONFIG.PLAYER_MAX_HP;
     this.isDead = false;
+    this.spawnProtectionTimer = 5.0; // リスポーン後の落下ダメージを一時的に無効化
     this.body.position.set(this.spawnPosition.x, this.spawnPosition.y + CONFIG.PLAYER_HEIGHT / 2, this.spawnPosition.z);
     this.body.velocity.set(0, 0, 0);
     this.lastVelocityY = 0;
@@ -791,6 +799,7 @@ export class Player {
 
   // スタック救出処理 (初期位置へ安全に戻す)
   public rescue(): void {
+    this.spawnProtectionTimer = 5.0; // 救出後の落下ダメージを一時的に無効化
     // 物理剛体の位置と速度を同期
     this.body.position.set(this.spawnPosition.x, this.spawnPosition.y + CONFIG.PLAYER_HEIGHT / 2, this.spawnPosition.z);
     this.body.velocity.set(0, 0, 0);
@@ -1199,6 +1208,20 @@ export class Player {
     if (!data) return;
 
     this.hp = typeof data.hp === 'number' ? data.hp : CONFIG.PLAYER_MAX_HP;
+
+    // もしロードしたデータのHPが0以下、または座標が奈落（y < -20）など異常な場合、安全な位置にリセットする
+    let targetX = data.x;
+    let targetY = data.y;
+    let targetZ = data.z;
+
+    if (this.hp <= 0 || targetY < -20 || targetY > 150 || isNaN(targetX) || isNaN(targetY) || isNaN(targetZ)) {
+      console.warn(`Loaded player state is invalid or dead (y=${targetY}, hp=${this.hp}). Resetting to spawn position.`);
+      this.hp = CONFIG.PLAYER_MAX_HP;
+      targetX = this.spawnPosition.x;
+      targetY = this.spawnPosition.y + CONFIG.PLAYER_HEIGHT / 2;
+      targetZ = this.spawnPosition.z;
+    }
+
     this.isDead = this.hp <= 0;
 
     // 装備のロード
@@ -1223,12 +1246,12 @@ export class Player {
     this.pitch = typeof data.pitch === 'number' ? data.pitch : 0;
 
     // 物理剛体の位置と速度を同期
-    this.body.position.set(data.x, data.y, data.z);
+    this.body.position.set(targetX, targetY, targetZ);
     this.body.velocity.set(0, 0, 0);
     this.lastVelocityY = 0;
 
     // プレイヤーのグラフィック表現位置の同期
-    this.position.set(data.x, data.y, data.z);
+    this.position.set(targetX, targetY, targetZ);
 
     // カメラとアバター描画の即時更新
     this.syncCamera();

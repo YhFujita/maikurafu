@@ -32,6 +32,18 @@ export class SaveManager {
   }
 
   public async loadData(force: boolean = false): Promise<boolean> {
+    if (this.isSaving) {
+      console.warn('Cannot load while saving. Waiting for save to complete...');
+      for (let i = 0; i < 5; i++) {
+        if (!this.isSaving) break;
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (this.isSaving) {
+        this.showToast('セーブ処理が完了しないため、ロードできません', true);
+        return false;
+      }
+    }
+
     if (!this.accountId) {
       console.error('Account ID is not set.');
       return false;
@@ -113,6 +125,9 @@ export class SaveManager {
         (this.player as any).spawnPosition.set(randX, 30, randZ);
       }
       
+      // ロード直後の落下ダメージを防ぐために保護タイマーを設定
+      this.player.spawnProtectionTimer = 5.0;
+
       // ワールド再描画
       this.world.clearAndRebuild(this.player.position.x, this.player.position.z);
       this.showToast('ロードが完了しました');

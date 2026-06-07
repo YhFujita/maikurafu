@@ -1637,14 +1637,17 @@ if (startBtn && menuOverlay) {
         if (hotbar) hotbar.style.display = 'none';
         if (hud) hud.style.display = 'none';
         
-        // Escキー等でポインターロックが解除された場合にオートセーブを実行
-        autoSaveGame();
-        const activeAccountId = saveManager.getAccountId();
-        console.log('[main.ts] pointerlockchange: Esc detected. activeAccountId:', activeAccountId);
-        if (activeAccountId) {
-          saveManager.saveData().catch(e => console.error('Cloud save failed:', e));
-        } else {
-          console.log('[main.ts] pointerlockchange: Cloud save skipped (no active account ID).');
+        // プレイヤーが死亡している場合は自動セーブを実行しない（死亡時の壊れた座標が上書きされるのを防ぐ）
+        if (player && !player.isDead && player.hp > 0) {
+          // Escキー等でポインターロックが解除された場合にオートセーブを実行
+          autoSaveGame();
+          const activeAccountId = saveManager.getAccountId();
+          console.log('[main.ts] pointerlockchange: Esc detected. activeAccountId:', activeAccountId);
+          if (activeAccountId) {
+            saveManager.saveData().catch(e => console.error('Cloud save failed:', e));
+          } else {
+            console.log('[main.ts] pointerlockchange: Cloud save skipped (no active account ID).');
+          }
         }
       }
     }
