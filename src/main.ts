@@ -420,49 +420,6 @@ saveManager.onLoadCustomData = (data: any) => {
   }
 };
 
-saveManager.onConflictDetected = (localTime: number, cloudTime: number): Promise<'local' | 'cloud' | 'cancel'> => {
-  return new Promise((resolve) => {
-    const modal = document.getElementById('conflict-modal');
-    const localTimeEl = document.getElementById('conflict-local-time');
-    const cloudTimeEl = document.getElementById('conflict-cloud-time');
-    const useLocalBtn = document.getElementById('conflict-use-local-btn');
-    const useCloudBtn = document.getElementById('conflict-use-cloud-btn');
-    const cancelBtn = document.getElementById('conflict-cancel-btn');
-
-    if (!modal || !localTimeEl || !cloudTimeEl || !useLocalBtn || !useCloudBtn || !cancelBtn) {
-      resolve('cloud');
-      return;
-    }
-
-    const formatDate = (ms: number) => {
-      if (!ms) return 'データなし';
-      const d = new Date(ms);
-      return `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}:${d.getSeconds().toString().padStart(2, '0')}`;
-    };
-
-    localTimeEl.textContent = formatDate(localTime);
-    cloudTimeEl.textContent = formatDate(cloudTime);
-
-    document.exitPointerLock();
-    modal.style.display = 'flex';
-
-    const cleanup = (choice: 'local' | 'cloud' | 'cancel') => {
-      modal.style.display = 'none';
-      useLocalBtn.removeEventListener('click', onLocal);
-      useCloudBtn.removeEventListener('click', onCloud);
-      cancelBtn.removeEventListener('click', onCancel);
-      resolve(choice);
-    };
-
-    const onLocal = () => cleanup('local');
-    const onCloud = () => cleanup('cloud');
-    const onCancel = () => cleanup('cancel');
-
-    useLocalBtn.addEventListener('click', onLocal);
-    useCloudBtn.addEventListener('click', onCloud);
-    cancelBtn.addEventListener('click', onCancel);
-  });
-};
 
 // オートセーブデータがあれば自動ロード
 const hasAutosave = loadAutoSave();

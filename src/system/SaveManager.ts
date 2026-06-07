@@ -12,7 +12,6 @@ export class SaveManager {
   
   public onSaveCustomData?: () => any;
   public onLoadCustomData?: (data: any) => void;
-  public onConflictDetected?: (localTime: number, cloudTime: number) => Promise<'local' | 'cloud' | 'cancel'>;
 
   constructor(player: Player, world: World) {
     this.player = player;
@@ -48,6 +47,8 @@ export class SaveManager {
       const data = await response.json();
 
       // 競合チェック (forceがfalseの場合のみ)
+      // ローカルデータが新しければ自動的にローカルデータを採用（クラウドへ同期）し、
+      // クラウドデータの方が新しければ自動的にクラウドデータをロードする
       if (!force) {
         const localAutosaveText = localStorage.getItem('maikurafu_autosave');
         if (localAutosaveText) {
@@ -57,26 +58,17 @@ export class SaveManager {
             // クラウドの最終更新日時（プレイヤーデータかワールドデータのうち新しい方）
             const cloudTime = Math.max(data.playerLastUpdated || 0, data.worldLastUpdated || 0);
 
-            // ローカルの方が新しく、かつクラウドに既存のデータが存在する場合のみ競合とする
+            // ローカルの方が新しく、かつクラウドに既存のデータが存在する場合は自動的にローカル優先
             if (cloudTime > 0 && localTime > cloudTime) {
-              if (this.onConflictDetected) {
-                const choice = await this.onConflictDetected(localTime, cloudTime);
-                if (choice === 'cancel') {
-                  this.showToast('ロードをキャンセルしました');
-                  return false;
-                } else if (choice === 'local') {
-                  // ローカルデータを使用し、それをクラウドに上書き保存する
-                  this.showToast('ローカルデータをクラウドにアップロード中...');
-                  const saveSuccess = await this.saveData();
-                  if (saveSuccess) {
-                    this.showToast('ローカルデータをクラウドに保存しました');
-                    return true;
-                  } else {
-                    this.showToast('アップロードに失敗しました', true);
-                    return false;
-                  }
-                }
-                // choice === 'cloud' の場合はそのまま以下のロード処理を続行
+              console.log(`[SaveManager] Local save is newer (${localTime}) than cloud save (${cloudTime}). Auto-uploading local save.`);
+              this.showToast('ローカルデータが新しいため、クラウドにアップロード中...');
+              const saveSuccess = await this.saveData();
+              if (saveSuccess) {
+                this.showToast('ローカルデータをクラウドに保存しました');
+                return true;
+              } else {
+                this.showToast('アップロードに失敗しました', true);
+                return false;
               }
             }
           } catch (e) {
