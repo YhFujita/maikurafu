@@ -12,6 +12,7 @@ export class SaveManager {
   
   public onSaveCustomData?: () => any;
   public onLoadCustomData?: (data: any) => void;
+  public onConflictDetected?: (localTime: number, cloudTime: number) => Promise<'local' | 'cloud' | 'cancel'>;
 
   constructor(player: Player, world: World) {
     this.player = player;
@@ -47,8 +48,6 @@ export class SaveManager {
       const data = await response.json();
 
       // 競合チェック (forceがfalseの場合のみ)
-      // ローカルデータが新しければ自動的にローカルデータを採用（クラウドへ同期）し、
-      // クラウドデータの方が新しければ自動的にクラウドデータをロードする
       if (!force) {
         const localAutosaveText = localStorage.getItem('maikurafu_autosave');
         if (localAutosaveText) {
@@ -58,17 +57,29 @@ export class SaveManager {
             // クラウドの最終更新日時（プレイヤーデータかワールドデータのうち新しい方）
             const cloudTime = Math.max(data.playerLastUpdated || 0, data.worldLastUpdated || 0);
 
-            // ローカルの方が新しく、かつクラウドに既存のデータが存在する場合は自動的にローカル優先
-            if (cloudTime > 0 && localTime > cloudTime) {
-              console.log(`[SaveManager] Local save is newer (${localTime}) than cloud save (${cloudTime}). Auto-uploading local save.`);
-              this.showToast('ローカルデータが新しいため、クラウドにアップロード中...');
-              const saveSuccess = await this.saveData();
-              if (saveSuccess) {
-                this.showToast('ローカルデータをクラウドに保存しました');
-                return true;
-              } else {
-                this.showToast('アップロードに失敗しました', true);
-                return false;
+            // タイムスタンプの時間差を計算
+            const timeDiff = Math.abs(localTime - cloudTime);
+            const fiveMinutes = 5 * 60 * 1000; // 5分 (ミリ秒)
+
+            // 時間差が5分以上あり、かつローカルの方が新しい場合のみ競合とみなす
+            if (cloudTime > 0 && localTime > cloudTime && timeDiff >= fiveMinutes) {
+              if (this.onConflictDetected) {
+                const choice = await this.onConflictDetected(localTime, cloudTime);
+                if (choice === 'cancel') {
+                  this.showToast('ロードをキャンセルしました');
+                  return false;
+                } else if (choice === 'local') {
+                  // ローカルデータをクラウドに保存する
+                  this.showToast('ローカルデータをクラウドに保存中...');
+                  const saveSuccess = await this.saveData();
+                  if (!saveSuccess) {
+                    this.showToast('アップロードに失敗しました', true);
+                    return false;
+                  }
+                  // アップロード成功後は、ローカルのメモリ状態のままでゲームを開始する（以降のロード処理をスキップ）
+                  return true;
+                }
+                // choice === 'cloud' の場合はそのまま以下のクラウドデータロード処理を続行
               }
             }
           } catch (e) {
