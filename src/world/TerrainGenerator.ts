@@ -207,23 +207,33 @@ export class TerrainGenerator {
         const isDesert = tempVal > 0.1 && humidVal < 0;
         const isForest = humidVal > 0.15;
         
-        // 初期スポーン位置 (8,8) からの距離を計算し、周辺32ブロックを完全に平地化、64ブロックに向けて滑らかに山へ繋ぐ
-        const dx = gx - 8;
-        const dz = gz - 8;
-        const distFromSpawn = Math.sqrt(dx * dx + dz * dz);
-        const flatRadius = 32.0;
-        const transitionRadius = 64.0;
-        
-        let heightFactor = 1.0;
-        if (distFromSpawn < flatRadius) {
-          heightFactor = 0.0;
-        } else if (distFromSpawn < transitionRadius) {
-          heightFactor = (distFromSpawn - flatRadius) / (transitionRadius - flatRadius);
+        // 平地化保護エリアの定義 (初期スポーン位置およびユーザーの建築物周辺)
+        const flatAreas = [
+          { x: 8.0, z: 8.0, rFlat: 32.0, rTrans: 64.0 },      // 初期スポーン地点
+          { x: -111.5, z: 41.6, rFlat: 32.0, rTrans: 64.0 }   // ユーザーの建物周辺
+        ];
+
+        let minHeightFactor = 1.0;
+        for (const area of flatAreas) {
+          const dx = gx - area.x;
+          const dz = gz - area.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          
+          let factor = 1.0;
+          if (dist < area.rFlat) {
+            factor = 0.0;
+          } else if (dist < area.rTrans) {
+            factor = (dist - area.rFlat) / (area.rTrans - area.rFlat);
+          }
+          
+          if (factor < minHeightFactor) {
+            minHeightFactor = factor;
+          }
         }
         
         // ベースの高さ (-15 〜 25 程度の起伏)
         const rawHeight = Math.floor(noiseVal * 40) - 2;
-        const surfaceY = Math.floor(rawHeight * heightFactor);
+        const surfaceY = Math.floor(rawHeight * minHeightFactor);
 
         for (let y = 0; y < size; y++) {
           const globalY = globalChunkY + y;
