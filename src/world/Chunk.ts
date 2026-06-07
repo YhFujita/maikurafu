@@ -130,9 +130,9 @@ export class Chunk {
 
     let vertexCount = 0;
     const atlasCols = 4; // アトラスの列数
-    const atlasRows = 16; // アトラスの行数
+    const atlasRows = 18; // アトラスの行数
     const uvStepU = 1.0 / atlasCols; // U方向ステップ (0.25)
-    const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/7)
+    const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/18)
 
     // 周辺の松明の座標を走査（現在のチャンク + 隣接2マスまで検索）
     const torches: { x: number; y: number; z: number }[] = [];

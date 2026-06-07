@@ -207,8 +207,23 @@ export class TerrainGenerator {
         const isDesert = tempVal > 0.1 && humidVal < 0;
         const isForest = humidVal > 0.15;
         
+        // 初期スポーン位置 (8,8) からの距離を計算し、周辺32ブロックを完全に平地化、64ブロックに向けて滑らかに山へ繋ぐ
+        const dx = gx - 8;
+        const dz = gz - 8;
+        const distFromSpawn = Math.sqrt(dx * dx + dz * dz);
+        const flatRadius = 32.0;
+        const transitionRadius = 64.0;
+        
+        let heightFactor = 1.0;
+        if (distFromSpawn < flatRadius) {
+          heightFactor = 0.0;
+        } else if (distFromSpawn < transitionRadius) {
+          heightFactor = (distFromSpawn - flatRadius) / (transitionRadius - flatRadius);
+        }
+        
         // ベースの高さ (-15 〜 25 程度の起伏)
-        const surfaceY = Math.floor(noiseVal * 40) - 2;
+        const rawHeight = Math.floor(noiseVal * 40) - 2;
+        const surfaceY = Math.floor(rawHeight * heightFactor);
 
         for (let y = 0; y < size; y++) {
           const globalY = globalChunkY + y;

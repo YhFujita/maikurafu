@@ -39,11 +39,14 @@ crackTexture.minFilter = THREE.NearestFilter;
 const crackMaterial = new THREE.MeshBasicMaterial({
   map: crackTexture,
   transparent: true,
-  opacity: 0.8,
+  opacity: 0.9,
   depthTest: true,
   depthWrite: false,
+  polygonOffset: true,
+  polygonOffsetFactor: -1,
+  polygonOffsetUnits: -4.0,
 });
-const crackGeometry = new THREE.BoxGeometry(1.01, 1.01, 1.01);
+const crackGeometry = new THREE.BoxGeometry(1.002, 1.002, 1.002);
 const crackMesh = new THREE.Mesh(crackGeometry, crackMaterial);
 crackMesh.visible = false;
 renderer.scene.add(crackMesh);
