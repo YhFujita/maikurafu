@@ -210,7 +210,8 @@ export class TerrainGenerator {
         // 平地化保護エリアの定義 (初期スポーン位置およびユーザーの建築物周辺)
         const flatAreas = [
           { x: 8.0, z: 8.0, rFlat: 32.0, rTrans: 64.0 },      // 初期スポーン地点
-          { x: -111.5, z: 41.6, rFlat: 32.0, rTrans: 64.0 }   // ユーザーの建物周辺
+          { x: -111.5, z: 41.6, rFlat: 32.0, rTrans: 64.0 },  // ユーザーの建物周辺 1
+          { x: -133.5, z: 41.6, rFlat: 32.0, rTrans: 64.0 }   // ユーザーの建物周辺 2
         ];
 
         let minHeightFactor = 1.0;
