@@ -4,7 +4,7 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   const canvas = document.createElement('canvas');
   const tileSize = 16;
   const atlasCols = 4;
-  const atlasRows = 18; // 18 * 4 = 72 blocks capacity
+  const atlasRows = 22; // 22 * 4 = 88 blocks capacity
   canvas.width  = tileSize * atlasCols;
   canvas.height = tileSize * atlasRows;
   const ctx = canvas.getContext('2d')!;
@@ -513,8 +513,8 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillStyle = 'rgb(34, 139, 34)'; // 葉っぱ部分
   ctx.fillRect(3 * tileSize + 7, 8 * tileSize + 3, 2, 3);
 
-  // ツールの共通描画関数 (ツルハシ、斧、シャベル)
-  const drawTool = (index: number, headColor: string, type: 'pickaxe' | 'axe' | 'shovel') => {
+  // ツールの共通描画関数 (ツルハシ、斧、シャベル、クワ)
+  const drawTool = (index: number, headColor: string, type: 'pickaxe' | 'axe' | 'shovel' | 'hoe') => {
     const col = index % 4;
     const row = Math.floor(index / 4);
     const startX = col * tileSize;
@@ -553,6 +553,13 @@ export function createProceduralTextureAtlas(): THREE.Texture {
       ctx.lineTo(startX + 14, startY + 6);
       ctx.lineTo(startX + 12, startY + 8);
       ctx.lineTo(startX + 8, startY + 4);
+      ctx.fill();
+    } else if (type === 'hoe') {
+      ctx.beginPath();
+      ctx.moveTo(startX + 6, startY + 6);
+      ctx.lineTo(startX + 12, startY + 2);
+      ctx.lineTo(startX + 14, startY + 4);
+      ctx.lineTo(startX + 8, startY + 8);
       ctx.fill();
     }
   };
@@ -873,6 +880,93 @@ export function createProceduralTextureAtlas(): THREE.Texture {
   ctx.fillRect(cartX, cartY + tileSize - 2, tileSize, 2);
   ctx.fillRect(cartX, cartY, 2, tileSize);
   ctx.fillRect(cartX + tileSize - 2, cartY, 2, tileSize);
+
+  // 71: パン (col: 3, row: 17)
+  const breadX = 3 * tileSize;
+  const breadY = 17 * tileSize;
+  ctx.clearRect(breadX, breadY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(200, 130, 40)';
+  ctx.fillRect(breadX + 3, breadY + 5, 10, 6);
+  ctx.fillStyle = 'rgb(140, 80, 20)';
+  ctx.fillRect(breadX + 3, breadY + 8, 10, 3);
+  ctx.fillStyle = 'rgb(240, 180, 80)';
+  ctx.fillRect(breadX + 5, breadY + 5, 2, 2);
+  ctx.fillRect(breadX + 9, breadY + 5, 2, 2);
+
+  // 72: 耕地(乾燥) (col: 0, row: 18)
+  drawNoiseRect(0, 18, 110, 75, 45, 15);
+  ctx.fillStyle = 'rgb(80, 50, 20)';
+  for(let i=0; i<tileSize; i+=4) ctx.fillRect(0*tileSize, 18*tileSize + i, tileSize, 1);
+
+  // 73: 耕地(湿潤) (col: 1, row: 18)
+  drawNoiseRect(1, 18, 80, 50, 30, 10);
+  ctx.fillStyle = 'rgb(50, 30, 10)';
+  for(let i=0; i<tileSize; i+=4) ctx.fillRect(1*tileSize, 18*tileSize + i, tileSize, 1);
+
+  // 小麦成長段階の描画関数
+  const drawWheat = (col: number, row: number, height: number, color: string) => {
+    const x = col * tileSize;
+    const y = row * tileSize;
+    ctx.clearRect(x, y, tileSize, tileSize);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + 7, y + tileSize - height, 2, height);
+    if(height > 4) {
+      ctx.fillRect(x + 4, y + tileSize - height + 2, 2, height - 2);
+      ctx.fillRect(x + 10, y + tileSize - height + 2, 2, height - 2);
+    }
+  };
+
+  // 74: 小麦0 (col: 2, row: 18)
+  drawWheat(2, 18, 3, 'rgb(34, 139, 34)');
+  // 75: 小麦1 (col: 3, row: 18)
+  drawWheat(3, 18, 5, 'rgb(40, 160, 40)');
+  // 76: 小麦2 (col: 0, row: 19)
+  drawWheat(0, 19, 7, 'rgb(50, 180, 50)');
+  // 77: 小麦3 (col: 1, row: 19)
+  drawWheat(1, 19, 9, 'rgb(120, 200, 40)');
+  // 78: 小麦4 (col: 2, row: 19)
+  drawWheat(2, 19, 11, 'rgb(160, 210, 30)');
+  // 79: 小麦5 (col: 3, row: 19)
+  drawWheat(3, 19, 13, 'rgb(200, 220, 20)');
+  // 80: 小麦6 (col: 0, row: 20)
+  drawWheat(0, 20, 15, 'rgb(220, 210, 20)');
+  // 81: 小麦完熟 (col: 1, row: 20)
+  drawWheat(1, 20, 16, 'rgb(240, 220, 30)');
+
+  // 82: 小麦アイテム (col: 2, row: 20)
+  const wheatItemX = 2 * tileSize;
+  const wheatItemY = 20 * tileSize;
+  ctx.clearRect(wheatItemX, wheatItemY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(220, 190, 30)';
+  ctx.fillRect(wheatItemX+6, wheatItemY+4, 4, 10);
+  ctx.fillStyle = 'rgb(180, 140, 20)';
+  ctx.fillRect(wheatItemX+5, wheatItemY+6, 6, 2);
+  ctx.fillRect(wheatItemX+5, wheatItemY+10, 6, 2);
+
+  // 83: 種 (col: 3, row: 20)
+  const seedX = 3 * tileSize;
+  const seedY = 20 * tileSize;
+  ctx.clearRect(seedX, seedY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(80, 150, 40)';
+  ctx.fillRect(seedX+6, seedY+8, 2, 2);
+  ctx.fillRect(seedX+9, seedY+7, 2, 2);
+  ctx.fillRect(seedX+7, seedY+11, 2, 2);
+
+  // 84: 木のクワ (col: 0, row: 21)
+  drawTool(84, woodColor, 'hoe');
+  // 85: 石のクワ (col: 1, row: 21)
+  drawTool(85, stoneColor, 'hoe');
+  // 86: 鉄のクワ (col: 2, row: 21)
+  drawTool(86, ironColor, 'hoe');
+  
+  // 87: 骨粉 (col: 3, row: 21)
+  const boneX = 3 * tileSize;
+  const boneY = 21 * tileSize;
+  ctx.clearRect(boneX, boneY, tileSize, tileSize);
+  ctx.fillStyle = 'rgb(240, 240, 240)';
+  ctx.fillRect(boneX+6, boneY+6, 4, 4);
+  ctx.fillStyle = 'rgb(200, 200, 200)';
+  ctx.fillRect(boneX+7, boneY+7, 2, 2);
 
   // キャンバスからテクスチャを作成
   const texture = new THREE.CanvasTexture(canvas);
