@@ -1467,32 +1467,51 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
       }
 
       // タネの植え付け
-      if (activeBlockType === BlockType.SEEDS && 
-          (clickedBlockType === BlockType.FARMLAND || clickedBlockType === BlockType.FARMLAND_WET)) {
-        const cropY = cty_y + 1;
-        if (world.getBlock(ctx_x, cropY, ctz_z) === BlockType.AIR) {
-          world.setBlock(ctx_x, cropY, ctz_z, BlockType.WHEAT_0);
-          SoundManager.playPlace(BlockType.GROUND); // 草の設置音
-          inventory[BlockType.SEEDS]--;
-          syncHotbarUI();
-          player.swing();
-          return;
+      if (activeBlockType === BlockType.SEEDS) {
+        if (clickedBlockType === BlockType.FARMLAND || clickedBlockType === BlockType.FARMLAND_WET) {
+          const cropY = cty_y + 1;
+          if (world.getBlock(ctx_x, cropY, ctz_z) === BlockType.AIR) {
+            world.setBlock(ctx_x, cropY, ctz_z, BlockType.WHEAT_0);
+            SoundManager.playPlace(BlockType.GROUND); // 草の設置音
+            inventory[BlockType.SEEDS]--;
+            syncHotbarUI();
+            player.swing();
+          }
         }
+        return; // タネは通常のブロックとして設置しない
       }
 
       // 骨粉による成長促進
-      if (activeBlockType === BlockType.BONE_MEAL && BLOCKS[clickedBlockType]?.isCrop) {
-        const currentStage = BLOCKS[clickedBlockType].growthStage ?? 0;
-        if (currentStage < 7) {
-          const nextStage = Math.min(7, currentStage + Math.floor(Math.random() * 3) + 2);
-          const nextBlockType = (BlockType.WHEAT_0 + nextStage) as BlockType;
-          world.setBlock(ctx_x, cty_y, ctz_z, nextBlockType);
-          SoundManager.playPlace(BlockType.GLASS); // キラキラした音（ガラスの音を代用）
-          inventory[BlockType.BONE_MEAL]--;
-          syncHotbarUI();
-          player.swing();
-          return;
+      if (activeBlockType === BlockType.BONE_MEAL) {
+        let targetCropX = ctx_x;
+        let targetCropY = cty_y;
+        let targetCropZ = ctz_z;
+        let targetCropType: BlockType = clickedBlockType;
+
+        // 耕地をクリックした場合はその上のブロックを調べる
+        if (clickedBlockType === BlockType.FARMLAND || clickedBlockType === BlockType.FARMLAND_WET) {
+          targetCropY = cty_y + 1;
+          targetCropType = world.getBlock(targetCropX, targetCropY, targetCropZ);
         }
+
+        if (BLOCKS[targetCropType]?.isCrop) {
+          const currentStage = BLOCKS[targetCropType].growthStage ?? 0;
+          if (currentStage < 7) {
+            const nextStage = Math.min(7, currentStage + Math.floor(Math.random() * 3) + 2);
+            const nextBlockType = (BlockType.WHEAT_0 + nextStage) as BlockType;
+            world.setBlock(targetCropX, targetCropY, targetCropZ, nextBlockType);
+            SoundManager.playPlace(BlockType.GLASS); // キラキラした音（ガラスの音を代用）
+            inventory[BlockType.BONE_MEAL]--;
+            syncHotbarUI();
+            player.swing();
+          }
+        }
+        return; // 骨粉は通常のブロックとして設置しない
+      }
+
+      // その他のアイテム（小麦、パン）やツールは設置しない
+      if (activeBlockType === BlockType.WHEAT_ITEM || activeBlockType === BlockType.BREAD || BLOCKS[activeBlockType]?.isTool) {
+        return;
       }
 
       // インベントリの残個数チェック
