@@ -68,6 +68,24 @@ export enum BlockType {
   WET_SPONGE = 66,        // 濡れたスポンジ
   RAIL = 67,              // レール
   MINECART = 68,          // トロッコ
+  // --- 農業システム ---
+  FARMLAND = 69,          // 耕地（乾燥）
+  FARMLAND_WET = 70,      // 耕地（水耕・濡れ）
+  WHEAT_0 = 71,           // 小麦 成長段階0
+  WHEAT_1 = 72,           // 小麦 成長段階1
+  WHEAT_2 = 73,           // 小麦 成長段階2
+  WHEAT_3 = 74,           // 小麦 成長段階3
+  WHEAT_4 = 75,           // 小麦 成長段階4
+  WHEAT_5 = 76,           // 小麦 成長段階5
+  WHEAT_6 = 77,           // 小麦 成長段階6
+  WHEAT_7 = 78,           // 小麦 完熟（収穫可能）
+  WHEAT_ITEM = 79,        // 小麦（収穫物アイテム）
+  SEEDS = 80,             // 小麦のタネ
+  WOODEN_HOE = 81,        // 木のクワ
+  STONE_HOE = 82,         // 石のクワ
+  IRON_HOE = 83,          // 鉄のクワ
+  BONE_MEAL = 84,         // 骨粉（成長促進）
+  BREAD = 85,             // パン
 }
 
 export interface BlockProperties {
@@ -90,12 +108,16 @@ export interface BlockProperties {
 
   // 破壊・採掘関連のプロパティ
   hardness?: number; // 壊すのにかかる基準時間（秒）。0や未定義なら瞬時(またはデフォルト値)
-  requiredToolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword' | 'none'; // 適性ツール
+  requiredToolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword' | 'hoe' | 'none'; // 適性ツール
   minToolTier?: number; // ドロップに必要なツールの最低ランク (0:木/手, 1:石, 2:鉄, 3:ダイヤ)
 
   // ツールとしてのプロパティ（アイテム向け）
   isTool?: boolean;
-  toolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword';
+  toolCategory?: 'pickaxe' | 'axe' | 'shovel' | 'sword' | 'hoe';
+  // 農業関連フラグ
+  isCrop?: boolean; // 作物ブロックかどうか
+  growthStage?: number; // 成長段階 (0〜7)
+  isFarmland?: boolean; // 農地ブロックかどうか
   toolTier?: number;
   speedMultiplier?: number; // 採掘速度の倍率
 }
@@ -718,5 +740,177 @@ export const BLOCKS: Record<BlockType, BlockProperties> = {
     isSolid: false,
     isTransparent: true,
     uvs: { front: 70, back: 70, left: 70, right: 70, top: 70, bottom: 70 },
+  },
+  // =========== 農業システム ===========
+  [BlockType.FARMLAND]: {
+    id: BlockType.FARMLAND,
+    name: 'たがやした土',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 72, back: 72, left: 72, right: 72, top: 72, bottom: 2 },
+    drops: BlockType.DIRT,
+    hardness: 0.5,
+    requiredToolCategory: 'shovel',
+    isFarmland: true,
+  },
+  [BlockType.FARMLAND_WET]: {
+    id: BlockType.FARMLAND_WET,
+    name: 'しめった農地',
+    isSolid: true,
+    isTransparent: false,
+    uvs: { front: 73, back: 73, left: 73, right: 73, top: 73, bottom: 2 },
+    drops: BlockType.DIRT,
+    hardness: 0.5,
+    requiredToolCategory: 'shovel',
+    isFarmland: true,
+  },
+  [BlockType.WHEAT_0]: {
+    id: BlockType.WHEAT_0,
+    name: '小麦（めが出た）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 74, back: 74, left: 74, right: 74, top: 74, bottom: 74 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 0,
+  },
+  [BlockType.WHEAT_1]: {
+    id: BlockType.WHEAT_1,
+    name: '小麦（成長中1）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 75, back: 75, left: 75, right: 75, top: 75, bottom: 75 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 1,
+  },
+  [BlockType.WHEAT_2]: {
+    id: BlockType.WHEAT_2,
+    name: '小麦（成長中2）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 76, back: 76, left: 76, right: 76, top: 76, bottom: 76 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 2,
+  },
+  [BlockType.WHEAT_3]: {
+    id: BlockType.WHEAT_3,
+    name: '小麦（成長中3）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 77, back: 77, left: 77, right: 77, top: 77, bottom: 77 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 3,
+  },
+  [BlockType.WHEAT_4]: {
+    id: BlockType.WHEAT_4,
+    name: '小麦（成長中4）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 78, back: 78, left: 78, right: 78, top: 78, bottom: 78 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 4,
+  },
+  [BlockType.WHEAT_5]: {
+    id: BlockType.WHEAT_5,
+    name: '小麦（成長中5）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 79, back: 79, left: 79, right: 79, top: 79, bottom: 79 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 5,
+  },
+  [BlockType.WHEAT_6]: {
+    id: BlockType.WHEAT_6,
+    name: '小麦（成長中6）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 80, back: 80, left: 80, right: 80, top: 80, bottom: 80 },
+    drops: BlockType.SEEDS,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 6,
+  },
+  [BlockType.WHEAT_7]: {
+    id: BlockType.WHEAT_7,
+    name: '小麦（完熟）',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 81, back: 81, left: 81, right: 81, top: 81, bottom: 81 },
+    drops: BlockType.WHEAT_ITEM,
+    hardness: 0.0,
+    isCrop: true,
+    growthStage: 7,
+  },
+  [BlockType.WHEAT_ITEM]: {
+    id: BlockType.WHEAT_ITEM,
+    name: '小麦',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 82, back: 82, left: 82, right: 82, top: 82, bottom: 82 },
+  },
+  [BlockType.SEEDS]: {
+    id: BlockType.SEEDS,
+    name: '小麦のタネ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 83, back: 83, left: 83, right: 83, top: 83, bottom: 83 },
+  },
+  [BlockType.WOODEN_HOE]: {
+    id: BlockType.WOODEN_HOE,
+    name: '木のクワ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 84, back: 84, left: 84, right: 84, top: 84, bottom: 84 },
+    isTool: true,
+    toolCategory: 'hoe',
+    toolTier: 0,
+    speedMultiplier: 2.0,
+  },
+  [BlockType.STONE_HOE]: {
+    id: BlockType.STONE_HOE,
+    name: '石のクワ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 85, back: 85, left: 85, right: 85, top: 85, bottom: 85 },
+    isTool: true,
+    toolCategory: 'hoe',
+    toolTier: 1,
+    speedMultiplier: 4.0,
+  },
+  [BlockType.IRON_HOE]: {
+    id: BlockType.IRON_HOE,
+    name: '鉄のクワ',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 86, back: 86, left: 86, right: 86, top: 86, bottom: 86 },
+    isTool: true,
+    toolCategory: 'hoe',
+    toolTier: 2,
+    speedMultiplier: 6.0,
+  },
+  [BlockType.BONE_MEAL]: {
+    id: BlockType.BONE_MEAL,
+    name: '骨粉',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 87, back: 87, left: 87, right: 87, top: 87, bottom: 87 },
+  },
+  [BlockType.BREAD]: {
+    id: BlockType.BREAD,
+    name: 'パン',
+    isSolid: false,
+    isTransparent: true,
+    uvs: { front: 71, back: 71, left: 71, right: 71, top: 71, bottom: 71 },
   },
 };

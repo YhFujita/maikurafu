@@ -183,6 +183,24 @@ const inventory: Record<BlockType, number> = {
   [BlockType.WET_SPONGE]: 0,
   [BlockType.RAIL]: 64,
   [BlockType.MINECART]: 64,
+  // --- 農業システム ---
+  [BlockType.FARMLAND]: 0,
+  [BlockType.FARMLAND_WET]: 0,
+  [BlockType.WHEAT_0]: 0,
+  [BlockType.WHEAT_1]: 0,
+  [BlockType.WHEAT_2]: 0,
+  [BlockType.WHEAT_3]: 0,
+  [BlockType.WHEAT_4]: 0,
+  [BlockType.WHEAT_5]: 0,
+  [BlockType.WHEAT_6]: 0,
+  [BlockType.WHEAT_7]: 0,
+  [BlockType.WHEAT_ITEM]: 0,
+  [BlockType.SEEDS]: 64,
+  [BlockType.WOODEN_HOE]: 1,
+  [BlockType.STONE_HOE]: 0,
+  [BlockType.IRON_HOE]: 0,
+  [BlockType.BONE_MEAL]: 64,
+  [BlockType.BREAD]: 0,
 };
 
 // 設定UIの初期化
@@ -236,6 +254,17 @@ const hotbarPages = [
     BlockType.FENCE,       // 7: 柵
     BlockType.BED_HEAD,    // 8: ベッド
     BlockType.FURNACE,     // 9: かまど
+  ],
+  [
+    BlockType.WOODEN_HOE,  // 1: 木のクワ
+    BlockType.SEEDS,       // 2: 小麦のタネ
+    BlockType.BONE_MEAL,   // 3: 骨粉
+    BlockType.BREAD,       // 4: パン
+    BlockType.WHEAT_ITEM,  // 5: 小麦（アイテム）
+    BlockType.FARMLAND,    // 6: たがやした土
+    BlockType.WATER_BUCKET, // 7: 水入りバケツ
+    BlockType.APPLE,       // 8: リンゴ
+    BlockType.COAL,        // 9: 石炭
   ]
 ];
 
@@ -401,9 +430,10 @@ saveManager.onLoadCustomData = (data: any) => {
       if (inv.blocks) {
         Object.assign(inventory, inv.blocks);
       }
-      if (inv.hotbarPages) {
-        hotbarPages[0] = [...inv.hotbarPages[0]];
-        hotbarPages[1] = [...inv.hotbarPages[1]];
+      if (inv.hotbarPages && Array.isArray(inv.hotbarPages)) {
+        for (let i = 0; i < Math.min(hotbarPages.length, inv.hotbarPages.length); i++) {
+          hotbarPages[i] = [...inv.hotbarPages[i]];
+        }
       }
       if (typeof inv.activePage === 'number') {
         activePage = inv.activePage;
@@ -718,9 +748,12 @@ function animate(time: number) {
   // かまど精錬プロセスの更新
   updateFurnace(deltaTime);
 
+  // 農業アップデートの実行
+  updateFarming(deltaTime, world, player.position);
+
   // Tabキー押下時のホットバーページ切り替え
   if (input.consumeJustPressed('Tab')) {
-    activePage = 1 - activePage;
+    activePage = (activePage + 1) % hotbarPages.length;
     slotBlocks = hotbarPages[activePage];
     syncHotbarUI();
   }
@@ -994,6 +1027,86 @@ function animate(time: number) {
   renderer.render();
 }
 
+// 農業用ユーティリティ：周囲4マス以内に水があるかチェック
+function isWaterNearby(world: World, startX: number, startY: number, startZ: number): boolean {
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dz = -4; dz <= 4; dz++) {
+        if (world.getBlock(startX + dx, startY + dy, startZ + dz) === BlockType.WATER) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+// 農業アップデートタイマーとロジック
+let farmingTimer = 0;
+function updateFarming(deltaTime: number, world: World, playerPos: THREE.Vector3) {
+  farmingTimer += deltaTime;
+  if (farmingTimer < 1.0) return; // 1秒ごとに実行
+  farmingTimer = 0;
+
+  const px = Math.floor(playerPos.x);
+  const py = Math.floor(playerPos.y);
+  const pz = Math.floor(playerPos.z);
+
+  // 1秒ごとにプレイヤー周囲のランダムな位置をチェック
+  const numTicks = 30;
+  for (let i = 0; i < numTicks; i++) {
+    const rx = px + Math.floor((Math.random() - 0.5) * 48);
+    const ry = py + Math.floor((Math.random() - 0.5) * 16);
+    const rz = pz + Math.floor((Math.random() - 0.5) * 48);
+
+    const blockType = world.getBlock(rx, ry, rz);
+    const blockProp = BLOCKS[blockType];
+
+    // 1. 農地の水分と状態の更新
+    if (blockProp && blockProp.isFarmland) {
+      const hasWater = isWaterNearby(world, rx, ry, rz);
+      if (hasWater && blockType === BlockType.FARMLAND) {
+        world.setBlock(rx, ry, rz, BlockType.FARMLAND_WET);
+      } else if (!hasWater && blockType === BlockType.FARMLAND_WET) {
+        if (Math.random() < 0.15) {
+          world.setBlock(rx, ry, rz, BlockType.FARMLAND);
+        }
+      }
+
+      // 上が空気の乾燥農地は低確率で土に戻る
+      if (blockType === BlockType.FARMLAND) {
+        const aboveType = world.getBlock(rx, ry + 1, rz);
+        if (aboveType === BlockType.AIR && Math.random() < 0.05) {
+          world.setBlock(rx, ry, rz, BlockType.DIRT);
+        }
+      }
+    }
+
+    // 2. 小麦の成長
+    if (blockProp && blockProp.isCrop) {
+      const currentStage = blockProp.growthStage ?? 0;
+      if (currentStage < 7) {
+        const belowType = world.getBlock(rx, ry - 1, rz);
+        if (belowType === BlockType.FARMLAND_WET) {
+          if (Math.random() < 0.20) {
+            const nextBlock = (BlockType.WHEAT_0 + currentStage + 1) as BlockType;
+            world.setBlock(rx, ry, rz, nextBlock);
+          }
+        } else if (belowType === BlockType.FARMLAND) {
+          if (Math.random() < 0.03) {
+            const nextBlock = (BlockType.WHEAT_0 + currentStage + 1) as BlockType;
+            world.setBlock(rx, ry, rz, nextBlock);
+          }
+        } else {
+          // 土台が農地でなければアイテム化
+          world.setBlock(rx, ry, rz, BlockType.AIR);
+          spawnDroppedItem(BlockType.SEEDS, new THREE.Vector3(rx + 0.5, ry + 0.5, rz + 0.5), playerPos);
+        }
+      }
+    }
+  }
+}
+
 // ブロック破壊処理を実行する関数
 function executeBlockDestroy(targetBlockType: BlockType, bx: number, by: number, bz: number) {
   // 岩盤は壊せない
@@ -1030,27 +1143,44 @@ function executeBlockDestroy(targetBlockType: BlockType, bx: number, by: number,
     // ベッドアイテムを必ず1個ドロップ
     spawnDroppedItem(BlockType.BED_HEAD, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
   } else {
-    // 適性ツールによるドロップ判定
     const blockProps = BLOCKS[targetBlockType];
-    const toolProps = BLOCKS[activeBlockType];
-    const minTier = blockProps.minToolTier || 0;
-    const toolTier = toolProps.isTool ? (toolProps.toolTier || 0) : 0;
-    
-    // ツールのティアが足りている場合のみドロップ
-    if (toolTier >= minTier) {
-      // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
-      if (targetBlockType !== BlockType.DOOR_OPEN) {
-        let dropType = blockProps.drops ?? targetBlockType;
 
-        // 葉っぱ特有のドロップロジック（低確率でリンゴ）
-        if (targetBlockType === BlockType.LEAVES) {
-          const r = Math.random();
-          if (r < 0.05) dropType = BlockType.APPLE;
-          else dropType = BlockType.AIR; // 基本は何も落ちない
+    // 作物（小麦）の特別なドロップロジック
+    if (blockProps && blockProps.isCrop) {
+      const dropPos = new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5);
+      if (targetBlockType === BlockType.WHEAT_7) {
+        // 完熟：小麦1個＋タネ1〜3個
+        spawnDroppedItem(BlockType.WHEAT_ITEM, dropPos, player.position);
+        const seedsCount = Math.floor(Math.random() * 3) + 1; // 1〜3個
+        for (let i = 0; i < seedsCount; i++) {
+          spawnDroppedItem(BlockType.SEEDS, dropPos, player.position);
         }
+      } else {
+        // 未熟：タネ1個
+        spawnDroppedItem(BlockType.SEEDS, dropPos, player.position);
+      }
+    } else {
+      // 適性ツールによるドロップ判定
+      const toolProps = BLOCKS[activeBlockType];
+      const minTier = blockProps.minToolTier || 0;
+      const toolTier = toolProps.isTool ? (toolProps.toolTier || 0) : 0;
+      
+      // ツールのティアが足りている場合のみドロップ
+      if (toolTier >= minTier) {
+        // 通常ブロックのドロップ（扉は上下2マス分でドロップは1個のみ）
+        if (targetBlockType !== BlockType.DOOR_OPEN) {
+          let dropType = blockProps.drops ?? targetBlockType;
 
-        if (dropType !== BlockType.AIR) {
-          spawnDroppedItem(dropType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+          // 葉っぱ特有のドロップロジック（低確率でリンゴ）
+          if (targetBlockType === BlockType.LEAVES) {
+            const r = Math.random();
+            if (r < 0.05) dropType = BlockType.APPLE;
+            else dropType = BlockType.AIR; // 基本は何も落ちない
+          }
+
+          if (dropType !== BlockType.AIR) {
+            spawnDroppedItem(dropType, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5), player.position);
+          }
         }
       }
     }
@@ -1304,6 +1434,46 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
           }
           SoundManager.playPlace(BlockType.MAGMA_BLOCK);
           syncHotbarUI();
+          return;
+        }
+      }
+
+      // クワによる耕地化
+      const isHoe = BLOCKS[activeBlockType]?.toolCategory === 'hoe';
+      if (isHoe && (clickedBlockType === BlockType.GROUND || clickedBlockType === BlockType.DIRT)) {
+        const hasWater = isWaterNearby(world, ctx_x, cty_y, ctz_z);
+        const farmlandType = hasWater ? BlockType.FARMLAND_WET : BlockType.FARMLAND;
+        world.setBlock(ctx_x, cty_y, ctz_z, farmlandType);
+        SoundManager.playPlace(BlockType.DIRT); // 耕す音
+        player.swing();
+        return;
+      }
+
+      // タネの植え付け
+      if (activeBlockType === BlockType.SEEDS && 
+          (clickedBlockType === BlockType.FARMLAND || clickedBlockType === BlockType.FARMLAND_WET)) {
+        const cropY = cty_y + 1;
+        if (world.getBlock(ctx_x, cropY, ctz_z) === BlockType.AIR) {
+          world.setBlock(ctx_x, cropY, ctz_z, BlockType.WHEAT_0);
+          SoundManager.playPlace(BlockType.GROUND); // 草の設置音
+          inventory[BlockType.SEEDS]--;
+          syncHotbarUI();
+          player.swing();
+          return;
+        }
+      }
+
+      // 骨粉による成長促進
+      if (activeBlockType === BlockType.BONE_MEAL && BLOCKS[clickedBlockType]?.isCrop) {
+        const currentStage = BLOCKS[clickedBlockType].growthStage ?? 0;
+        if (currentStage < 7) {
+          const nextStage = Math.min(7, currentStage + Math.floor(Math.random() * 3) + 2);
+          const nextBlockType = (BlockType.WHEAT_0 + nextStage) as BlockType;
+          world.setBlock(ctx_x, cty_y, ctz_z, nextBlockType);
+          SoundManager.playPlace(BlockType.GLASS); // キラキラした音（ガラスの音を代用）
+          inventory[BlockType.BONE_MEAL]--;
+          syncHotbarUI();
+          player.swing();
           return;
         }
       }

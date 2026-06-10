@@ -207,4 +207,26 @@ export const RECIPES: Recipe[] = [
     inputs: [{ type: BlockType.BIRCH_PLANK, count: 2 }, { type: BlockType.STICK, count: 4 }],
     output: { type: BlockType.FENCE, count: 3 },
   },
+  // --- 農業システムレシピ ---
+  {
+    id: 'wooden_hoe',
+    inputs: [{ type: BlockType.STICK, count: 2 }, { type: BlockType.PLANK, count: 2 }],
+    output: { type: BlockType.WOODEN_HOE, count: 1 },
+  },
+  {
+    id: 'stone_hoe',
+    inputs: [{ type: BlockType.STICK, count: 2 }, { type: BlockType.COBBLESTONE, count: 2 }],
+    output: { type: BlockType.STONE_HOE, count: 1 },
+  },
+  {
+    id: 'iron_hoe',
+    inputs: [{ type: BlockType.STICK, count: 2 }, { type: BlockType.IRON_INGOT, count: 2 }],
+    output: { type: BlockType.IRON_HOE, count: 1 },
+  },
+  {
+    id: 'bread',
+    inputs: [{ type: BlockType.WHEAT_ITEM, count: 3 }],
+    output: { type: BlockType.BREAD, count: 1 },
+  },
 ];
+

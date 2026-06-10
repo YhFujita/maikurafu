@@ -309,6 +309,7 @@
       margin-bottom: 10px;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互換性のため） */
       -webkit-text-fill-color: transparent;
       letter-spacing: 1px;
     }
@@ -579,6 +580,7 @@
       margin-bottom: 20px;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互换性のため） */
       -webkit-text-fill-color: transparent;
       text-align: center;
     }
@@ -1354,6 +1356,79 @@
       font-size: 1.1rem;
     }
 
+    .slot-wheat-item {
+      background: linear-gradient(135deg, #fef08a, #eab308);
+      position: relative;
+    }
+    .slot-wheat-item::after {
+      content: '🌾';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.1rem;
+    }
+    .slot-wooden-hoe {
+      background: linear-gradient(135deg, #d97706, #78350f);
+      position: relative;
+    }
+    .slot-wooden-hoe::after {
+      content: '🪓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 1.1rem;
+    }
+    .slot-stone-hoe {
+      background: linear-gradient(135deg, #9ca3af, #4b5563);
+      position: relative;
+    }
+    .slot-stone-hoe::after {
+      content: '🪓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 1.1rem;
+    }
+    .slot-iron-hoe {
+      background: linear-gradient(135deg, #cbd5e1, #64748b);
+      position: relative;
+    }
+    .slot-iron-hoe::after {
+      content: '🪓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 1.1rem;
+    }
+    .slot-bone-meal {
+      background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+      position: relative;
+    }
+    .slot-bone-meal::after {
+      content: '🦴';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      font-size: 1.1rem;
+    }
+    .slot-bread {
+      background: linear-gradient(135deg, #f59e0b, #b45309);
+      position: relative;
+    }
+    .slot-bread::after {
+      content: '🍞';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.1rem;
+    }
+
     .slot-num {
       position: absolute;
       top: 2px;
@@ -1491,6 +1566,7 @@
       font-weight: 800;
       background: linear-gradient(135deg, #3b82f6, #8b5cf6);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互换性のため） */
       -webkit-text-fill-color: transparent;
       margin-bottom: 6px;
     }
@@ -1693,7 +1769,7 @@
       margin-top: 20px;
     }
   </style>
-  <script type="module" crossorigin src="./assets/index-wdyWXksI.js"></script>
+  <script type="module" crossorigin src="./assets/index-CU2YYGDa.js"></script>
 </head>
 
 <body>
@@ -2198,7 +2274,17 @@
           <li style="margin-bottom: 8px;"><strong>鉄の道具を作る:</strong> 出来上がった鉄インゴットを使って、より強い「鉄のツルハシ」や「鉄の剣」を作りましょう！</li>
         </ol>
 
-        <h2>📜 4. 全レシピ一覧</h2>
+                <h2>🌾 4. 農業（小麦の栽培）</h2>
+        <p>食料を安定して確保するために、畑を作って小麦を育てることができます。</p>
+        <ol style="margin-top: 10px; margin-bottom: 20px;">
+          <li style="margin-bottom: 8px;"><strong>クワを作る:</strong> クラフト画面で「木の棒」と「丸石/鉄インゴット」を使って「クワ」を作成します。</li>
+          <li style="margin-bottom: 8px;"><strong>畑を耕す:</strong> クワを手に持ち、<strong>土ブロック</strong>に向かって<strong>「右クリック」</strong>すると「耕地（畑）」になります。</li>
+          <li style="margin-bottom: 8px;"><strong>タネを植える:</strong> 雑草を破壊して手に入れた「タネ」を手に持ち、耕地に向かって<strong>「右クリック」</strong>するとタネを植えられます。</li>
+          <li style="margin-bottom: 8px;"><strong>成長を待つ（または骨粉を使う）:</strong> 小麦は時間経過で徐々に成長します。早く育てたいときは、<strong>「骨粉」</strong>を持って小麦に<strong>「右クリック」</strong>すると瞬時に成長します。</li>
+          <li style="margin-bottom: 8px;"><strong>収穫とクラフト:</strong> 小麦が完熟（黄金色の状態）になったら、左クリックで破壊して「小麦」と「タネ」を収穫します。小麦3個から<strong>「パン」</strong>をクラフトできます。</li>
+        </ol>
+
+        <h2>📜 5. 全レシピ一覧</h2>
         <h3>🪵 基本素材・建築ブロック</h3>
         <table>
           <tr>
@@ -2302,12 +2388,12 @@
             <td>木の棒 ×2, 木材（ツルハシ/斧は3, シャベルは1）</td>
           </tr>
           <tr>
-            <td><strong>石のツルハシ・斧・シャベル</strong></td>
-            <td>木の棒 ×2, 丸石（ツルハシ/斧は3, シャベルは1）</td>
+            <td><strong>石のツルハシ・斧・シャベル・クワ</strong></td>
+            <td>木の棒 ×2, 丸石（ツルハシ/斧は3, クワは2, シャベルは1）</td>
           </tr>
           <tr>
-            <td><strong>鉄のツルハシ・斧・シャベル</strong></td>
-            <td>木の棒 ×2, 鉄インゴット（ツルハシ/斧は3, シャベルは1）</td>
+            <td><strong>鉄のツルハシ・斧・シャベル・クワ</strong></td>
+            <td>木の棒 ×2, 鉄インゴット（ツルハシ/斧は3, クワは2, シャベルは1）</td>
           </tr>
           <tr>
             <td><strong>ダイヤのツルハシ・斧・シャベル</strong></td>
@@ -2349,7 +2435,21 @@
           </tr>
         </table>
 
-        <h2>🐾 5. 動物たちとの触れ合い</h2>
+                <h3>🌾 食べ物・農業</h3>
+        <table>
+          <tr>
+            <th>作り出せるアイテム</th>
+            <th>必要な素材</th>
+            <th>使い道</th>
+          </tr>
+          <tr>
+            <td><strong>パン</strong></td>
+            <td>小麦 ×3</td>
+            <td>美味しい食料（パン）を収穫した小麦から作ります。</td>
+          </tr>
+        </table>
+
+        <h2>🐾 6. 動物たちとの触れ合い</h2>
         <p>フィールドには様々な動物が登場します。動物を倒すとアイテムをゲットできます！</p>
         <table>
           <tr><th>動物</th><th>手に入るアイテム</th><th>行動</th></tr>
@@ -2361,7 +2461,7 @@
           <tr><td><strong>クリーパー（夜間）</strong></td><td><strong>石炭</strong></td><td>近づくと爆発する。すぐに逃げること！</td></tr>
         </table>
 
-        <h2>💬 6. むらびと・他プレイヤーとの会話</h2>
+        <h2>💬 7. むらびと・他プレイヤーとの会話</h2>
         <p>むらびとや画面上の他プレイヤーアバターに近づいて <strong>右クリック</strong> すると話しかけることができます！</p>
         <ul>
           <li>むらびとはランダムな挨拶文を返してくれます。</li>

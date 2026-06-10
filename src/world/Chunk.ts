@@ -130,9 +130,9 @@ export class Chunk {
 
     let vertexCount = 0;
     const atlasCols = 4; // アトラスの列数
-    const atlasRows = 18; // アトラスの行数
+    const atlasRows = 22; // アトラスの行数
     const uvStepU = 1.0 / atlasCols; // U方向ステップ (0.25)
-    const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/18)
+    const uvStepV = 1.0 / atlasRows; // V方向ステップ (1/22)
 
     // 周辺の松明の座標を走査（現在のチャンク + 隣接2マスまで検索）
     const torches: { x: number; y: number; z: number }[] = [];
@@ -646,8 +646,8 @@ export class Chunk {
             continue;
           }
 
-          // お花：対角線上に交差するプレート
-          if (blockType === BlockType.FLOWER_DANDELION || blockType === BlockType.FLOWER_ROSE) {
+          // お花・作物：対角線上に交差するプレート
+          if (blockType === BlockType.FLOWER_DANDELION || blockType === BlockType.FLOWER_ROSE || blockProp.isCrop) {
             addCrossPlate(globalX, globalY, globalZ, blockProp.uvs.front);
             continue;
           }
@@ -718,6 +718,12 @@ export class Chunk {
                 let vx = globalX + corner[0];
                 let vy = globalY + corner[1];
                 let vz = globalZ + corner[2];
+
+                if (blockProp.isFarmland) {
+                  if (corner[1] === 1) {
+                    vy -= 0.0625; // 高さを 15/16 (1 - 1/16) にする
+                  }
+                }
 
                 if (isTorch) {
                   // 松明専用の細長い棒状アバターを生成 (幅2/16 = 0.125, 高さ10/16 = 0.625)
