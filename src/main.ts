@@ -940,12 +940,12 @@ function animate(time: number) {
   }
   prevShouldBreak = currentShouldBreak;
   
-  if (shouldBreak && input.isLocked) {
-    player.swing(); // 長押し中はスイングを繰り返しトリガー
+  let hitValidBlock = false;
+
+  if (input.isLocked) {
     raycaster.setFromCamera(new THREE.Vector2(0, 0), player.camera);
     const chunkMeshes = world.getChunkMeshes();
     const intersects = raycaster.intersectObjects(chunkMeshes);
-    let hitValidBlock = false;
 
     if (intersects.length > 0 && intersects[0].distance <= maxInteractDistance) {
       const intersect = intersects[0];
@@ -961,67 +961,80 @@ function animate(time: number) {
 
         if (targetBlockType !== BlockType.AIR && targetBlockType !== BlockType.BEDROCK) {
           hitValidBlock = true;
-          
           const currentTargetPos = new THREE.Vector3(bx, by, bz);
-          if (!isBreakingBlock || !breakingTargetPos.equals(currentTargetPos)) {
-            // 新しいブロックを破壊開始
-            isBreakingBlock = true;
-            breakingTargetPos.copy(currentTargetPos);
+
+          if (isBreakingBlock && !breakingTargetPos.equals(currentTargetPos)) {
+            // 別のブロックを見たらリセット
+            isBreakingBlock = false;
+            crackMesh.visible = false;
             breakingProgress = 0.0;
-            crackMesh.position.set(bx + 0.5, by + 0.5, bz + 0.5);
-            crackMesh.visible = true;
-            updateCrackTexture(0);
+          }
 
-            // イージーモードなら即座に破壊を実行
+          if (shouldBreak) {
+            player.swing(); // 破壊アクション
+            
+            if (!isBreakingBlock) {
+              // 新しいブロックを破壊開始
+              isBreakingBlock = true;
+              breakingTargetPos.copy(currentTargetPos);
+              breakingProgress = 0.0;
+              crackMesh.position.set(bx + 0.5, by + 0.5, bz + 0.5);
+              crackMesh.visible = true;
+              updateCrackTexture(0);
+            }
+
             if (config.easyMode) {
-              executeBlockDestroy(targetBlockType, bx, by, bz);
-              isBreakingBlock = false;
-              crackMesh.visible = false;
-              breakingProgress = 0.0;
-              easyModeBreakTimer = 0.25; // 0.25秒の連打防止クールダウンを設定
-            }
-          } else {
-            // 破壊継続中
-            const blockProps = BLOCKS[targetBlockType];
-            const toolProps = BLOCKS[activeBlockType] || {};
-            
-            let hardness = blockProps.hardness || 1.0;
-            let speed = 1.0; // 基準速度
-            
-            // 手持ちのツール適性チェック
-            const isAppropriateTool = !blockProps.requiredToolCategory || blockProps.requiredToolCategory === 'none' || toolProps.toolCategory === blockProps.requiredToolCategory;
-            
-            if (isAppropriateTool && toolProps.isTool) {
-              speed *= (toolProps.speedMultiplier || 1.0);
-            } else if (!isAppropriateTool && blockProps.requiredToolCategory && blockProps.requiredToolCategory !== 'none') {
-              // 適性ツールでない場合は極端に遅くなる（10分の1）
-              speed *= 0.1;
-            }
-            
-            // 破壊にかかる時間 = hardness * 1.5 (基準係数) / speed
-            const requiredTime = (hardness * 1.5) / speed;
-            breakingProgress += deltaTime / requiredTime;
-            
-            updateCrackTexture(breakingProgress);
+              // イージーモード：クリックごとに進行度を進める (約3回で破壊)
+              breakingProgress += 0.34;
+              if (breakingProgress >= 1.0) {
+                executeBlockDestroy(targetBlockType, bx, by, bz);
+                isBreakingBlock = false;
+                crackMesh.visible = false;
+                breakingProgress = 0.0;
+              } else {
+                updateCrackTexture(breakingProgress);
+              }
+              easyModeBreakTimer = 0.25; // 連打防止クールダウン
+            } else {
+              // ノーマルモード：長押しで破壊進行
+              const blockProps = BLOCKS[targetBlockType];
+              const toolProps = BLOCKS[activeBlockType] || {};
+              
+              let hardness = blockProps.hardness || 1.0;
+              let speed = 1.0; // 基準速度
+              
+              // 手持ちのツール適性チェック
+              const isAppropriateTool = !blockProps.requiredToolCategory || blockProps.requiredToolCategory === 'none' || toolProps.toolCategory === blockProps.requiredToolCategory;
+              
+              if (isAppropriateTool && toolProps.isTool) {
+                speed *= (toolProps.speedMultiplier || 1.0);
+              } else if (!isAppropriateTool && blockProps.requiredToolCategory && blockProps.requiredToolCategory !== 'none') {
+                // 適性ツールでない場合は極端に遅くなる（10分の1）
+                speed *= 0.1;
+              }
+              
+              // 破壊にかかる時間 = hardness * 1.5 (基準係数) / speed
+              const requiredTime = (hardness * 1.5) / speed;
+              breakingProgress += deltaTime / requiredTime;
+              
+              updateCrackTexture(breakingProgress);
 
-            if (breakingProgress >= 1.0) {
-              // 破壊完了
-              executeBlockDestroy(targetBlockType, bx, by, bz);
-              isBreakingBlock = false;
-              crackMesh.visible = false;
-              breakingProgress = 0.0;
+              if (breakingProgress >= 1.0) {
+                // 破壊完了
+                executeBlockDestroy(targetBlockType, bx, by, bz);
+                isBreakingBlock = false;
+                crackMesh.visible = false;
+                breakingProgress = 0.0;
+              }
             }
           }
         }
       }
     }
-    
-    if (!hitValidBlock) {
-      isBreakingBlock = false;
-      crackMesh.visible = false;
-      breakingProgress = 0.0;
-    }
-  } else {
+  }
+
+  // ブロックに当たっていない、またはノーマルモードでボタンを離した場合はリセット
+  if (!hitValidBlock || (!shouldBreak && !config.easyMode)) {
     isBreakingBlock = false;
     crackMesh.visible = false;
     breakingProgress = 0.0;
