@@ -685,8 +685,12 @@ function animate(time: number) {
     easyModeBreakTimer -= deltaTime;
   }
 
-  // プレイヤーの周辺ブロックの物理ボディを同期
-  physics.updateBlockBodies(player.position, world);
+  // プレイヤーおよびMobの周辺ブロックの物理ボディを同期
+  const physicsUpdatePositions = [player.position];
+  for (const mob of mobs) {
+    physicsUpdatePositions.push(mob.mesh.position);
+  }
+  physics.updateBlockBodies(physicsUpdatePositions, world);
 
   // 物理世界のステップ実行
   physics.step(deltaTime);

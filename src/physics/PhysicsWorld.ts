@@ -61,46 +61,48 @@ export class PhysicsWorld {
     this.world.addBody(groundBody);
   }
 
-  // プレイヤー周辺のソリッドブロックに対して、物理ボディを動的に追加・削除する (超軽量化)
-  public updateBlockBodies(playerPos: THREE.Vector3, voxelWorld: World): void {
-    // プレイヤーの周辺検出範囲 (半径数マス)
+  // プレイヤーおよびMobの周辺ソリッドブロックに対して、物理ボディを動的に追加・削除する
+  public updateBlockBodies(positions: THREE.Vector3[], voxelWorld: World): void {
+    // 検出範囲 (半径数マス)
     // 範囲が広すぎると重くなり、狭すぎると衝突前にすり抜ける。3〜4マスが適切。
     const radius = 3;
-    const px = Math.floor(playerPos.x);
-    const py = Math.floor(playerPos.y);
-    const pz = Math.floor(playerPos.z);
-
     const activeKeys = new Set<string>();
 
-    for (let x = px - radius; x <= px + radius; x++) {
-      for (let y = py - radius - 1; y <= py + radius; y++) { // 足元カバーのため下方向は1マス広め
-        for (let z = pz - radius; z <= pz + radius; z++) {
-          const blockType = voxelWorld.getBlock(x, y, z);
-          const blockProp = BLOCKS[blockType];
+    for (const pos of positions) {
+      const px = Math.floor(pos.x);
+      const py = Math.floor(pos.y);
+      const pz = Math.floor(pos.z);
 
-          if (blockProp && blockProp.isSolid) {
-            const key = `${x},${y},${z}`;
-            activeKeys.add(key);
+      for (let x = px - radius; x <= px + radius; x++) {
+        for (let y = py - radius - 1; y <= py + radius; y++) { // 足元カバーのため下方向は1マス広め
+          for (let z = pz - radius; z <= pz + radius; z++) {
+            const blockType = voxelWorld.getBlock(x, y, z);
+            const blockProp = BLOCKS[blockType];
 
-            // まだ剛体が作成されていなければ作成して追加
-            if (!this.blockBodies.has(key)) {
-              let shape = this.blockShape;
-              let yOffset = 0.5;
+            if (blockProp && blockProp.isSolid) {
+              const key = `${x},${y},${z}`;
+              activeKeys.add(key);
 
-              if (blockType === BlockType.BED_HEAD || blockType === BlockType.BED_FOOT) {
-                shape = this.bedShape;
-                yOffset = 0.5625 / 2;
+              // まだ剛体が作成されていなければ作成して追加
+              if (!this.blockBodies.has(key)) {
+                let shape = this.blockShape;
+                let yOffset = 0.5;
+
+                if (blockType === BlockType.BED_HEAD || blockType === BlockType.BED_FOOT) {
+                  shape = this.bedShape;
+                  yOffset = 0.5625 / 2;
+                }
+
+                const body = new CANNON.Body({
+                  mass: 0, // 静的ボディ
+                  shape: shape,
+                  // ブロックの中心に配置
+                  position: new CANNON.Vec3(x + 0.5, y + yOffset, z + 0.5),
+                  material: this.defaultMaterial,
+                });
+                this.world.addBody(body);
+                this.blockBodies.set(key, body);
               }
-
-              const body = new CANNON.Body({
-                mass: 0, // 静的ボディ
-                shape: shape,
-                // ブロックの中心に配置
-                position: new CANNON.Vec3(x + 0.5, y + yOffset, z + 0.5),
-                material: this.defaultMaterial,
-              });
-              this.world.addBody(body);
-              this.blockBodies.set(key, body);
             }
           }
         }
