@@ -82,6 +82,11 @@ export class NPCManager {
     }
   }
 
+  // アクティブなNPC一覧を取得（main.ts でのインタラクション用）
+  public getActiveNPCs(): Map<string, NPC> {
+    return this.activeNPCs;
+  }
+
   // ワールド退室時などに全NPCをクリアする
   public clearAll(): void {
     for (const npc of this.activeNPCs.values()) {

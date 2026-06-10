@@ -61,6 +61,11 @@ export class Player {
   private lastRegenTime: number = 0;
   private magmaDamageTimer: number = 0;
 
+  // ダンス
+  public isDancing: boolean = false;
+  private danceTimer: number = 0;
+  private readonly DANCE_DURATION: number = 6.0;
+
   // ボクセルワールドへの参照（カメラ壁抜け判定に使用）
   private voxelWorld!: World;
 
@@ -601,6 +606,18 @@ export class Player {
     this.updateHUD();
   }
 
+  // ダンス開始（トグル）
+  public startDance(): void {
+    if (this.isDancing) {
+      // 再度押すとダンス停止
+      this.isDancing = false;
+      this.danceTimer = 0;
+    } else {
+      this.isDancing = true;
+      this.danceTimer = this.DANCE_DURATION;
+    }
+  }
+
   // マウス入力による視点回転
   private handleRotation(input: InputHandler): void {
     const mouseDelta = input.consumeMouseDelta();
@@ -947,6 +964,15 @@ export class Player {
     // 頭のピッチ（上下）の同期
     this.head.rotation.x = this.pitch;
 
+    // ダンスタイマーの更新
+    if (this.isDancing) {
+      this.danceTimer -= deltaTime;
+      if (this.danceTimer <= 0) {
+        this.isDancing = false;
+        this.danceTimer = 0;
+      }
+    }
+
     // 歩行アニメーションの計算
     const speedSq = this.body.velocity.x * this.body.velocity.x + this.body.velocity.z * this.body.velocity.z;
     const isMoving = speedSq > 0.1 && this.isGrounded;
@@ -961,6 +987,20 @@ export class Player {
       }
       this.leftLeg.rotation.x = -angle;
       this.rightLeg.rotation.x = angle;
+    } else if (this.isDancing) {
+      // ダンスアニメーション
+      const t = performance.now() * 0.003;
+      // 腕を大きく振る（上下）
+      this.leftArm.rotation.x = Math.sin(t * 6) * 1.2;
+      if (this.swingTime <= 0) {
+        this.rightArm.rotation.x = -Math.sin(t * 6) * 1.2;
+      }
+      // 腕を外に広げる（Z軸）
+      this.leftArm.rotation.z = Math.abs(Math.sin(t * 3)) * 0.5;
+      this.rightArm.rotation.z = -Math.abs(Math.sin(t * 3)) * 0.5;
+      // 脚をリズミカルに動かす
+      this.leftLeg.rotation.x = Math.sin(t * 6 + Math.PI) * 0.5;
+      this.rightLeg.rotation.x = Math.sin(t * 6) * 0.5;
     } else {
       // 立ち止まっている時は手足を滑らかに直立に戻す
       const lerpFactor = 10 * deltaTime;

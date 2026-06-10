@@ -309,6 +309,7 @@
       margin-bottom: 10px;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互換性のため） */
       -webkit-text-fill-color: transparent;
       letter-spacing: 1px;
     }
@@ -579,6 +580,7 @@
       margin-bottom: 20px;
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互换性のため） */
       -webkit-text-fill-color: transparent;
       text-align: center;
     }
@@ -1491,6 +1493,7 @@
       font-weight: 800;
       background: linear-gradient(135deg, #3b82f6, #8b5cf6);
       -webkit-background-clip: text;
+      background-clip: text; /* 標準プロパティ（Firefox等他ブラウザの互换性のため） */
       -webkit-text-fill-color: transparent;
       margin-bottom: 6px;
     }
@@ -1833,6 +1836,10 @@
         <div class="instruction-row">
           <span>メニューに戻る</span>
           <span class="key-badge">Esc</span>
+        </div>
+        <div class="instruction-row">
+          <span>ダンス</span>
+          <span class="key-badge">F</span>
         </div>
       </div>
     </div>
@@ -2343,6 +2350,33 @@
             <td>インベントリから使用</td>
           </tr>
         </table>
+
+        <h2>🐾 5. 動物たちとの触れ合い</h2>
+        <p>フィールドには様々な動物が登場します。動物を倒すとアイテムをゲットできます！</p>
+        <table>
+          <tr><th>動物</th><th>手に入るアイテム</th><th>行動</th></tr>
+          <tr><td><strong>にわとり</strong></td><td><strong>リンゴ</strong></td><td>のんびり歩き回る。攻撃されると逃げる。</td></tr>
+          <tr><td><strong>ぶた</strong></td><td><strong>リンゴ</strong></td><td>のんびり歩き回る。攻撃されると逃げる。</td></tr>
+          <tr><td><strong>ひつじ</strong></td><td><strong>葉っぱ（羊毛代わり）</strong></td><td>のんびり歩き回る。攻撃されると逃げる。</td></tr>
+          <tr><td><strong>うし</strong></td><td><strong>革の防具セット</strong></td><td>のんびり歩き回る。バケツで右クリックすると水バケツになる。</td></tr>
+          <tr><td><strong>ゾンビ（夜間）</strong></td><td><strong>石炭</strong></td><td>夜間に出現。プレイヤーを追跡して攻撃する。</td></tr>
+          <tr><td><strong>クリーパー（夜間）</strong></td><td><strong>石炭</strong></td><td>近づくと爆発する。すぐに逃げること！</td></tr>
+        </table>
+
+        <h2>💬 6. むらびと・他プレイヤーとの会話</h2>
+        <p>むらびとや画面上の他プレイヤーアバターに近づいて <strong>右クリック</strong> すると話しかけることができます！</p>
+        <ul>
+          <li>むらびとはランダムな挨拶文を返してくれます。</li>
+          <li>他プレイヤーのアバターに話しかけることもできます。</li>
+          <li>吹き出しは数秒後に自動で消えます。</li>
+        </ul>
+
+        <h2>💃 7. ダンスコマンド</h2>
+        <p>ゲーム中に <strong><code>Fキー</code></strong> を押すと自分のキャラクターがダンスを踊ります！もう一度Fキーを押すとダンスが止まります。</p>
+        <ul>
+          <li>むらびとや他プレイヤーのアバターも時々ダンスします。</li>
+          <li>ダンス中も移動・ブロック操作は通常通りできます。</li>
+        </ul>
       </div>
 
       <!-- ひらがなモード -->
@@ -2570,6 +2604,33 @@
             <td>カバン から つかう</td>
           </tr>
         </table>
+
+        <h2>🐾 5. どうぶつ たちとの ふれあい</h2>
+        <p>フィールドには いろんな どうぶつが でてきます。どうぶつを たおすと アイテムを ゲット できます！</p>
+        <table>
+          <tr><th>どうぶつ</th><th>てにはいる アイテム</th><th>こうどう</th></tr>
+          <tr><td><strong>にわとり</strong></td><td><strong>リンゴ</strong></td><td>のんびり あるく。こうげき されると にげる。</td></tr>
+          <tr><td><strong>ぶた</strong></td><td><strong>リンゴ</strong></td><td>のんびり あるく。こうげき されると にげる。</td></tr>
+          <tr><td><strong>ひつじ</strong></td><td><strong>はっぱ（ようもうがわり）</strong></td><td>のんびり あるく。こうげき されると にげる。</td></tr>
+          <tr><td><strong>うし</strong></td><td><strong>かわの ぼうぐセット</strong></td><td>のんびり あるく。バケツで みぎクリック すると みずバケツ になる。</td></tr>
+          <tr><td><strong>ゾンビ（よる）</strong></td><td><strong>せきたん</strong></td><td>よるに でてくる。おいかけてきて こうげきする。</td></tr>
+          <tr><td><strong>クリーパー（よる）</strong></td><td><strong>せきたん</strong></td><td>ちかづくと ばくはつ する。はやく にげること！</td></tr>
+        </table>
+
+        <h2>💬 6. むらびと・ほかの プレイヤーとの かいわ</h2>
+        <p>むらびとや がめん に でている ほかの プレイヤーに ちかづいて <strong>みぎクリック</strong> すると はなしかける ことが できます！</p>
+        <ul>
+          <li>むらびとは ランダムな あいさつ を かえしてくれます。</li>
+          <li>ほかの プレイヤーの アバターに はなしかける こともできます。</li>
+          <li>ふきだし は すうびょうご に じどうで きえます。</li>
+        </ul>
+
+        <h2>💃 7. ダンス コマンド</h2>
+        <p>ゲーム ちゅうに <strong><code>Fキー</code></strong> を おすと じぶんの キャラクターが ダンスを おどります！もういちど Fキーを おすと ダンスが とまります。</p>
+        <ul>
+          <li>むらびとや ほかの プレイヤーの アバターも ときどき ダンスします。</li>
+          <li>ダンス ちゅうも いどう・ブロック そうさ は ふつうどおり できます。</li>
+        </ul>
       </div>
       <div class="manual-close-container">
         <button id="manual-close-btn"

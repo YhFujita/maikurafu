@@ -33,6 +33,19 @@ export class NPC {
   private targetDirection: THREE.Vector3 = new THREE.Vector3();
   private isGreeting: boolean = false;
 
+  // 吹き出し（会話）
+  private speechBubble: THREE.Sprite | null = null;
+  private speechTimer: number = 0;
+  private readonly SPEECH_DURATION: number = 3.5;
+
+  // ダンス
+  private isDancing: boolean = false;
+  private danceTimer: number = 0;
+  private readonly DANCE_DURATION: number = 5.0;
+
+  // ランダムダンスタイマー
+  private randomDanceTimer: number = 20.0 + Math.random() * 30.0;
+
   constructor(
     accountId: string,
     characterType: string,
@@ -216,6 +229,78 @@ export class NPC {
     this.mesh.add(this.rightLeg);
   }
 
+  // 挨拶文リスト（ランダム選択）
+  private static readonly GREETINGS = [
+    'こんにちは！',
+    'やあ、元気？',
+    'いい天気だね！',
+    '何か手伝えることある？',
+    'また会えてうれしいよ！',
+    '最近どう？',
+    'よろしくね！',
+    'いっしょに遊ぼう！',
+  ];
+
+  // 吹き出しスプライトの作成
+  private buildSpeechBubble(text: string): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // 吹き出し背景
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(8, 4, 296, 60, 12);
+      } else {
+        ctx.rect(8, 4, 296, 60);
+      }
+      ctx.fill();
+      // 三角形（しっぽ）
+      ctx.beginPath();
+      ctx.moveTo(60, 64);
+      ctx.lineTo(80, 64);
+      ctx.lineTo(70, 76);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      ctx.fill();
+      // テキスト
+      ctx.font = 'bold 24px Outfit, sans-serif';
+      ctx.fillStyle = '#1a1a2e';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 160, 34);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(2.0, 0.5, 1.0);
+    sprite.position.set(0, 1.6, 0); // 頭上
+    return sprite;
+  }
+
+  // 話しかける（吹き出し表示）
+  public speak(): void {
+    // 既存の吹き出しを削除
+    if (this.speechBubble) {
+      this.mesh.remove(this.speechBubble);
+      this.speechBubble = null;
+    }
+    const text = NPC.GREETINGS[Math.floor(Math.random() * NPC.GREETINGS.length)];
+    this.speechBubble = this.buildSpeechBubble(text);
+    this.mesh.add(this.speechBubble);
+    this.speechTimer = this.SPEECH_DURATION;
+  }
+
+  // ダンスを開始する
+  public startDance(duration: number = this.DANCE_DURATION): void {
+    this.isDancing = true;
+    this.danceTimer = duration;
+    // ダンス中は移動しない
+    this.isWaiting = true;
+  }
+
   private createNameTag(name: string): THREE.Sprite {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
@@ -264,10 +349,40 @@ export class NPC {
     // 次の予測座標（水平方向）
     const nextPos = this.position.clone();
     
+    // ダンス中はカウントダウン
+    if (this.isDancing) {
+      this.danceTimer -= deltaTime;
+      if (this.danceTimer <= 0) {
+        this.isDancing = false;
+        this.isWaiting = false;
+      }
+    }
+
+    // 吹き出しのフェードアウト処理
+    if (this.speechBubble && this.speechTimer > 0) {
+      this.speechTimer -= deltaTime;
+      // 最後の1秒でフェードアウト
+      const opacity = Math.min(1.0, this.speechTimer);
+      (this.speechBubble.material as THREE.SpriteMaterial).opacity = opacity;
+      if (this.speechTimer <= 0) {
+        this.mesh.remove(this.speechBubble);
+        this.speechBubble = null;
+      }
+    }
+
+    // ランダムダンスタイマー（プレイヤーが近すぎない場合のみ）
+    if (!this.isDancing && distToPlayer > 5.0) {
+      this.randomDanceTimer -= deltaTime;
+      if (this.randomDanceTimer <= 0) {
+        this.startDance();
+        this.randomDanceTimer = 30.0 + Math.random() * 60.0;
+      }
+    }
+
     // 挨拶していないかつ待機していない場合のみ移動する
     this.isGreeting = distToPlayer < 4.0;
     
-    if (!this.isGreeting && !this.isWaiting) {
+    if (!this.isGreeting && !this.isWaiting && !this.isDancing) {
       nextPos.x += this.targetDirection.x * this.speed * deltaTime;
       nextPos.z += this.targetDirection.z * this.speed * deltaTime;
     }
@@ -319,7 +434,21 @@ export class NPC {
     this.mesh.position.copy(this.position);
 
     // 3. アニメーションと向きの更新
-    if (this.isGreeting) {
+    if (this.isDancing) {
+      // ダンスアニメーション
+      const t = performance.now() * 0.003;
+      // 体を左右に揺らす
+      this.mesh.rotation.y += Math.sin(t * 4) * 0.05;
+      // 腕を大きく振る（上下）
+      this.leftArm.rotation.x = Math.sin(t * 6) * 1.2;
+      this.rightArm.rotation.x = -Math.sin(t * 6) * 1.2;
+      // 腕を外に広げる（Z軸）
+      this.leftArm.rotation.z = Math.abs(Math.sin(t * 3)) * 0.5;
+      this.rightArm.rotation.z = -Math.abs(Math.sin(t * 3)) * 0.5;
+      // 脚を交互に上げる
+      this.leftLeg.rotation.x = Math.sin(t * 6 + Math.PI) * 0.5;
+      this.rightLeg.rotation.x = Math.sin(t * 6) * 0.5;
+    } else if (this.isGreeting) {
       // プレイヤーの方向を向く
       const dirX = pPos.x - this.position.x;
       const dirZ = pPos.z - this.position.z;
@@ -344,6 +473,7 @@ export class NPC {
     } else {
       this.head.rotation.x += (0 - this.head.rotation.x) * 5 * deltaTime; // 頭の角度をリセット
       this.rightArm.rotation.z += (0 - this.rightArm.rotation.z) * 5 * deltaTime; // 腕のZ回転を戻す
+      this.leftArm.rotation.z += (0 - this.leftArm.rotation.z) * 5 * deltaTime;
 
       this.walkTimer -= deltaTime;
       if (this.walkTimer <= 0) {
@@ -374,6 +504,12 @@ export class NPC {
   }
 
   private chooseNextAction(): void {
+    // ダンス（10%の確率）
+    if (Math.random() < 0.1) {
+      this.startDance(3.0 + Math.random() * 4.0);
+      this.walkTimer = this.danceTimer + 0.5;
+      return;
+    }
     // 待機するか歩くかを決定 (50% の確率)
     this.isWaiting = Math.random() < 0.5;
     this.walkTimer = 3.0 + Math.random() * 5.0; // 3〜8秒間のアクション期間

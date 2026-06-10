@@ -534,14 +534,19 @@ export class Mob {
     );
   }
 
-  public update(deltaTime: number, player: Player, world: World): boolean {
+  public update(deltaTime: number, player: Player, world: World, frustum?: THREE.Frustum): boolean {
     const pPos = player.position;
     const mobPos = Mob.tempVec3.set(this.body.position.x, this.body.position.y, this.body.position.z);
     const dist = mobPos.distanceTo(pPos);
 
+    // 画面外（フラストラム外）かつ一定距離以上離れた場合のみデスポーン
+    // 画面内に映っているモブは消えない
     if (dist > CONFIG.MOB_DESPAWN_RADIUS) {
-      this.destroy();
-      return true; // デスポーン
+      const isVisible = frustum ? frustum.containsPoint(mobPos) : false;
+      if (!isVisible) {
+        this.destroy();
+        return true; // デスポーン
+      }
     }
 
     if (this.damageFlashTime > 0) {

@@ -557,6 +557,76 @@ function updateHPUI() {
   }
 }
 
+// むらびと（Mob）の頭上に吹き出しを表示する
+function showMobSpeechBubble(mob: Mob, text: string): void {
+  // 既存の吹き出しを削除（userData に保存して管理）
+  if (mob.mesh.userData.speechSprite) {
+    mob.mesh.remove(mob.mesh.userData.speechSprite);
+    mob.mesh.userData.speechSprite = null;
+  }
+
+  // Canvas に吹き出しを描画
+  const canvas = document.createElement('canvas');
+  canvas.width = 320;
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    // 吹き出し背景（白い丸角矩形）
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(8, 4, 296, 60, 12);
+    } else {
+      ctx.rect(8, 4, 296, 60);
+    }
+    ctx.fill();
+    // 三角形（しっぽ）
+    ctx.beginPath();
+    ctx.moveTo(60, 64);
+    ctx.lineTo(80, 64);
+    ctx.lineTo(70, 76);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.fill();
+    // テキスト
+    ctx.font = 'bold 24px Outfit, sans-serif';
+    ctx.fillStyle = '#1a1a2e';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 160, 34);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.0, 0.5, 1.0);
+  sprite.position.set(0, 1.6, 0); // 頭上
+
+  mob.mesh.add(sprite);
+  mob.mesh.userData.speechSprite = sprite;
+
+  // 音を鳴らす（グラス音を流用）
+  SoundManager.playPlace(BlockType.GLASS);
+
+  // 3.5秒後にフェードアウトして削除
+  const startTime = performance.now();
+  const duration = 3500;
+  const fade = () => {
+    const elapsed = performance.now() - startTime;
+    const progress = elapsed / duration;
+    if (progress >= 1.0) {
+      if (mob.mesh.userData.speechSprite === sprite) {
+        mob.mesh.remove(sprite);
+        mob.mesh.userData.speechSprite = null;
+      }
+      return;
+    }
+    // 最後の1秒でフェードアウト
+    mat.opacity = Math.min(1.0, (1.0 - progress) * 3.0);
+    requestAnimationFrame(fade);
+  };
+  requestAnimationFrame(fade);
+}
+
 // ドロップアイテムの生成処理
 function spawnDroppedItem(type: BlockType, pos: THREE.Vector3, targetPos?: THREE.Vector3) {
   if (droppedItems.length >= CONFIG.MAX_DROPPED_ITEMS) {
@@ -786,9 +856,15 @@ function animate(time: number) {
     }
   }
 
-  // Mobの更新
+  // Mobの更新（フラストラムを使ったデスポーン制御）
+  // 視錐台（カメラに映っている範囲）の計算
+  const frustum = new THREE.Frustum();
+  const projScreenMatrix = new THREE.Matrix4();
+  projScreenMatrix.multiplyMatrices(renderer.camera.projectionMatrix, renderer.camera.matrixWorldInverse);
+  frustum.setFromProjectionMatrix(projScreenMatrix);
+
   for (let i = mobs.length - 1; i >= 0; i--) {
-    const isDespawned = mobs[i].update(deltaTime, player, world);
+    const isDespawned = mobs[i].update(deltaTime, player, world, frustum);
     if (isDespawned) {
       mobs.splice(i, 1);
     }
@@ -1123,18 +1199,47 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
             }
             return;
           }
-          // 村人からプレゼント
+          // 村人に話しかける（右クリック → 挨拶文をランダムに表示）
           if (hitMob.type === MobType.VILLAGER) {
-            if (Math.random() < 0.3) {
-              const presentType = Math.random() < 0.5 ? BlockType.APPLE : BlockType.FLOWER_ROSE;
-              spawnDroppedItem(presentType, new THREE.Vector3(hitMob.body.position.x, hitMob.body.position.y, hitMob.body.position.z), player.position);
-              SoundManager.playPlace(BlockType.GLASS);
-            }
+            // 挨拶文リスト
+            const greetings = [
+              'こんにちは！',
+              'やあ、元気？',
+              'いい天気だね！',
+              'また会えてうれしいよ！',
+              'よろしくね！',
+              'いっしょに遊ぼう！',
+            ];
+            const text = greetings[Math.floor(Math.random() * greetings.length)];
+            showMobSpeechBubble(hitMob, text);
             return;
           }
           
           if (hitMob.isFriendly()) {
             return;
+          }
+        }
+      }
+
+      // NPC（他プレイヤーのアバター）に対する話しかけ判定
+      const activeNPCs = npcManager.getActiveNPCs();
+      if (activeNPCs.size > 0) {
+        const npcMeshes: THREE.Object3D[] = [];
+        for (const npc of activeNPCs.values()) {
+          npc.mesh.traverse(child => {
+            if (child instanceof THREE.Mesh) npcMeshes.push(child);
+          });
+        }
+        const npcIntersects = raycaster.intersectObjects(npcMeshes);
+        if (npcIntersects.length > 0 && npcIntersects[0].distance < maxInteractDistance) {
+          const hitMesh = npcIntersects[0].object;
+          for (const npc of activeNPCs.values()) {
+            let found = false;
+            npc.mesh.traverse(child => { if (child === hitMesh) found = true; });
+            if (found) {
+              npc.speak();
+              return;
+            }
           }
         }
       }
@@ -1360,6 +1465,15 @@ window.addEventListener('keydown', (e) => {
   }
 
   const config = configStore.getConfig();
+
+  // Fキーによるダンス開始（トグル）
+  if (e.code === 'KeyF') {
+    if (input.isLocked) {
+      player.startDance();
+      e.preventDefault();
+      input.consumeJustPressed('KeyF');
+    }
+  }
 
   // Escapeキーで開いているモーダルを閉じる処理
   if (e.code === 'Escape') {
