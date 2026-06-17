@@ -508,8 +508,22 @@ export class Chunk {
           const globalZ = this.z * this.size + cz;
 
           if (blockType === BlockType.STAIRS) {
-            addBox(globalX, globalY,       globalZ, globalX + 1.0, globalY + 0.5, globalZ + 1.0, 9); // ベース
-            addBox(globalX, globalY + 0.5, globalZ, globalX + 1.0, globalY + 1.0, globalZ + 0.5, 9); // ステップ
+            const dir = world.getDoorOrientation(globalX, globalY, globalZ) as string;
+            
+            // ベースは共通
+            addBox(globalX, globalY, globalZ, globalX + 1.0, globalY + 0.5, globalZ + 1.0, 9); // ベース
+            
+            // ステップは向きに応じて配置
+            if (dir === 'E') { // 東向きに登る
+              addBox(globalX + 0.5, globalY + 0.5, globalZ, globalX + 1.0, globalY + 1.0, globalZ + 1.0, 9);
+            } else if (dir === 'W') { // 西向きに登る
+              addBox(globalX, globalY + 0.5, globalZ, globalX + 0.5, globalY + 1.0, globalZ + 1.0, 9);
+            } else if (dir === 'S') { // 南向きに登る
+              addBox(globalX, globalY + 0.5, globalZ + 0.5, globalX + 1.0, globalY + 1.0, globalZ + 1.0, 9);
+            } else {
+              // 'N' (デフォルト)。北向きに登る
+              addBox(globalX, globalY + 0.5, globalZ, globalX + 1.0, globalY + 1.0, globalZ + 0.5, 9);
+            }
             continue;
           }
 
@@ -736,7 +750,7 @@ export class Chunk {
               // 扉の向き情報を取得（NS=南北方向に開口、EW=東西方向に開口）
               let doorOrientation: 'NS' | 'EW' = 'NS';
               if (isDoorClosed || isDoorOpen) {
-                doorOrientation = world.getDoorOrientation(globalX, globalY, globalZ);
+                doorOrientation = world.getDoorOrientation(globalX, globalY, globalZ) as 'NS' | 'EW';
               }
 
               // 頂点の追加

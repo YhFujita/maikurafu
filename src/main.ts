@@ -1642,6 +1642,23 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
           mobs.push(cart);
           inventory[BlockType.MINECART]--;
           syncHotbarUI();
+        } else if (activeBlockType === BlockType.STAIRS) {
+          world.setBlock(bx, by, bz, BlockType.STAIRS);
+          const yaw = player.getYaw();
+          let dir: 'N'|'S'|'E'|'W' = 'N';
+          if (yaw >= -Math.PI/4 && yaw < Math.PI/4) {
+            dir = 'N';
+          } else if (yaw >= Math.PI/4 && yaw < 3*Math.PI/4) {
+            dir = 'W';
+          } else if (yaw >= -3*Math.PI/4 && yaw < -Math.PI/4) {
+            dir = 'E';
+          } else {
+            dir = 'S';
+          }
+          world.setDoorOrientation(bx, by, bz, dir);
+          SoundManager.playPlace(activeBlockType);
+          inventory[activeBlockType]--;
+          syncHotbarUI();
         } else {
           // 通常ブロックの設置
           world.setBlock(bx, by, bz, activeBlockType);

@@ -123,15 +123,15 @@ export class World {
    * @param z - グローバルZ座標
    * @param orientation - 'NS'(南北=Z軸方向に薄い板) または 'EW'(東西=X軸方向に薄い板)
    */
-  public setDoorOrientation(x: number, y: number, z: number, orientation: 'NS' | 'EW'): void {
-    this.doorOrientations.set(`${x},${y},${z}`, orientation);
+  public setDoorOrientation(x: number, y: number, z: number, orientation: 'NS' | 'EW' | 'N' | 'S' | 'E' | 'W'): void {
+    this.doorOrientations.set(`${x},${y},${z}`, orientation as 'NS' | 'EW');
   }
 
   /**
    * 指定座標の扉の向き情報を取得する。登録なしの場合は 'NS' をデフォルト返す。
    */
-  public getDoorOrientation(x: number, y: number, z: number): 'NS' | 'EW' {
-    return this.doorOrientations.get(`${x},${y},${z}`) ?? 'NS';
+  public getDoorOrientation(x: number, y: number, z: number): 'NS' | 'EW' | 'N' | 'S' | 'E' | 'W' {
+    return (this.doorOrientations.get(`${x},${y},${z}`) as any) ?? 'NS';
   }
 
   /**
