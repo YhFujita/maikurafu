@@ -670,6 +670,32 @@ export class Chunk {
             continue;
           }
 
+          let torchOffsetX = 0;
+          let torchOffsetZ = 0;
+          if (blockType === BlockType.TORCH) {
+            const checkSolid = (dx: number, dy: number, dz: number) => {
+              let neighborBlock: BlockType;
+              if (this.isOutOfBounds(cx + dx, cy + dy, cz + dz)) {
+                neighborBlock = world.getBlock(globalX + dx, globalY + dy, globalZ + dz);
+              } else {
+                neighborBlock = this.getBlock(cx + dx, cy + dy, cz + dz);
+              }
+              return BLOCKS[neighborBlock]?.isSolid ?? false;
+            };
+
+            if (checkSolid(0, -1, 0)) {
+              // 床に置ける場合はそのまま
+            } else if (checkSolid(1, 0, 0)) {
+              torchOffsetX = 0.4;
+            } else if (checkSolid(-1, 0, 0)) {
+              torchOffsetX = -0.4;
+            } else if (checkSolid(0, 0, 1)) {
+              torchOffsetZ = 0.4;
+            } else if (checkSolid(0, 0, -1)) {
+              torchOffsetZ = -0.4;
+            }
+          }
+
           for (const face of FACES) {
             const nx = cx + face.dir[0];
             const ny = cy + face.dir[1];
@@ -730,6 +756,17 @@ export class Chunk {
                   vx = globalX + 0.5 + (corner[0] - 0.5) * 0.125;
                   vy = globalY + corner[1] * 0.625;
                   vz = globalZ + 0.5 + (corner[2] - 0.5) * 0.125;
+
+                  if (torchOffsetX !== 0) {
+                    vx += torchOffsetX;
+                    if (corner[1] === 1) vx -= Math.sign(torchOffsetX) * 0.2;
+                    vy += 0.2; // 壁掛けは少し高い位置に
+                  }
+                  if (torchOffsetZ !== 0) {
+                    vz += torchOffsetZ;
+                    if (corner[1] === 1) vz -= Math.sign(torchOffsetZ) * 0.2;
+                    vy += 0.2;
+                  }
                 } else if (isDoorClosed) {
                   if (doorOrientation === 'EW') {
                     // EW向き（東西）の閉扉：X軸方向に薄い板（通路をZ方向に通る場合に壁になる）

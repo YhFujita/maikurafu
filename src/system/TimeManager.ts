@@ -3,7 +3,6 @@ import { configStore } from '../configStore.ts';
 
 export class TimeManager {
   private time: number = 0; // 0.0 ~ 1.0 (0.0 = 正午, 0.5 = 真夜中)
-  private timeScale: number = 0.01; // 時間の進む速度
 
   private sunLight: THREE.DirectionalLight;
   private ambientLight: THREE.AmbientLight;
@@ -46,19 +45,20 @@ export class TimeManager {
     this.scene.add(this.ambientLight);
   }
 
-  public update(deltaTime: number, playerPosition: THREE.Vector3): void {
-    // 太陽が地平線の上（昼）か下（夜）かによって時間の進む速度を変える
-    const currentAngle = this.time * Math.PI * 2;
-    const currentSin = Math.sin(currentAngle);
-    let speedFactor = 1.0;
-    if (currentSin > -0.1) {
-      speedFactor = 0.35; // 昼はゆっくり進める（昼が約3倍長くなる）
-    } else {
-      speedFactor = 2.5;  // 夜は早く進める（夜が早く明ける）
-    }
+  public update(_deltaTime: number, playerPosition: THREE.Vector3): void {
+    // 全プレイヤーで時間を共有するため、現在時刻(UTC)から時間を計算する
+    // 1日の現実時間での長さ（例：10分 = 600,000ミリ秒）
+    const CYCLE_MS = 600000;
+    const progress = (Date.now() % CYCLE_MS) / CYCLE_MS;
 
-    // 時間を進める
-    this.time = (this.time + this.timeScale * speedFactor * deltaTime) % 1.0;
+    // 昼を長く、夜を短くするマッピング（昼:約70%, 夜:約30%）
+    // progressが0.0 ~ 0.7 の時は timeを 0.0 ~ 0.5 (昼)
+    // progressが0.7 ~ 1.0 の時は timeを 0.5 ~ 1.0 (夜)
+    if (progress < 0.7) {
+      this.time = (progress / 0.7) * 0.5;
+    } else {
+      this.time = 0.5 + ((progress - 0.7) / 0.3) * 0.5;
+    }
 
     // 太陽の角度（角度 = time * 2 * PI）
     const angle = this.time * Math.PI * 2;
