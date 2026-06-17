@@ -1644,7 +1644,12 @@ function performBlockAction(shouldDestroy: boolean, shouldPlace: boolean) {
           syncHotbarUI();
         } else if (activeBlockType === BlockType.STAIRS) {
           world.setBlock(bx, by, bz, BlockType.STAIRS);
-          const yaw = player.getYaw();
+          let yaw = player.getYaw();
+          // yawを -PI 〜 PI に正規化する
+          yaw = yaw % (2 * Math.PI);
+          if (yaw > Math.PI) yaw -= 2 * Math.PI;
+          if (yaw < -Math.PI) yaw += 2 * Math.PI;
+
           let dir: 'N'|'S'|'E'|'W' = 'N';
           if (yaw >= -Math.PI/4 && yaw < Math.PI/4) {
             dir = 'N';
